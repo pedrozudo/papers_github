@@ -1,0 +1,324 @@
+%File: anonymous-submission-latex-2024.tex
+\documentclass[letterpaper]{article} % DO NOT CHANGE THIS
+\usepackage{aaai24}  % DO NOT CHANGE THIS
+\usepackage{times}  % DO NOT CHANGE THIS
+\usepackage{helvet}  % DO NOT CHANGE THIS
+\usepackage{courier}  % DO NOT CHANGE THIS
+\usepackage[hyphens]{url}  % DO NOT CHANGE THIS
+\usepackage{graphicx} % DO NOT CHANGE THIS
+\urlstyle{rm} % DO NOT CHANGE THIS
+\def\UrlFont{\rm}  % DO NOT CHANGE THIS
+\usepackage{natbib}  % DO NOT CHANGE THIS AND DO NOT ADD ANY OPTIONS TO IT
+\usepackage{caption} % DO NOT CHANGE THIS AND DO NOT ADD ANY OPTIONS TO IT
+\frenchspacing  % DO NOT CHANGE THIS
+\setlength{\pdfpagewidth}{8.5in} % DO NOT CHANGE THIS
+\setlength{\pdfpageheight}{11in} % DO NOT CHANGE THIS
+%
+% These are recommended to typeset algorithms but not required. See the subsubsection on algorithms. Remove them if you don't have algorithms in your paper.
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+%
+% These are are recommended to typeset listings but not required. See the subsubsection on listing. Remove this block if you don't have listings in your paper.
+\usepackage{newfloat}
+\usepackage{listings}
+\DeclareCaptionStyle{ruled}{labelfont=normalfont,labelsep=colon,strut=off} % DO NOT CHANGE THIS
+\lstset{%
+	basicstyle={\footnotesize\ttfamily},% footnotesize acceptable for monospace
+	numbers=left,numberstyle=\footnotesize,xleftmargin=2em,% show line numbers, remove this entire line if you don't want the numbers.
+	aboveskip=0pt,belowskip=0pt,%
+	showstringspaces=false,tabsize=2,breaklines=true}
+\floatstyle{ruled}
+\newfloat{listing}{tb}{lst}{}
+\floatname{listing}{Listing}
+%
+% Keep the \pdfinfo as shown here. There's no need
+% for you to add the /Title and /Author tags.
+\pdfinfo{
+/TemplateVersion (2024.1)
+}
+
+% DISALLOWED PACKAGES
+% \usepackage{authblk} -- This package is specifically forbidden
+% \usepackage{balance} -- This package is specifically forbidden
+% \usepackage{color (if used in text)
+% \usepackage{CJK} -- This package is specifically forbidden
+% \usepackage{float} -- This package is specifically forbidden
+% \usepackage{flushend} -- This package is specifically forbidden
+% \usepackage{fontenc} -- This package is specifically forbidden
+% \usepackage{fullpage} -- This package is specifically forbidden
+% \usepackage{geometry} -- This package is specifically forbidden
+% \usepackage{grffile} -- This package is specifically forbidden
+% \usepackage{hyperref} -- This package is specifically forbidden
+% \usepackage{navigator} -- This package is specifically forbidden
+% (or any other package that embeds links such as navigator or hyperref)
+% \indentfirst} -- This package is specifically forbidden
+% \layout} -- This package is specifically forbidden
+% \multicol} -- This package is specifically forbidden
+% \nameref} -- This package is specifically forbidden
+% \usepackage{savetrees} -- This package is specifically forbidden
+% \usepackage{setspace} -- This package is specifically forbidden
+% \usepackage{stfloats} -- This package is specifically forbidden
+% \usepackage{tabu} -- This package is specifically forbidden
+% \usepackage{titlesec} -- This package is specifically forbidden
+% \usepackage{tocbibind} -- This package is specifically forbidden
+% \usepackage{ulem} -- This package is specifically forbidden
+% \usepackage{wrapfig} -- This package is specifically forbidden
+% DISALLOWED COMMANDS
+% \nocopyright -- Your paper will not be published if you use this command
+% \addtolength -- This command may not be used
+% \balance -- This command may not be used
+% \baselinestretch -- Your paper will not be published if you use this command
+% \clearpage -- No page breaks of any kind may be used for the final version of your paper
+% \columnsep -- This command may not be used
+% \newpage -- No page breaks of any kind may be used for the final version of your paper
+% \pagebreak -- No page breaks of any kind may be used for the final version of your paperr
+% \pagestyle -- This command may not be used
+% \tiny -- This is not an acceptable font size.
+% \vspace{- -- No negative value may be used in proximity of a caption, figure, table, section, subsection, subsubsection, or reference
+% \vskip{- -- No negative value may be used to alter spacing above or below a caption, figure, table, section, subsection, subsubsection, or reference
+
+\setcounter{secnumdepth}{2} %May be changed to 1 or 2 if section numbers are desired.
+
+% The file aaai24.sty is the style file for AAAI Press
+% proceedings, working notes, and technical reports.
+%
+
+% Title
+
+
+\title{}
+
+
+%Example, Single Author, ->> remove \iffalse,\fi and place them surrounding AAAI title to use it
+% \author {
+%     Pedro Zuidberg Dos Martires
+% }
+% \affiliations{
+%     Örebro University
+% }
+
+\author{}
+\affiliations{}
+
+
+
+
+\usepackage{mathtools} % amsmath with fixes and additions
+% \usepackage{siunitx} % for proper typesetting of numbers and units
+\usepackage{booktabs} % commands to create good-looking tables
+\usepackage{tikz}
+\usetikzlibrary{decorations.pathreplacing,calligraphy,calc,hobby,intersections,through}
+\usetikzlibrary{spn}
+
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fontsm
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+
+\usepackage{multirow}
+\usepackage{courier}
+\usepackage{listings, lstautogobble,amsfonts}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mdframed}
+\usepackage{mathtools}
+\usepackage{xspace}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{multicol}
+\usepackage{thmtools}
+\usepackage{bm}
+\usepackage{thm-restate}
+\usepackage{todonotes}
+\usepackage[inline]{enumitem}
+\usepackage{soul}
+\usepackage{physics}
+
+
+
+% Recommended, but optional, packages for figures and better typesetting:
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{booktabs} % for professional tables
+\usepackage{cancel}
+
+
+\pgfplotsset{compat=1.18}
+
+\input{macros}
+
+
+
+%Commands definitions
+\newcommand{\setbackgroundcolour}{\pagecolor[rgb]{0.19,0.19,0.19}}  
+\newcommand{\settextcolour}{\color[rgb]{0.77,0.77,0.77}}    
+\newcommand{\invertbackgroundtext}{\setbackgroundcolour\settextcolour}
+
+%Command execution. 
+%If this line is commented, then the appearance remains as usual.
+% \invertbackgroundtext
+
+
+
+
+\newcommand{\spacing}{\vspace{0.1cm}}
+\newcommand{\question}[1]{\noindent{\bf\color{teal}{#1}}}
+
+\newcommand{\answer}[1]{\noindent{\normalfont\color{black}{#1}}}
+
+
+
+
+\begin{document}
+
+% \maketitle
+\noindent
+We would like to thank the reviewers for their considerate and thoughtful comments. In order to adequately address these comments, we intend to purchase an extra page.
+
+
+
+\vspace{0.1cm}
+\noindent {\bf Reviewer 1}
+
+
+\noindent We address the comment made by Reviewer 1 concerning marginalization in our responses to Reviewers 2 and 3.
+\spacing
+\question{
+How do PNCs empirically compare to state-of-the-art (intractable) density estimators?
+}
+
+\answer{
+State of the art neural density estimators usually deploy a plethora of tricks, such as the use of \textit{discretized logistic mixtures}~\Citep{salimans2017pixelcnn} to achieve a high performance. While we plan in future work to explore these ideas for PNCs, the main focus of the experiments was to show that giving up to a certain degree on tractability leads to more expressive models. Indeed, our experiments confirm this hypothesis, especially when comparing PNCs. PQCs, and state-of-the-art circuits.
+
+Nevertheless, we also compare to less tractable models. In particular normalizing flows (IDF) and hierarchical latent variable models (BitSwap) (both using neural networks). In this regard we believe we make a fair effort in terms of comparisons. Especially when considering the parameter count of the models: The parameter count of PNCs is half the one of SHCLT and only a fraction of neural density estimators such as PixelCNN ($\approx56M$ parameters).
+
+% In future work we plan on scaling up our approach (usually not trivial for PCs as parameter learning is tricky in massively overparametrized circuits). We would then compare to larger models, \eg PixelCNN++ ($\approx56M$ parameters). We would also deploy common tricks from the density estimation literature such as  in the leaves \Citep{salimans2017pixelcnn}.
+}
+
+\vspace{0.1cm}
+\noindent {\bf Reviewer 2}
+
+
+\noindent
+\question{Relationship between CPCs and PNCs.}
+
+\answer{
+The advantage of introducing CPCs lies with the neat interpretation as deep mixture of Bayesian networks and the fact that we can, for instance, proof their validity (Proposition 3.9) using arguments similar to the case of PCs. 
+
+We agree, however, with the reviewer that simply stating the functional form of sum units for PNCs (3.10 Definition) obscures to a certain degree their relationship to CPCs. For the camera-ready version we will include an extended version of the following discussion, which gives us PNCs starting from CPCs.
+
+Consider a sum unit of a CPC:
+\begin{talign}
+	\sum_{j\in\inputs(k)} \weight_{kj} \circuit_j(\xvars_n  {\mid}  \xvars_{\parents(n)})
+\end{talign}
+This can be rearranged into:
+\begin{talign}
+	\sum_{j\in\inputs(k)}
+		\weight_{kj}
+		\frac{
+			\circuit_j(  \xvars_{\parents(n)} \mid \xvars_n  )
+		}{
+			\circuit_j(  \xvars_{\parents(n)  })
+		}
+	\circuit_j(  \xvars_n)
+\end{talign}
+We approximate the ratio with a neural network as follows:
+\begin{talign}
+	\nweight_{kj}(\xvars_{\ancestors(n)})\approx 		\weight_{kj}
+	\frac{
+		\circuit_j(  \xvars_{\parents(n)} \mid \xvars_n  )
+	}{
+		\circuit_j(  \xvars_{\parents(n)  })
+	}.
+\end{talign}
+This gives us the expression of Definition 3.10. Constraining the $ \nweight_{kj} ( \xvars_{\ancestors(n)})$ to sum to one together with necessitating $\circuit_j (\xvars_n)$ being a valid circuit then gives us the validity of the PNC. This lets us conclude that PNCs are neural approximations of CPCs. We will make this explicit in the final version of the paper.
+Note that it is this approximation that makes PNCs tractable: PNCs only need a single circuits for each $j$ while CPCs need a circuit for every $j$ and every instantiation of $\xvars_{\parents(n)}$.
+}
+
+
+\spacing
+\question{
+The marginal inference algorithm was a bit unclear. Does it require m number of passes through the circuit, or can it be done in a single pass? [...]
+}
+
+The marginalization method we describe in Proposition 3.13 walks through a circuit in a depth-first fashion. This requires only visiting each node at most once (assuming proper caching). This can indeed be translated into a breadth-first circuit traversal, which is then easily parallelized for layered PNCs. This would then only require a single pass through the layered computation graph.
+As pointed out by the reviewer this would indeed boil down to replacing distributions at the leaves with $1$ and evaluating the circuit.
+We will add a discussion on this to the paper as well as provide pseudocode.
+
+
+% This is what we refer to as "the delicate point" in the paper (after the proof of Proposition 3.13).
+
+\spacing
+\question{
+Also, I think PNCs are tractable for more general ordered conditionals than shown in Corollary 3.14. [...].
+}
+
+Yes, indeed thank you for the suggestion. We will add it to the paper. Showing this is quite straightforward by combining Proposition 3.13 (marginalizing $X_m$) and Corollary 3.14. 
+
+\spacing
+\question{Minor Questions / Comments}
+
+\answer{
+Due to space constraints, we are, unfortunately, not able to comment on them here. We will address them in the camera-ready version of the manuscript.
+}
+
+% \begin{itemize}
+
+% \item Definition 3.2: $pa(n)$ where $X_n$ is a set of variables was not previously defined. Is it just the union of parents of variables in $X_n$ (minus $X_n$ itself)?
+% \item Eq (5): missing parenthesis for $w_{kj}$. Also, should the sum unit be $p_k(x_n | x_{an(n)})$ instead because the weights depend on $x_{an(n)}$, and should $p_j$ also be conditioned the same way for the recursive definition?
+% \item Typo: Theorem 3.9 sum of $w_m$ -> $w_{nm}$
+% \item Typo: Figure 5 caption “while on the left” -> “while on the right”
+% \item Section 6.3: I did not follow “two components in the leaf units instead of 256”
+% \item Are partition trees related to vtrees? (Kisa et al. "Probabilistic sentential decision diagrams." 2014)
+% \item Definition 3.10 seems to assume Boolean variables. Can this be applied to continuous variables?
+
+
+
+% \end{itemize}
+
+
+
+
+
+
+\vspace{0.1cm}
+\noindent {\bf Reviewer 3}
+
+
+\noindent
+Similarly to Reviewer 1, Reviewer 3 commented on tractability of marginals (in practice). In the final version of the manuscript we will include a more detailed discussion. Here we already answer some of the questions.
+
+
+	\question{For the PNC structures used for 28x28 images, have the following questions:
+	}
+
+	\question{
+	A. What is the missingness pattern that is allowed in the images so we still get tractable queries? Is there a intuitive way to see which missing patterns are allowed for the pixels?
+	}
+	\answer{Yes, there is an intuitive pattern. Consider the partition tree in Figure 3. We can then marginalize out the variables the right branch of the tree. For images this is similar but with a second dimension.}
+
+	\question{
+	 B. Is the missingness pattern allowed for MARs the same for PNCs learned on the different datasets? Or is it data dependent (assume still images of same size).
+	}
+	\answer{The missingness pattern is the same for different datasets (assuming the same PNC structure is used.)}
+
+	\question{
+	 C. In practice how often we get actual tractability for MARs for images.
+	}
+	\answer{In practice one could, for instance, marginalize the right side of an image and have a model for the left side. This means that one would need to know beforehand the queries posed to the model. An interesting question is whether this can be mitigated using approximate inference techniques such as sampling or adapting a form of loopy belief propagation.
+	Alternatively, one could focus on tasks where only ordered marginalization (PNC) is needed instead of any-order marginalization (PC). As we suggest in our future work section, arithmetic coding seems to be a good candidate and there might be other such tasks of interest. 
+	}
+
+
+
+
+
+
+
+\bibliography{references}
+
+\end{document}
