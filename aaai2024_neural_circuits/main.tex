@@ -933,7 +933,7 @@ In order to study PNC structures, we introduce the concept of a partition graph,
 
 Ignoring for now neural dependencies in PNCs (\ie the red edges in the partition tree in Figure~\ref{fig:partition_graph}) we describe the layer-wise operations. Let us assume, for the sake of simplicity, that the number of variables $N$ is a power of $2$. For instance, the circuits in Figure~\ref{fig:circuit} has $N=4$ and the partition diagram in Figure~\ref{fig:partition_graph} has $N=8$. Given that we merge partitions pairwise at each layer via multiplication, we obtain for the number of layers in a circuit $N_L= \log_2 N+1$. Formally, we express the layer-wise product units as follows:
 \begin{align}
-    \component_{l,p,1,c} = \component_{l-1,2p,2,c} \times \component_{l-1,2p+1,2,c},
+    \component_{l,p,1,c} = \component_{l-1,2(p-1)+1,2,c} \times \component_{l-1,2(p-1)+2,2,c},
     \tag{ProductLayer}
 \end{align}
 which describes how to compute the value of a component given the components of the previous layer.
