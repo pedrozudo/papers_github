@@ -1,0 +1,125 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\cf}{cf.\xspace}
+\newcommand{\eg}{e.g.\xspace}
+\newcommand{\ie}{i.e.\xspace}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newtheorem{theorem}{Theorem}[section]
+% \theoremstyle{theorem}
+\newtheorem{definition}[theorem]{Definition}
+% \theoremstyle{theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+% \theoremstyle{theorem}
+\newtheorem{corollary}[theorem]{Corollary}
+% \theoremstyle{theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+% \theoremstyle{theorem}
+\newtheorem{example}[theorem]{Example}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\expect}{\ensuremath{\mathbb{E}}}
+
+\newenvironment{talign}
+{\let\displaystyle\textstyle\align}
+{\endalign}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\circuit}{\ensuremath{p}}
+\newcommand{\inputs}{\ensuremath{\text{in}}}
+
+\newcommand{\Xvars}{\ensuremath{\mathbf{X}}}
+\newcommand{\xvars}{\ensuremath{\mathbf{x}}}
+\newcommand{\Xvar}{\ensuremath{X}}
+\newcommand{\xvar}{\ensuremath{x}}
+
+\newcommand{\Zvars}{\ensuremath{\mathbf{Z}}}
+\newcommand{\zvars}{\ensuremath{\mathbf{z}}}
+\newcommand{\Zvar}{\ensuremath{Z}}
+\newcommand{\zvar}{\ensuremath{z}}
+
+
+\newcommand{\poset}{\ensuremath{\mathcal{O}}}
+
+
+\newcommand{\weight}{\ensuremath{w}}
+\newcommand{\nweight}{\ensuremath{\omega}}
+\newcommand{\nparams}{\ensuremath{\mathbf{\theta}}}
+
+
+\newcommand{\scope}{\ensuremath{\phi}}
+
+\newcommand{\eff}{\ensuremath{{eff}}}
+\newcommand{\con}{\ensuremath{{con}}}
+
+\newcommand{\parents}{\ensuremath{{pa}}}
+\newcommand{\ancestors}{\ensuremath{{an}}}
+
+
+\newcommand{\component}{\ensuremath{{\kappa}}}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\smalllinewidth}{0.6pt}
+\newcommand{\midlinewidth}{1.0pt}
+\newcommand{\midlinewidthx}{2.0pt}
+\newcommand{\largelinewidth}{1.7pt}
+\newcommand{\middist}{24pt}
+\newcommand{\middistt}{20pt}
+\newcommand{\middisttt}{28pt}
+\newcommand{\largedist}{30pt}
+\newcommand{\hugedist}{50pt}
+\newcommand{\smalldist}{20pt}
+\newcommand{\smalldistt}{4pt}
+\newcommand{\tinydist}{5pt}
+\newcommand{\intermiddist}{30pt}
+\newcommand{\sqintermiddist}{15.5pt}
+\newcommand{\halfdist}{4pt}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Redefine the proof environment to modify margins
+\makeatletter
+\renewenvironment{proof}[1][\proofname]{\par
+    \pushQED{\qed}%
+    \normalfont\topsep0pt \partopsep0pt % Adjust the vertical spacing above
+    \trivlist
+    \item[\hskip\labelsep
+                \itshape
+                #1\@addpunct{.}]\ignorespaces
+}{%
+    \popQED\endtrivlist\@endpefalse
+    \vskip 1ex  % Add some flexible glue for the bottom margin
+}
+\makeatother
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

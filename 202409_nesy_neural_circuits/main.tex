@@ -1,0 +1,550 @@
+%% The first command in your LaTeX source must be the \documentclass command.
+%%
+%% Options:
+%% twocolumn : Two column layout.
+%% hf: enable header and footer.
+\documentclass[
+	% twocolumn,
+	% hf,
+]{ceurart}
+
+%%
+%% One can fix some overfulls
+\sloppy
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%
+%% Minted listings support 
+%% Need pygment <http://pygments.org/> <http://pypi.python.org/pypi/Pygments>
+\usepackage{listings}
+%% auto break lines
+\lstset{breaklines=true}
+
+
+
+
+
+
+
+
+
+\usepackage{mathtools} % amsmath with fixes and additions
+% \usepackage{siunitx} % for proper typesetting of numbers and units
+\usepackage{booktabs} % commands to create good-looking tables
+\usepackage{tikz}
+\usetikzlibrary{decorations.pathreplacing,calligraphy,calc,hobby,intersections,through}
+\usetikzlibrary{spn}
+
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fontsm
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+
+\usepackage{multirow}
+\usepackage{courier}
+\usepackage{listings, lstautogobble,amsfonts}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mdframed}
+\usepackage{mathtools}
+\usepackage{xspace}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{multicol}
+\usepackage{thmtools}
+\usepackage{bm}
+\usepackage{thm-restate}
+\usepackage{todonotes}
+\usepackage[inline]{enumitem}
+\usepackage{soul}
+\usepackage{physics}
+
+
+
+% Recommended, but optional, packages for figures and better typesetting:
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{booktabs} % for professional tables
+\usepackage{cancel}
+
+\pgfplotsset{compat=1.18}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\cf}{cf.\xspace}
+\newcommand{\eg}{e.g.\xspace}
+\newcommand{\ie}{i.e.\xspace}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newtheorem{theorem}{Theorem}[section]
+% \theoremstyle{theorem}
+\newtheorem{definition}[theorem]{Definition}
+% \theoremstyle{theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+% \theoremstyle{theorem}
+\newtheorem{corollary}[theorem]{Corollary}
+% \theoremstyle{theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+% \theoremstyle{theorem}
+\newtheorem{example}[theorem]{Example}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\expect}{\ensuremath{\mathbb{E}}}
+
+\newenvironment{talign}
+{\let\displaystyle\textstyle\align}
+{\endalign}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\circuit}{\ensuremath{p}}
+\newcommand{\inputs}{\ensuremath{\text{in}}}
+
+\newcommand{\Xvars}{\ensuremath{\mathbf{X}}}
+\newcommand{\xvars}{\ensuremath{\mathbf{x}}}
+\newcommand{\Xvar}{\ensuremath{X}}
+\newcommand{\xvar}{\ensuremath{x}}
+
+\newcommand{\Zvars}{\ensuremath{\mathbf{Z}}}
+\newcommand{\zvars}{\ensuremath{\mathbf{z}}}
+\newcommand{\Zvar}{\ensuremath{Z}}
+\newcommand{\zvar}{\ensuremath{z}}
+
+
+\newcommand{\poset}{\ensuremath{\mathcal{O}}}
+
+
+\newcommand{\weight}{\ensuremath{w}}
+\newcommand{\nweight}{\ensuremath{\omega}}
+\newcommand{\nparams}{\ensuremath{\mathbf{\theta}}}
+
+
+\newcommand{\scope}{\ensuremath{\phi}}
+
+\newcommand{\eff}{\ensuremath{{eff}}}
+\newcommand{\con}{\ensuremath{{con}}}
+
+\newcommand{\parents}{\ensuremath{{pa}}}
+\newcommand{\ancestors}{\ensuremath{{an}}}
+
+
+\newcommand{\component}{\ensuremath{{\kappa}}}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\smalllinewidth}{0.6pt}
+\newcommand{\midlinewidth}{1.0pt}
+\newcommand{\midlinewidthx}{2.0pt}
+\newcommand{\largelinewidth}{1.7pt}
+\newcommand{\middist}{24pt}
+\newcommand{\middistt}{20pt}
+\newcommand{\middisttt}{28pt}
+\newcommand{\largedist}{30pt}
+\newcommand{\hugedist}{50pt}
+\newcommand{\smalldist}{20pt}
+\newcommand{\smalldistt}{4pt}
+\newcommand{\tinydist}{5pt}
+\newcommand{\intermiddist}{30pt}
+\newcommand{\sqintermiddist}{15.5pt}
+\newcommand{\halfdist}{4pt}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Redefine the proof environment to modify margins
+\makeatletter
+\renewenvironment{proof}[1][\proofname]{\par
+	\pushQED{\qed}%
+	\normalfont\topsep0pt \partopsep0pt % Adjust the vertical spacing above
+	\trivlist
+	\item[\hskip\labelsep
+	            \itshape
+	            #1\@addpunct{.}]\ignorespaces
+}{%
+	\popQED\endtrivlist\@endpefalse
+	\vskip 1ex  % Add some flexible glue for the bottom margin
+}
+\makeatother
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%Commands definitions
+\newcommand{\setbackgroundcolour}{\pagecolor[rgb]{0.19,0.19,0.19}}
+\newcommand{\settextcolour}{\color[rgb]{0.77,0.77,0.77}}
+\newcommand{\invertbackgroundtext}{\setbackgroundcolour\settextcolour}
+
+%Command execution. 
+%If this line is commented, then the appearance remains as usual.
+% \invertbackgroundtext
+
+
+
+
+
+
+
+
+
+
+%%
+%% end of the preamble, start of the body of the document source.
+\begin{document}
+
+%%
+%% Rights management information.
+%% CC-BY is default license.
+\copyrightyear{2022}
+\copyrightclause{Copyright for this paper by its authors.
+	Use permitted under Creative Commons License Attribution 4.0
+	International (CC BY 4.0).}
+
+%%
+%% This command is for the conference information
+\conference{18th International conference on
+	Neural-Symbolic Learning and Reasoning}
+
+%%
+%% The "title" command
+\title{Autoregressive Connections in Probabilistic Circuits}
+
+
+
+%%
+%% The "author" command and its associated commands are used to define
+%% the authors and their affiliations.
+\author{Pedro {Zuidberg Dos Martires}}
+\address{Örebro University, Sweden}
+
+
+
+
+%%
+%% The abstract is a short summary of the work to be presented in the
+%% article.
+\begin{abstract}
+	Probabilistic circuits (PCs) have gained prominence in recent years as a versatile framework for discussing probabilistic models that support tractable queries and are yet expressive enough to model complex probability distributions.
+	Nevertheless, tractability comes at a cost: PCs are less expressive than neural networks.
+	In this extended abstract we briefly summarize the concept of a probabilistic neural circuit (PNC), which strikes a balance between PCs and neural nets in terms of tractability and expressive power, and distinguishes itself from ordinary PCs by the presence of autoregressive connections.
+\end{abstract}
+
+%%
+%% Keywords. The author(s) should pick words that accurately describe
+%% the work being presented. Separate the keywords with commas.
+\begin{keywords}
+	LaTeX class \sep
+	paper template \sep
+	paper formatting \sep
+	CEUR-WS
+\end{keywords}
+
+%%
+%% This command processes the author and affiliation and title
+%% information and builds the first part of the formatted document.
+\maketitle
+
+
+
+
+\section{Introduction}
+
+In recent years probabilistic circuits (PCs) (also called sum-product networks)~\citep{darwiche2003differential} have emerged as an assembly language to talk about tractable probabilistic models and inference therein~\citep{vergari2021compositional}. The core idea is quite simple: we start with a set of independent random variables and construct complex probability distribution by recursively adding and multiplying them together.
+There are two common ways of interpreting PCs. Firstly, we can consider them to be hierarchical mixture models. Secondly, we look at them as neural nets consisting of sums, products, and atomic probability distributions.
+
+A major advantage of PCs is their ability to answer certain queries in polynomial time -- given that adequate restrictions are imposed on a circuit's structure~\citep{vergari2021compositional}. An example of such a tractable query would be the computation of conditional probabilities for so-called \textit{smooth and decomposable} PCs~\citep{darwiche2001decomposable,darwiche2003differential}.
+This tractability, however, comes at a hefty price: the properties imposed on PCs in order to ensure polynomial time queries limit their expressive power~\citep{martens2014expressive,sharir2018sum}.
+In this extended abstract we give a short exposition of the ideas presented in~\citep{zuidberg2024probabilistic} where we used the concepts of \textit{conditional smoothness} and \textit{conditional decomposability}~\citep{sharir2018sum}
+to develop probabilistic neural circuits -- a novel probabilistic model class that trades-off tractability and expressive power.
+
+
+
+
+
+
+
+
+\section{Layered Probabilistic Neural Circuits}
+
+The key difference between (layered) probabilistic circuits ~\citep{peharz2020einsum} and probabilistic neural circuits is the presence of áutoregressive connections in the circuit. We illustrate this in Figure~\ref{fig:partition_graph}. It is precisely these autoregressive connections that lead to a huge boost in expressive power. We show this in our experimental study in~\citep{zuidberg2024probabilistic}. Note that this gain in expressive power comes at the cost of tractability: not all marginals of the joint distributions are computable in poly-time anymore.
+
+
+
+\begin{figure}[t]
+	\begin{minipage}[c]{0.49\linewidth}
+		\centering
+		\resizebox{0.85\columnwidth}{!}{
+			\tikzset{point/.style={circle,inner sep=0pt,minimum size=3pt,fill=red}}
+
+		\begin{tikzpicture}
+
+			\varnode[line width=\midlinewidth]{v11}{$X_1$};
+			\varnode[line width=\midlinewidth, right=\middist of v11]{v12}{$X_1$};
+			\varnode[line width=\midlinewidth, right=\middist of v12]{v21}{$X_2$};
+			\varnode[line width=\midlinewidth, right=\middist of v21]{v22}{$X_2$};
+
+			\sumnode[line width=\midlinewidth, above=\smalldist of v11]{s11};
+			\sumnode[line width=\midlinewidth, right=\halfdist of s11]{s12};
+			\sumnode[line width=\midlinewidth, above=\smalldist of v12]{s1k};
+
+			\sumnode[line width=\midlinewidth, above=\smalldist of v21]{s21};
+			\sumnode[line width=\midlinewidth, right=\halfdist of s21]{s22};
+			\sumnode[line width=\midlinewidth, above=\smalldist of v22]{s2k};
+
+			\prodnode[line width=\midlinewidth, above=\smalldist of s1k]{p121};
+			\prodnode[line width=\midlinewidth, right=\halfdist of p121]{p122};
+			\prodnode[line width=\midlinewidth, above=\smalldist of s21]{p12k};
+
+			\sumnode[line width=\midlinewidth, above=\smalldist of p121]{s121};
+			\sumnode[line width=\midlinewidth, above=\smalldist of p122]{s122};
+			\sumnode[line width=\midlinewidth, above=\smalldist of p12k]{s12k};
+
+			% edges
+			\edge[line width=\midlinewidth,left] {s11, s12, s1k} {v11, v12};
+			\edge[line width=\midlinewidth,left] {s21, s22, s2k} {v21, v22};
+
+			\edge[line width=\midlinewidth,dashed] {p121} {s11, s21};
+			\edge[line width=\midlinewidth,dashed] {p122} {s12, s22};
+			\edge[line width=\midlinewidth,dashed] {p12k} {s1k, s2k};
+
+			\edge[line width=\midlinewidth,left] {s121, s122, s12k} {p121, p122, p12k};
+
+			%%%%% V3 and V4
+			\varnode[line width=\midlinewidth, right=\middist of v22]{v31}{$X_3$};
+			\varnode[line width=\midlinewidth, right=\middist of v31]{v32}{$X_3$};
+			\varnode[line width=\midlinewidth, right=\middist of v32]{v41}{$X_4$};
+			\varnode[line width=\midlinewidth, right=\middist of v41]{v42}{$X_4$};
+
+			\sumnode[line width=\midlinewidth, above=\smalldist of v31]{s31};
+			\sumnode[line width=\midlinewidth, right=\halfdist of s31]{s32};
+			\sumnode[line width=\midlinewidth, above=\smalldist of v32]{s3k};
+
+			\sumnode[line width=\midlinewidth, above=\smalldist of v41]{s41};
+			\sumnode[line width=\midlinewidth, right=\halfdist of s41]{s42};
+			\sumnode[line width=\midlinewidth, above=\smalldist of v42]{s4k};
+
+			\prodnode[line width=\midlinewidth, above=\smalldist of s3k]{p341};
+			\prodnode[line width=\midlinewidth, right=\halfdist of p341]{p342};
+			\prodnode[line width=\midlinewidth, above=\smalldist of s41]{p34k};
+
+			\sumnode[line width=\midlinewidth, above=\smalldist of p341]{s341};
+			\sumnode[line width=\midlinewidth, above=\smalldist of p342]{s342};
+			\sumnode[line width=\midlinewidth, above=\smalldist of p34k]{s34k};
+
+
+
+			% edges
+			\edge[line width=\midlinewidth,left] {s31, s32, s3k} {v31, v32};
+			\edge[line width=\midlinewidth,left] {s41, s42, s4k} {v41, v42};
+
+			\edge[line width=\midlinewidth,dashed] {p341} {s31, s41};
+			\edge[line width=\midlinewidth,dashed] {p342} {s32, s42};
+			\edge[line width=\midlinewidth,dashed] {p34k} {s3k, s4k};
+
+			\edge[line width=\midlinewidth,left] {s341, s342, s34k} {p341, p342, p34k};
+
+
+			%%%% final root
+			\prodnode[line width=\midlinewidth, above=90pt of s2k]{p12341};
+			\prodnode[line width=\midlinewidth, right=\halfdist of p12341]{p12342};
+			\prodnode[line width=\midlinewidth, above=90pt of s31]{p1234k};
+
+			\sumnode[line width=\midlinewidth, above=\smalldist of p12342]{s12341};
+
+			\edge[line width=\midlinewidth,dashed] {p12341} {s121, s341};
+			\edge[line width=\midlinewidth,dashed] {p12342} {s122, s342};
+			\edge[line width=\midlinewidth,dashed] {p1234k} {s12k, s34k};
+
+			\edge[line width=\midlinewidth,left] {s12341} {p12341, p12342, p1234k};
+
+			\draw [decorate, decoration = {brace, mirror, amplitude=10pt}, ultra thick] (6.2,4.7) --  (6.2,6.8) node[pos=0.5,right=10pt]{ \begin{tabular}{c}
+					root layer \\(Layer 3)
+				\end{tabular} };
+			\draw [decorate, decoration = {brace, mirror, amplitude=10pt}, ultra thick] (9.1,2.2) --  (9.1,4.3) node[pos=0.5,right=10pt]{\begin{tabular}{c}
+					sum-product layer \\(Layer 2)
+				\end{tabular} };
+			\draw [decorate, decoration = {brace, mirror, amplitude=10pt}, ultra thick] (10.5,-0.4) --  (10.5,1.7) node[pos=0.5,right=10pt]{\begin{tabular}{c}
+					leaf layer \\(Layer 1)
+				\end{tabular} };
+
+			\node[draw=red, circle,dashed,ultra thick, minimum width=0.7cm] at (p121.center) (c1) {};
+			\node[draw=red, circle,dashed,ultra thick, minimum width=0.7cm] at (p122.center) (c2) {};
+			\node[draw=red, circle,dashed,ultra thick, minimum width=0.7cm] at (p12k.center) (c3) {};
+
+			\node[draw=red, circle,dashed, ultra thick, minimum width=0.7cm, below=1.2 of p12342, inner sep=0pt]  (mid) {};
+
+			\path (c1) edge[-, red,dashed, ultra thick, in=160, out=35] (mid);
+			\path (c2) edge[-, red,dashed, ultra thick, in=175, out=45] (mid);
+			\path (c3) edge[-, red,dashed, ultra thick, in=220, out=-20] (mid);
+
+			\path (mid) edge[->, red,dashed, ultra thick, in=190, out=25] (s341);
+			\path (mid) edge[->, red,dashed, ultra thick, in=220, out=10] (s342);
+			\path (mid) edge[->, red,dashed, ultra thick, in=230, out=-10] (s34k);
+
+
+
+
+
+		\end{tikzpicture}
+		}
+	\end{minipage}
+	\begin{minipage}[c]{0.49\linewidth}
+		\centering
+		\resizebox{0.9\columnwidth}{!}{
+			\begin{tikzpicture}
+
+
+
+				\prodnode[line width=\midlinewidth]{p21};
+				\prodnode[line width=\midlinewidth, right=\halfdist of p21]{p22};
+				\prodnode[line width=\midlinewidth, right=\halfdist of p22]{p23};
+
+				\prodnode[line width=\midlinewidth, right=2\halfdist of p23]{p31};
+				\prodnode[line width=\midlinewidth, right=\halfdist of p31]{p32};
+				\prodnode[line width=\midlinewidth, right=\halfdist of p32]{p33};
+
+				\node[draw, dashed, draw=red, circle, above right=0.875 and 0.35 of p23, inner sep=1pt,line width=\midlinewidth, minimum width=0.5cm] (w2){};
+				\node[draw, dashed, draw=red,circle, left= \halfdist of w2, inner sep=1pt,line width=\midlinewidth,minimum width=0.5cm] (w1) {};
+				\node[draw, dashed, draw=red,circle, right= \halfdist of w2, inner sep=1pt,line width=\midlinewidth,minimum width=0.5cm] (w3) {};
+
+
+
+
+				\draw[-,red,dashed,line width=\midlinewidth] (p21) to (w1);
+				\draw[-,red,dashed,line width=\midlinewidth] (p21) to (w2);
+				\draw[-,red,dashed,line width=\midlinewidth] (p21) to (w3);
+				\draw[-,red,dashed,line width=\midlinewidth] (p22) to (w1);
+				\draw[-,red,dashed,line width=\midlinewidth] (p22) to (w2);
+				\draw[-,red,dashed,line width=\midlinewidth] (p22) to (w3);
+				\draw[-,red,dashed,line width=\midlinewidth] (p23) to (w1);
+				\draw[-,red,dashed,line width=\midlinewidth] (p23) to (w2);
+				\draw[-,red,dashed,line width=\midlinewidth] (p23) to (w3);
+
+				\draw[-,red,dashed,line width=\midlinewidth] (p31) to (w1);
+				\draw[-,red,dashed,line width=\midlinewidth] (p31) to (w2);
+				\draw[-,red,dashed,line width=\midlinewidth] (p31) to (w3);
+				\draw[-,red,dashed,line width=\midlinewidth] (p32) to (w1);
+				\draw[-,red,dashed,line width=\midlinewidth] (p32) to (w2);
+				\draw[-,red,dashed,line width=\midlinewidth] (p32) to (w3);
+				\draw[-,red,dashed,line width=\midlinewidth] (p33) to (w1);
+				\draw[-,red,dashed,line width=\midlinewidth] (p33) to (w2);
+				\draw[-,red,dashed,line width=\midlinewidth] (p33) to (w3);
+
+
+				\prodnode[line width=\midlinewidth, right=2\halfdist of p33]{p11};
+				\prodnode[line width=\midlinewidth, right=0.5 of p11]{p12};
+				\prodnode[line width=\midlinewidth, right=0.5 of p12]{p13};
+
+				\sumnode[line width=\midlinewidth, above=1.75 of p11]{s13};
+
+				\draw[-,line width=\midlinewidth] (p12) to (s13);
+				\draw[-,line width=\midlinewidth] (p11) to (s13);
+				\draw[-,line width=\midlinewidth] (p13) to (s13);
+
+				\node[circle,inner sep=0pt,dashed,red] (lw1) at ($(p11)!0.5!(s13)+(-0.3,0.2)$) {$\nweight_1$};
+				\node[circle,inner sep=0pt,dashed,red] (lw2) at ($(p12)!0.5!(s13)+(-0.15,-0.3)$) {$\nweight_2$};
+				\node[circle,inner sep=0pt,dashed,red] (lw3) at ($(p13)!0.5!(s13)+(0.3,0.2)$) {$\nweight_3$};
+
+
+				\draw[->,red,dashed,line width=\midlinewidth] (w1) to[out=45,in=150] (lw1);
+				\draw[->,red,dashed,line width=\midlinewidth] (w2) to[out=45,in=-180] (lw2);
+				\draw[->,red,dashed,line width=\midlinewidth] (w3) to[out=-15,in=-110] (lw3);
+
+
+			\end{tikzpicture}
+		}
+	\end{minipage}
+
+
+	\caption{
+		On the left we have probabilistic neural circuit. The par tof the circuit that is drawn in black indicates the structure of an ordinary probabilistic circuit.
+		The red structure indicates the (neural) autoregressive connection that Separates a PNCs from these ordinary PCs.
+		On the right we give a more detailed graphical representation of neural dependencies in a PNC. The sum unit at the top outputs the weighted sum of the three product units at the bottom right. The weights for the sum are the outputs of a neural network for which it holds that $\sum_{i=1}^3=1$.
+	}
+
+	\label{fig:partition_graph}
+\end{figure}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section*{Acknowledgements}
+
+This project received funding from the Wallenberg AI, Autonomous Systems and Software Program (WASP) funded by the Knut and Alice Wallenberg-Foundation, as well as from the TAILOR Connectivity Fund (part of the TAILOR project funded by the EU Horizon 2020 research and innovation program under GA No 952215).
+
+
+
+\bibliography{references}
+
+
+
+\end{document}
+
+%%
+%% End of file
