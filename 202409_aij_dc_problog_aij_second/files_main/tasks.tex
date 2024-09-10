@@ -1,0 +1,251 @@
+\section{Probabilistic Inference Tasks} \label{sec:inference-tasks}
+
+In Section~\ref{sec:log_cons_bool_comp} we defined the probability distribution induced by a \dfplpsty program by extending the basic measure to logical consequences (expressed as logical rules). The joint distribution is then simply the joint distribution over all (ground) logical consequences. We obtain marginal probability distributions by marginalizing out specific logical consequences.
+This means that marginal and joint probabilities of atoms in \dfplpsty programs are well-defined. 
+Defining the semantics of probabilistic logic programs using an extension of Sato's distribution semantics gives us the semantics of probabilistic queries: the probability of an atom of interest is given by the probability induced by the joint probability of the program and marginalizing out all atoms one is not interested in.
+
+The situation is more involved with regard to conditional probability queries. In contrast to unconditional queries, not all conditional queries are well-defined under the measure semantics (as well ass the distribution semantics). We will now give the formal definition of the PROB task, which lets us compute the (conditional) marginal probability of probabilistic events and which has so far not yet been defined in the PLP literature for hybrid domains under a declarative semantics (\eg \citep{azzolini2021semantics}).
+
+After defining the task of computing conditional marginal probabilities, we will study how to compute these probabilities in the hybrid domain. Before defining the PROB task, we will first need to formally introduce the notion of a conditional probability with respect to a  \dcproblogsty program.
+
+
+\begin{definition}[Conditional Probability]
+\label{def:conditional_prob}
+Let $\herbrandbase$ be 
+% the Herbrand base, i.e,
+the set of all ground atoms in a given \dcproblogsty program \dcpprogram.
+Let $\evidenceset = \{\eta_1,\ldots,\eta_n\} \subset \herbrandbase$ be a set of observed atoms, and  $e=\langle e_1,\ldots, e_n\rangle$ a vector of corresponding  observed truth values, with $e_i\in \{\bot, \top \}$.
+We refer to $(\eta_1=e_1) \wedge \ldots\wedge (\eta_n=e_n)$  as the evidence and write more compactly  $\evidenceset = e$.
+Let  $\mu \in\herbrandbase$ be an atom of interest called the query.
+If the probability of $\evidenceset = e$ is greater than zero, then the conditional probability of $\mu=\top$ given $\evidenceset=e$ is defined as:
+\begin{align}
+    P_\dcpprogram(\mu=\top \mid \evidenceset=e)= \frac{P_{\dcpprogram}(\mu=\top, \evidenceset=e)}{P_\dcpprogram(\evidenceset=e)} \label{eq:conditional_prob}
+\end{align}
+\end{definition}
+
+\begin{definition}[PROB Task]
+\label{def:prob_task}
+Let $\herbrandbase$ be the set of all ground atoms of a given \dcproblogsty program \dcpprogram.
+We are given the (potentially empty) evidence $\evidenceset=e$ (with $\evidenceset \subset \herbrandbase$)
+and a set $\queryset \subset \herbrandbase$ of atoms of interest, called
+query atoms.
+The {\bf PROB task} consists of computing the conditional probability of the truth value of every atom in $\queryset$ given the evidence, \ie compute the conditional probability $P_{\dcpprogram} (\mu {=} \top \mid \evidenceset {=} e)$ for each $\mu \in \queryset$.
+\end{definition}
+
+\begin{example}[Valid Conditioning Set]
+    Assume two random variables $\nu_1$ and $\nu_2$, where $\nu_1$ is distributed according to a normal distribution and $\nu_2$ is distributed according to a Poisson distribution. Furthermore, assume the following conditioning set $\evidenceset= \{\eta_1=\top, \eta_2=\top \}$, where $\eta_1 \leftrightarrow (\nu_1>0)$ and $\eta_2 \leftrightarrow (\nu_2=5)$. This is a valid conditioning set as none of the events has a zero probability of occurring, and we can safely perform the division in Equation~\ref{eq:conditional_prob}.
+\end{example}
+
+\subsection{Conditioning on  Zero-Probability Events}
+
+A prominent class of conditional queries, which are not captured by Definition~\ref{def:conditional_prob}, are so-called  zero probability conditional queries. For such queries the probability of the observed event happening is actually zero but the event is still possible. Using Equation~\ref{eq:conditional_prob} does not work anymore as a division by zero would now occur.
+
+\begin{example}[Zero-Probability Conditioning Set]
+    Assume that we have a random variable $\nu$ distributed according to a normal distribution and that we have the conditioning set $\evidenceset= \{ \eta=\top \} $, with $\eta\leftrightarrow (\nu=20)$. In other words, we condition the query on the observation that the random variable $\nu$ takes the value $20$ -- for instance in a distance measuring experiment. This is problematic as the probability of any specific value for a random variable with uncountably many outcomes is in fact zero and applying Equation~\ref{eq:conditional_prob} leads to a division-by-zero. Consequently,  an ill-defined conditional probability arises.
+\end{example}
+
+In order to sidestep divisions by zero when conditioning on zero-probability (but possible) events, we modify Definition~\ref{def:conditional_prob}. Analogously to~\citet{nitti2016probabilistic}, we follow the approach taken in~\citep{kadane2011principles}. 
+ 
+ 
+\begin{definition}[Conditional Probability with Zero-Probability Events]
+\label{def:conditional_prob_zero_event}
+Let $\nu$ be a continuous random variable in the \dcproblogsty program \dcpprogram with ground atoms \herbrandbase. Furthermore, let us assume that the evidence consists of $\evidenceset = \{ \eta_0 = \top  \}$ with $\eta_0\leftrightarrow (\nu=w)$ and $w\in \samplespace_\nu$.
+The conditional probability of an atom of interest $\mu\in \herbrandbase$ is now defined as:
+\begin{align}
+    P_\dcpprogram (\mu= \top \mid \eta_0= \top)
+    &= \lim_{\Delta w \rightarrow 0}
+    \frac{P_\dcpprogram(\mu=\top, \nu \in [w-\nicefrac{\Delta w}{2}, w+\nicefrac{\Delta w}{2} ]) }{P_\dcpprogram(\nu \in [w-\nicefrac{\Delta w}{2}, w+\nicefrac{\Delta w}{2} ] )} \label{eq:condition_prob_zero_ev}
+\end{align}
+\end{definition}
+
+To write this limit more compactly, we introduce an 
+infinitesimally small constant $\delta w$ and two new comparison atoms  $\eta_1 \leftrightarrow ( w-\nicefrac{\delta w}{2} \leq  \nu)$ and $\eta_2 \leftrightarrow (\nu \leq w+\nicefrac{\delta w}{2} )$ that together encode the limit interval.
+Using these, we rewrite Equation~\ref{eq:condition_prob_zero_ev} as
+\begin{align}
+    P_\dcpprogram (\mu = \top \mid \eta_0 = \top) =  \frac{P_\dcpprogram(\mu=\top,  \eta_1=\top, \eta_2=\top )}{P_\dcpprogram( \eta_1=\top, \eta_2=\top )}
+\end{align}
+
+Applying the definition recursively, allows us to have multiple zero probability conditioning events. More specifically, let us assume an additional continuous random variable $\nu'$ that takes the value $w'$ for which we define: 
+$\eta^{\prime}_1 \leftrightarrow ( w'-\nicefrac{\delta w'}{2} \leq  \nu')$ and $\eta^{\prime}_2 \leftrightarrow (\nu' \leq w'+\nicefrac{\delta w'}{2} )$.
+This then leads to the following conditional probability:
+\begin{align}
+    P_\dcpprogram(\mu=\top \mid \nu=w, \nu'=w') 
+    &= \frac{P_\dcpprogram(\mu=\top, \eta_1=\top, \eta_2=\top \mid \nu'=w' )}{P_\dcpprogram(\eta_1=\top, \eta_2=\top \mid \nu'=w')} \nonumber \\
+    &= \frac{ \frac{P_\dcpprogram(\mu=\top, \eta_1=\top, \eta_2=\top, \eta'_1=\top, \eta'_2=\top)}{ \cancel{P_\dcpprogram(\eta'_1=\top, \eta'_2=\top)}} }{\frac{ P_\dcpprogram(\eta_1=\top, \eta_2=\top, \eta'_1=\top, \eta'_2=\top)}{\cancel{ P_\dcpprogram(\eta'_1=\top, \eta'_2=\top) }}} \nonumber \\
+    &= \frac{P_\dcpprogram(\mu=\top,\eta_1=\top, \eta_2=\top, \eta'_1=\top, \eta'_2=\top)}{P_\dcpprogram(\eta_1=\top, \eta_2=\top, \eta'_1=\top, \eta'_2=\top)} 
+\end{align}
+Here we first applied the definition of the conditional probability for the observation of the random variable $\nu$ and then for the observation of the random variable $\nu'$. Finally, we simplified the expression.
+
+\begin{proposition}
+\label{prop:existence_cond_prob_zero_evidence}
+The conditional probability as defined in Definition~\ref{def:conditional_prob_zero_event} exists.
+\end{proposition}
+\begin{proof}
+See ~\citep[Equation 6]{nitti2016probabilistic}.
+\end{proof}
+
+In order to express zero-probability events in \dcproblogsty we add a new built-in comparison predicate to the finite set of comparison predicates $\comparisonpredicates =\{ \mathprobloginline{<}, \mathprobloginline{>},\allowbreak \mathprobloginline{=<}, \mathprobloginline{>=}, \mathprobloginline{=:=},\allowbreak \mathprobloginline{=\=} \}$ (cf. Definition~\ref{def:reserved_vocabulary}).
+
+
+\begin{definition}[Delta Interval Comparison]\label{def:delta_interval}
+    For a random variable \probloginline{v} and a rational number \probloginline{w}, we define \probloginline{delta_interval(v,w)} (with $\text{\predicate{delta_interval}{2}} \in \comparisonpredicates$) as follows. If \probloginline{v} has a countable sample space, then  \probloginline{delta_interval(v,w)} is equivalent to \probloginline{v=:=w}. Otherwise, \probloginline{delta_interval(v,w)} is equivalent to the conjunction of
+    the two comparison atoms \probloginline{w-@$\delta$@w=<v} and \probloginline{v=<w+@$\delta$@w},
+    where \probloginline{@$\delta$@w} is an infinitesimally small number.
+\end{definition}
+
+The delta interval predicate lets us express conditional probabilities with zero probability conditioning events as defined in Definition~\ref{def:conditional_prob_zero_event}.
+
+Zero probability conditioning events are often abbreviated as $P_\dcpprogram (\mu=\top\mid \nu=w)$.
+This can be confusing as it does not convey the intent of conditioning on an infinitesimally small interval. To this end, we introduce the symbol `$\doteq$' (equal sign with a dot on top). We use this symbol to explicitly point out an infinitesimally small conditioning set. For instance, we abbreviate the limit
+\begin{align*}
+    \lim_{\Delta w \rightarrow 0}
+    \frac{P_\dcpprogram(\mu=\top, \nu\in [w-\nicefrac{\Delta w}{2}, w+\nicefrac{\Delta w}{2} ]) }{P_\dcpprogram(\nu \in [w-\nicefrac{\Delta w}{2}, w+\nicefrac{\Delta w}{2} ] )}
+\end{align*}
+in Definition~\ref{def:conditional_prob_zero_event} as:
+\begin{align}
+    P_\dcpprogram(\mu=\top \mid \nu\doteq w )
+\end{align}
+
+More concretely, if we measure the height $h$ of a person to be $180cm$ we denote this by $h\doteq 180$. This means that we measured the height  of the person to be in an infinitesimally small interval around $180cm$. Note that the $\doteq$ sign has slightly different semantics for random variables with a countable support. For discrete random variables the $\doteq$ is equivalent to the $equal$ sign.
+
+
+
+\begin{example} \label{ex:conditional_prob_zero}
+    Assume that we have a random variable $\nu$ distributed according to a normal distribution and that we have the evidence set $\evidenceset= \{ \eta=\top \} $, with $\eta\leftrightarrow (\nu\doteq 20)$. This is a valid conditional probability defined through Definition~\ref{def:conditional_prob_zero_event}.
+\end{example}
+
+
+\begin{example}
+    Assume that we have a random variable $\nu$ distributed according to a normal distribution and that we have the conditioning set $\evidenceset= \{ \eta=\top, \eta' = \top \} $, with $\eta_1\leftrightarrow (\nu\doteq 20)$ and $\eta'\leftrightarrow (\nu\doteq 30)$. This does not encode a conditional probability as the conditioning event is not a possible event: one and the same random variable cannot be observed to have two different outcomes.
+\end{example}
+
+The notation used to condition on zero probability events (even when using `$\doteq$') hides away the limiting process that is used to define the conditional probability. This can lead to situations where seemingly equivalent conditional probabilities have diametrically opposed meanings.
+
+\begin{example} \label{ex:conditional_prob}
+    Let us consider the conditioning set $\evidenceset = \{ \eta=\top, \eta'=\top \}$, with $\eta \leftrightarrow (\nu\leq 20)$ and $\eta' \leftrightarrow (20\leq \nu)$, which we use again to condition a continuous random variable $\nu$. In contrast to Example~\ref{ex:conditional_prob_zero}, where we directly observed $\nu\doteq 20$, here, Definition~\ref{def:conditional_prob} applies, which %leads to a division by zero 
+    states that the conditional probability is undefined as $P(\nu\leq 20, 20\leq \nu )=0$.
+\end{example}
+
+
+
+
+
+
+
+\subsection{Discussion on the Well-Definedness of a Query}
+
+The probability of an unconditional query to a valid \dcproblogsty program is always well-defined, as it is simply a marginal of the distribution represented by the program.  
+This stands in stark contrast to conditional probabilities: an obvious issue are  divisions by zero occurring when the conditioning event does not belong to the set of possible outcomes of the conditioned random variable. Similarly to~\citet{wu2018discrete} we will assume for the remainder of the paper that conditioning events are always possible events, \ie events that have a non-zero probability but possibly an infinitesimally small probability  of occurring. This allows us to bypass potential issues caused by zero-divisions.\footnote{In general, deciding whether a conditioning event is possible or not is undecidable. This follows from the undecidability of general logic programs under the well-founded semantics~\citep{cherchago2007decidability}. A similar discussion is also presented in the thesis of Brian Milch~\citep[Proposition 4.8]{milch2006probabilistic} for the \blogsty language, which also discusses decidable language fragments~\citep[Section 4.5]{milch2006probabilistic}.}  
+
+Even when discarding impossible conditioning events, conditioning a probabilistic event on a zero probability (but possible) event remains inherently ambiguous~\citep{jaynes2003probability} and might lead to the Borel-Kolmogorov paradox.
+Problems arise when the limiting process used to define the conditional probability with zero probability events (cf. Definition~\ref{def:conditional_prob_zero_event}) does not produce a unique limit. 
+For instance, a conditional probability  $P(\mu=\top \mid  2\nu \doteq \nu' )$, where $\nu$ and $\nu'$ are two random variables, depends on the parametrization used. We refer the reader to~\citep{shan2017exact} and \citep{jacobs2021paradoxes} for a more detailed discussion on ambiguities arising with zero probability conditioning events in the context of probabilistic programming.
+We will sidestep such ambiguities completely by limiting observations of zero probability events to direct comparisons between random variables and numbers. This makes also sense from an epistemological perspective: we interpret a conditioning event as the outcome of an experiment, which produces a number, for instance the reading of a tape measure.
+
+
+
+
+
+
+\subsection{Conditional Probabilities by Example}
+
+
+
+\begin{example}\label{example:problog_machine}
+The following ProbLog program models the conditions under which machines work. There are two machines (Line \ref{program:problog_machines_dec}), and three (binary) random terms, which we interpret as random variables as the bodies of the probabilistic facts are empty. The random variables are: the outside temperature (Line \ref{program:problog_machines_temp}) and  whether the cooling of each machine works (Lines \ref{program:problog_machines_cool1} and \ref{program:problog_machines_cool2}). Each machine works if its cooling works or if the temperature is low (Lines \ref{program:problog_machines_work_cool} and \ref{program:problog_machines_work_temp}).
+
+
+	\begin{problog*}{linenos}
+machine(1). machine(2). @\label{program:problog_machines_dec}@
+
+0.8::temperature(low). @\label{program:problog_machines_temp}@
+0.99::cooling(1). @\label{program:problog_machines_cool1}@
+0.95::cooling(2). @\label{program:problog_machines_cool2}@
+
+works(N):- machine(N), cooling(N). @\label{program:problog_machines_work_cool}@
+works(N):- machine(N), temperature(low). @\label{program:problog_machines_work_temp}@
+	\end{problog*}
+We can query this program for the probability of \dcplpinline{works(1)} given that we have as evidence that \dcplpinline{works(2)} is true:
+$$
+P(\text{\dcplpinline{works(1)}}{=}1\mid\text{\dcplpinline{works(2)}}{=}1)\approx 0.998
+$$
+\end{example}
+
+
+\begin{example}\label{example:dcproblog_machine}
+In the previous example there are only Boolean random variables (encoded as probabilistic facts) and the \dcproblogsty program is equivalent to an identical \problogsty program. An advantage of \dcproblogsty is that we can now use an almost identical program to model the temperature as a continuous random variable.
+
+	\begin{problog*}{linenos}
+machine(1). machine(2).
+
+temperature ~ normal(20,5). @\label{program:dcproblog_machines_temp}@
+0.99::cooling(1).
+0.95::cooling(2).
+
+works(N):- machine(N), cooling(N).
+works(N):- machine(N), temperature<25.0. @\label{program:dcproblog_machines_work_temp}@
+	\end{problog*}
+We can again ask for the probability of \probloginline{works(1)} given that we have as evidence that \probloginline{works(2)} is true but now the program also involves a continuous random variable:
+$$
+P(\text{\probloginline{works(1)}}{=}\top\mid\text{\probloginline{works(2)}}{=}\top)\approx 0.998
+$$
+\end{example}
+
+In the two previous examples we were interested in a conditional probability where the conditioning event has a non-zero probability of occurring. However, \dcproblogsty programs can also encode conditional probabilities where the conditioning event has a zero probability of happening, while still being possible.
+\begin{example}\label{example:dcproblog:observation}
+	We model the size of a ball as a mixture of  different beta distributions, depending on whether the ball is made out of wood or metal (Line~\ref{program:dcproblog_machines_observation:ad}).
+	We would now like to know the probability of the ball being made out of wood given that we have a measurement of the size of the ball.
+	\begin{problog*}{linenos}
+3/10::material(wood);7/10::material(metal).@\label{program:dcproblog_machines_observation:ad}@
+
+size~beta(2,3):- material(metal)@\label{example:dcproblog:observation:beta23}@.
+size~beta(4,2):- material(wood).
+	\end{problog*}
+Assume that we measure the size of the ball and we find that it is $0.4cm$, which means that we have a measurement (or observation) infinitesimally close to $0.4$. Using the `$\doteq$' notation, we write this conditional probability as:
+	\begin{align}
+		P\Bigl(\text{\probloginline{material(wood)}}{=}\top \mid \left(\text{\probloginline{size@$\doteq$@4/10}}\right) {=}\top \Bigr)
+	\end{align}
+\end{example}
+
+
+
+The {\em Indian GPA problem} was initially proposed by Stuart Russell as an example problem to showcase the intricacies of mixed random variables.
+Below we express the Indian GPA problem in \dcproblogsty.
+
+\begin{example} \label{ex:indian_gpa}
+The Indian GPA problem models US-American and Indian students and their GPAs. Both receive scores on the continuous domain, namely from 0 to 4 (American) and from 0 to 10 (Indian), cf. Line~\ref{ex:gpa:dens_am} and \ref{ex:gpa:dens_in}. With non-zero probabilities both student groups can also obtain marks at the extremes of the respective scales (Lines~\ref{ex:gpa:max_am}, \ref{ex:gpa:min_am}, \ref{ex:gpa:max_in}, \ref{ex:gpa:min_in}). 
+
+\begin{problog*}{linenos}
+1/4::american;3/4::indian.
+
+19/20::isdensity(a).
+99/100::isdensity(i).
+
+17/20::perfect_gpa(a).
+1/10::perfect_gpa(i).
+
+gpa(a)~uniform(0,4):- isdensity(a). @\label{ex:gpa:dens_am}@
+gpa(a)~delta(4.0):- not isdensity(a), perfect_gpa(a).  @\label{ex:gpa:max_am}@
+gpa(a)~delta(0.0):- not isdensity(a), not perfect_gpa(a). @\label{ex:gpa:min_am}@
+     
+gpa(i)~uniform(0,10):- isdensity(i). @\label{ex:gpa:dens_in}@
+gpa(i)~delta(10.0):- not isdensity(i), perfect_gpa(i).  @\label{ex:gpa:max_in}@
+gpa(i)~delta(0.0):- not isdensity(i), not perfect_gpa(i).  @\label{ex:gpa:min_in}@
+    
+gpa(student)~delta(gpa(a)):- american.
+gpa(student)~delta(gpa(i)):- indian.
+\end{problog*}
+Note that in order to write the probability distribution of \probloginline{gpa(a)} and \probloginline{gpa(i)} we used uniform and Dirac delta distributions. This allowed us to distribute the random variables \probloginline{gpa(a)} and \probloginline{gpa(i)} according to a discrete-continuous mixture distribution.
+We then observe that a student has a GPA of $4$ and we would like to know the probability of this student being American or Indian. 
+\begin{align}
+P\Bigl(\text{\probloginline{american}}{=}\top \mid (\text{\probloginline{gpa(student)}}\doteq4)=\top \Bigr)&=1 
+\nonumber \\
+P \Bigl(\text{\probloginline{indian}}{=}\top \mid (\text{\probloginline{gpa(student)}}\doteq4)=\top \Bigr)&=0 \nonumber
+\end{align}
+\end{example}
+
+
+
+
+
+

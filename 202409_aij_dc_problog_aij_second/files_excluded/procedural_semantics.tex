@@ -1,0 +1,100 @@
+\section{Procedural Semantics of \dcproblogsty}\label{sec:swp}
+We now provide a procedural view on the semantics that extends \citet{van1991well}'s $W_\dcpprogram$-operator for well-founded models to deal with comparison literals following the approach of the stochastic $T_\dcpprogram$-operator for negation-free distributional clauses \citep{gutmann2011magic}. As in the latter, we exclude comparison atoms from interpretations, and instead introduce a function \textsc{ReadTable}$(\cdot)$ that keeps track of the sampled values of random variables to evaluate comparison literals. Given a comparison literal \probloginline{q}, \textsc{ReadTable(\probloginline{q})}  returns the truth value of \probloginline{q} based on the values of the random terms \probloginline{x} in \probloginline{q}, which are either retrieved from the table or sampled according to their definition \probloginline{x~D} as included in the interpretation and stored in the table in case they are not yet available. 
+
+\subsection{Unfounded Sets}
+
+We first extend the notion of \emph{unfounded set}, which is used to draw negative conclusions, to the stochastic case.
+\begin{definition}[Stochastic unfounded set]
+	Let $\dcpprogram$ be a DC-ProbLog program with Herbrand base $H$. Let $I$ be a partial interpretation of  $H\setminus F$, \ie, not including comparison atoms. 
+	We say that  $A\subseteq H\setminus F$ is a stochastic unfounded set (of $\dcpprogram$) with respect to $I$ if each atom $a\in A$ satisfies the following condition: For each instantiated rule $R$ of $\dcpprogram$ whose head is $a$, (at least) one of the following holds:
+	\begin{enumerate}
+		\item Some (positive or negative) non-comparison subgoal $q$ of the body is false in $I$.
+		\item For some comparison literal $q$ in the body, the following both hold
+		\begin{itemize}
+			\item $I$ contains  a true atom \probloginline{x~D} for every random term \probloginline{x} in \probloginline{q}.
+			\item $\textsc{ReadTable(\probloginline{q})}=true$
+		\end{itemize}
+		\item Some positive subgoal of the body occurs in $A$.
+	\end{enumerate}
+	The greatest stochastic unfounded set (of $\dcpprogram$) with respect to $I$, denoted $SU_\dcpprogram(I)$, is the union of all sets that are unfounded with respect to $I$.
+\end{definition}
+We note that comparison literals can invalidate external support for an unfounded set only if all involved random variables have associated distributions in the partial interpretation. \todo{example}
+
+\begin{definition}[Stochastic $W_\dcpprogram$-operator]\label{def:swp}
+	We define the transformations $ST_\dcpprogram$, $SU_\dcpprogram$, and $SW_\dcpprogram$ as follows:
+	\begin{itemize}
+		\item $p\in T_\dcpprogram(I)$ if and only if there is some instantiated rule $R$ of $\dcpprogram$ such that $R$ has head $p$, and
+		\begin{itemize}
+			\item each non-comparison  literal in the body of $R$ is true in $I$,
+			\item $I$ contains a true atom \probloginline{x~D} for every random term \probloginline{x} that appears inside a comparison literal in the body, and 
+			\item for each comparison literal \probloginline{q} in the body, $\textsc{ReadTable(\probloginline{q})}=true$
+		\end{itemize}
+		\item $SU_\dcpprogram(I)$ is the greatest unfounded set of $\dcpprogram$ with respect to $I$.
+		\item $SW_\dcpprogram(I) = ST_\dcpprogram(I) \cup \neg SU_\dcpprogram(I)$
+	\end{itemize}
+	where negation applied to a set negates each element of the set.
+\end{definition}
+That is, comparison literals in rule bodies are evaluated based on the table, but can only decide on whether a rule is fired (in $ST_\dcpprogram$) or blocked (in $SU_\dcpprogram$) if all their random variables have a distributional atom in the (partial) interpretation.
+However, for valid core \dcproblogsty programs, the first iteration of fixpoint computation adds all distributional facts to the interpretation. Thus, from the second iteration onwards, all rules with comparison atoms will have their necessary \probloginline{x~D} atoms available, and may access the table to evaluate comparisons. The procedural view thus exactly mirrors the three layers of the declarative view: it first introduces all random variables and their distributions, which then makes it possible to evaluate comparison atoms based on the sampled joint assignment maintained by the table, and thus enables derivation of logical consequences through the computation of the well-founded model. 
+
+\todo{too much context assumed -- expand / illustrate}
+
+
+
+
+\subsection{Procedural view}
+As stated above, the semantics of a full \dcproblogsty program is given by the corresponding core program, which explicitly encodes in the program how each random term should be interpreted based on logical context. 
+In Section~\ref{sec:swp}, we provided a procedural view on the semantics through the stochastic $W_\dcpprogram$ operator, which, as the procedural semantics of the distributional clause language, incorporates these context checks into the execution mechanism rather than the program itself. While the explicit encoding makes the program and its semantics independent of the execution mechanism, this generality comes at the price of a potentially significant blowup in program size, as illustrated in the following example.
+
+
+
+\begin{example}
+	Consider the following program fragment modeling a robot moving along a one-dimensional corridor under different conditions.
+	\begin{problog*}{linenos}
+0.2::cond(1); 0.5::cond(2); 0.3::cond(3).
+pos(0) ~ normal(20,3).
+pos(1) ~ normal(pos(0)+0.5, 0.1) :- cond(1). @\label{line:cond1pos1}@
+pos(1) ~ normal(pos(0), 0.5) :- cond(2).
+pos(1) ~ normal(pos(0), 2) :- cond(3).
+pos(2) ~ normal(pos(1)+0.5, 0.1) :- cond(1). @\label{line:cond1pos2}@
+pos(2) ~ normal(pos(1), 0.5) :- cond(2).
+pos(2) ~ normal(pos(1), 2) :- cond(3).
+...
+	\end{problog*}
+	Given any interpretation of the AD, only one of the three conditions applies, and determines the distribution to associate with every position. For instance, if \probloginline{cond(1)} holds, \probloginline{pos(1)} is determined by line~\ref{line:cond1pos1} only, and \probloginline{pos(2)} by line~\ref{line:cond1pos2}.  The transformed program, however, has to summarize \emph{all} situations, and thus needs a correspondingly larger set of random variables. We omit the transform of the annotated disjunction for brevity:
+	\begin{problog*}{linenos}
+v1 ~ normal(20,3).
+refers2rv(pos(0),v1).
+
+v2 ~ normal(v1+0.5, 0.1).
+refers2rv(pos(1),v2) :- refers2rv(pos(0),v1),cond(1).
+v3 ~ normal(v1, 0.5).
+refers2rv(pos(1),v3) :- refers2rv(pos(0),v1),cond(2).
+v4 ~ normal(v1, 2).
+refers2rv(pos(1),v4) :- refers2rv(pos(0),v1),cond(3).
+
+v5 ~ normal(v2+0.5, 0.1).
+refers2rv(pos(2),v5) :- refers2rv(pos(1),v2), cond(1).
+v6 ~ normal(v3+0.5, 0.1).
+refers2rv(pos(2),v6) :- refers2rv(pos(1),v3), cond(1).
+v7 ~ normal(v4+0.5, 0.1).
+refers2rv(pos(2),v7) :- refers2rv(pos(1),v4), cond(1).
+v8 ~ normal(v2, 0.5).
+refers2rv(pos(2),v8) :- refers2rv(pos(1),v2), cond(2).
+v9 ~ normal(v3, 0.5).
+refers2rv(pos(2),v9) :- refers2rv(pos(1),v3), cond(2).
+v10 ~ normal(v4, 0.5).
+refers2rv(pos(2),v10) :- refers2rv(pos(1),v4), cond(2).
+v11 ~ normal(v2, 2).
+refers2rv(pos(2),v11) :- refers2rv(pos(1),v2), cond(3).
+v12 ~ normal(v3, 2).
+refers2rv(pos(2),v12) :- refers2rv(pos(1),v3), cond(3).
+v13 ~ normal(v4, 2).
+refers2rv(pos(2),v13) :- refers2rv(pos(1),v4), cond(3).
+...
+	\end{problog*}
+	As the transform is purely syntactical, in this specific example, where conditions do not change from one timestep to the next, many of the random variables it introduces are irrelevant, as they correspond to impossible combinations of contexts. For instance, \probloginline{v6} is relevant only if \probloginline{v3} is relevant and \probloginline{cond(1)} holds (line 14), but \probloginline{v3} is relevant only if \probloginline{cond(2)} holds (line 7), which is inconsistent with \probloginline{cond(1)}. 
+\end{example}
+
+It is worth noting that, for a valid AD-free program $\dcpprogram$, the fixpoint of  the $SW_\dcpprogram$-operator (Definition~\ref{def:swp}) applied on $\dcpprogram$ itself realizes the same distribution over the non-comparison atoms' truth values as that of applying the operator to the transform of $\dcpprogram$, despite the fact that the transform uses different names for random variables. The $SW_\dcpprogram$-operator controls the application of rules with comparison literals in the body through the presence of suitable distributional atoms in the partial interpretation, which for distributional clauses can only appear in the interpretation if the body of the clause is satisfied. In the transformed program, the same control mechanism is explicitly implemented in the program itself through \dcplpinline{refers2rv}-atoms, whose defining rules mirror the original DC bodies.
+

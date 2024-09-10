@@ -1,0 +1,241 @@
+
+\section{Implementing \dcproblogsty}
+\label{sec:implementation}
+
+Having developed a probabilistic inference approach for \dcproblogsty based on knowledge compilation and similar to the one of \problogsty has the advantage of allowing us to leverage existing implementations of \problogsty (and its inference algorithms) in order to implement \dcproblogsty.
+This entails that our implementation of \dcproblogsty, which we dub \dcproblogsys, inherits its general architecture from \problogsys and performs inference via a number of deterministic program transformations~\citep{dries2015problog2}. These program transformations reflect the inference steps described in Section~\ref{sec:dc2smt} and Section~\ref{sec:alw}.
+We graphically summarize the program transformations in Figure~\ref{figure:dcproblog_sys} and describe further details in Appendix~\ref{sec:system_blocks}.
+In Appendix~\ref{sec:system_query_predicates} we introduce built-in system predicates that allow a user to query and condition on atoms of interest, whose use we then briefly exhibit in Appendix~\ref{sec:usage}, where we present the usage of our implementation.
+
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=\linewidth]{../figures/dcproblog_sys.pdf}
+	\caption[Overview of the program transformation steps in the \dcproblogsys system]{Overview of the program transformation steps in the \dcproblogsys system. The nodes represent the intermediate representations and the annotations of the arrows show which transformations is performed on them. Each transformation is implemented in a seperate system block. (Figure inspired by~\protect\citep[Figure 2]{zuidbergdosmartires2019transforming} and \citep[Figure 1]{dries2015problog2}.}
+	\label{figure:dcproblog_sys}
+\end{figure}
+
+
+
+
+
+\subsection{System Blocks}
+\label{sec:system_blocks}
+
+The system blocks that constitute \dcproblogsys are alterations of the existing system blocks already present in the \problogsys implementation, which is mainly written in Python\footnote{\url{https://github.com/ML-KULeuven/problog}}. Consequently, \dcproblogsys is written in Python as well and effectively extends \problogsys with continuous random variables but also discrete random variables with infinite support (cf. Poisson distribution). We would like to point out that in the absence distributional facts, \dcproblogsty programs in \dcproblogsys are equivalent to \problogsty programs in \problogsys.
+
+\paragraph{\bf Grounding}
+Inference in \dcproblogsys starts with a non-ground probabilistic program, a query set and an evidence set. In a first instance, the program is grounded with respect to the query set, which results in the (relevant) ground program. Grounding is performed using the resolution rules described in Appendix~\ref{app:resolution}.
+\dcproblogsys reuses the grounder of \problogsys by adding additional resolution rules to the ones that are already implemented. More specifically, \dcproblogsys additionally has resolution rules for the cases {\bf C3} to {\bf C6} (cf. Definition~\ref{def:resolution_rules}), while the resolution rules for the cases {\bf C1} and {\bf C2} are already present in \problogsys's grounder. Note that \problogsys has special resolution rules for probabilistic facts and annotated disjunctions, which means that the \dcproblogsys implementation can also handle these. In the absence of distributional facts grounding in \dcproblogsys is identical to grounding in \problogsys as none of the rules for {\bf C3} to {\bf C6} are used. 
+
+
+
+
+\paragraph{\bf Breaking Cycles}
+Once we have the relevant ground program we would like to obtain a cycle-free representation of the program, as such a cycle-free program is trivially mapped onto a Boolean formula (cf. Section~\ref{sec:relprog2boolfrom}). Concerning the cycle breaking step, \dcproblogsys reuses the cycle breaking algorithm deployed in \problogsys with minor bookkeeping extensions in order to ensure consistency between the names of random variables (stemming from distributional facts) before and after performing cycle breaking.  
+
+
+
+
+\paragraph{\bf Knowledge Compiling}
+Next, \dcproblogsys takes, a labeled propositional formula, \ie the acyclic representation of the program, and knowledge compiles it into a so-called sentential decision diagram (SDD)~\citep{darwiche2011sdd}.
+Identically to \problogsys, the compilation of SDDs, which are a strict subset of d-DNNF formulas, is performed using bottom-up compilation\footnote{\url{http://reasoning.cs.ucla.edu/sdd/}}~\citep{choi2013dynamic}.
+
+Currently, the compilation of labeled propositional formulas is agnostic towards information present in the labels of the atoms. This can lead to situations where infeasible labeled formula are not discarded. Take for instance the formula $a \land b$, where the labels are $\alpha(a)=\ive{x<0}$ and $\alpha(b)=\ive{x>1}$. Clearly there is no instantiation of $x$ that would satisfy the conditions in the labels. However, as the compiler is label-agnostic, it does not take this information into account and does not disregard such a formula by setting it equivalent to $\bot$. This might results in needless computations. To prevent this from happening one could take into account the information in the labels and effectively perform knowledge compilation with SMT formulas, which has been studied in the WMI literature~\citep{sanner2011symbolic,kolb2018efficient,kolb2019exploit,derkinderen2020ordering}.
+We leave it for future research to adapt and further develop these techniques in the context of probabilistic programming.\footnote{We establish the link between computing expected labels of propositional logic formulas and weighted model integration in  Appendix~\ref{app:labeled_prop_to_SMT}.}
+
+
+
+
+\paragraph{\bf Evaluating} Finally, we obtain the probability of a query to a (hybrid) probabilistic logic program by evaluating the compiled logic formula using algebraic likelihood weighting.
+Note that the arithmetic circuit that corresponds to the compiled formula does not contain any program branches, in other words there are no if-else statements presents. Effectively, knowledge compilation transforms a query to a probabilistic query into a branchless program that can trivially be run on a graphics processing unit. Furthermore, we observe that each iteration in the loop of Algorithm~\ref{alg:unormalize_alw} uses the same (branchless) circuit. This means that the loop in Algorithm~\ref{alg:unormalize_alw} is  embarrassingly parallelizable, as already pointed out by~\citet{zuidbergdosmartires2019exact}.
+\dcproblogsys implements the circuit evaluations for the different samples by using a vectorized version of Algorithm~\ref{alg:unormalize_alw} implemented in PyTorch~\citep{paszke2019pytorch} and Pyro~\citep{bingham2019pyro}.
+
+
+
+
+
+
+
+
+
+\subsection{System Predicates to Query \dcproblogsty Programs}
+\label{sec:system_query_predicates}
+
+Implementations of probabilistic programming languages usually define a set of system predicates that allow users to declare queries and conditioning sets within a probabilistic program.
+% A key issue of these system predicates is that they should encode unambiguous inference tasks, \eg encode conditional probabilities that exist and do not succumb to the Borel-Kolmogorov paradox. \ak{didn't you say in an earlier comment that syntax cannot ensure this? I agree about the unambiguous part, but not the rest.}
+We are going to introduce such system predicates for \dcproblogsty based on \problogsty's system predicates.  
+
+% Many probabilistic programming languages are often quite permissive with the use of system predicates for querying programs. This can then result in possibly ill-defined queries, such as in Distributional Clauses~\citep[Section 3.2]{nitti2016probabilistic}.
+% Other languages, such as BLOG, leave it up to the user and simply assume the well-definedness of conditional probability queries~\citep{wu2018discrete}.
+% A more sophisticated method to tackle the non-uniqueness of the conditional probability is {\em disintegration}~\citep{shan2017exact}, where, instead of returning a conditional probability, a family of conditional probabilities is returned (representing an uncountable number of limits).
+% However, this does not resolve the issue of the observation/measuring process being inherently underspecified.
+
+
+
+
+
+
+
+
+\begin{definition}[Query Predicates]
+	\label{def:query_predicates}
+	Let $\herbrandbase$ be the Herbrand base of a given \dcproblogsty program \dcpprogram.
+	Let us assume that we are given the evidence $\evidenceset=e$ (with $\evidenceset \subset \herbrandbase$).
+	and a set $\queryset \subset \herbrandbase$ of atoms of interest, called
+	query atoms.
+	We encode these sets directly as facts in \dcpprogram using the following system predicates:
+	\begin{itemize}
+		\item The unary predicate \probloginline{query/1} declares a set of Boolean atoms of interest $\queryset = \{ \text{\probloginline{q}} \mid \text{\probloginline{query(q)}} \in \dcpprogram     \}$.
+		% 
+		\item The binary predicate \probloginline{evidence/2}, where the second argument is either the \probloginline{true} symbol or the \probloginline{false} symbol, encodes a set of Boolean atoms that we condition on. It produces an ordered set of evidence atoms:
+		$$
+		\evidenceset =
+		\{ E_\text{\probloginline{e@$_i$@}}  \mid \text{\probloginline{evidence(e@$_i$@,false)} } \in \dcpprogram \}
+		\cup
+		\{   E_\text{\probloginline{e@$_i$@}} = \mid \text{\probloginline{evidence(e@$_i$@,true)}} \in \dcpprogram \} $$
+		and the corresponding ordered multiset of truth values for the elements of $\evidenceset$:
+		$$
+		e =
+		\{  0   \mid \text{\probloginline{evidence(e@$_i$@,false)} } \in \dcpprogram \}
+		\cup
+		\{ 1 \mid \text{\probloginline{evidence(e@$_i$@,true)}} \in \dcpprogram \}
+		$$
+		The probability $P_\dcpprogram(\evidenceset=e)$ now corresponds to the denominator in Equation~\ref{eq:conditional_prob}.
+		The unary version \probloginline{evidence/1} is shorthand for the \probloginline{true} case and omits the second argument.
+		
+		\item The binary predicate \probloginline{observation/2} is used to condition random variables on observed values they take. The first argument denotes a random term and the second one the observed value. We define the semantics of the \probloginline{observation/2} predicate in terms of  \probloginline{evidence/1} and a novel Boolean comparison predicate \probloginline{delta_interval/2}. The atom \probloginline{observation(x,v)} is syntactic sugar for two clauses of the form:
+		\begin{problog}
+obs:- delta_interval(x,v).
+evidence(obs).
+		\end{problog}
+		where \probloginline{obs} is a fresh ground atom. \probloginline{delta_interval/2} is the built-in comparison predicate describing infinitesimally small intervals and which we introduce in Definition~\ref{def:delta_interval}.
+	\end{itemize}
+\end{definition}
+
+
+
+
+The \probloginline{query} and \probloginline{evidence} predicates are inherited from \problogsty, contrary to \probloginline{observation}, which we introduce in order to handle point observations of both discrete and continuous random variables via the \probloginline{delta_interval/2} predicate.
+%Note that the definition of the \probloginline{observation} predicate can equally be used with discrete and continuous random variables. This will allow us to condition queries to \dcproblogsty programs on mixed discrete-continuous random variables, cf. Example~\ref{ex:indian_gpa}.
+
+
+
+
+
+
+
+
+\subsection{System Usage}
+\label{sec:usage}
+
+We provide two modes of use for \dcproblogsys. Firstly, through the command line  and secondly, as \dcproblogsys is implemented in Python, through Python scripts. To illustrate the command line interface, consider a file named \mintinline{bash}{coin_flip.pl} containing the program described in Example~\ref{example:bayesian_learning}.
+
+\begin{example}\label{example:bayesian_learning}
+	We model a coin flip scenario where the probability of the coin turning up heads is defined through two distributional clauses. We then flip the coin three times and get as evidence that the first and third flip turn up heads, and the second coin turns up tails. We then query for the probability of \probloginline{b>0.5.}
+	\begin{problog*}{linenos}
+0.2::a.
+b~beta(1,1):- a.
+b~beta(1,2):- not a.
+b::coin_flip(N).
+
+evidence(coin_flip(1), true).
+evidence(coin_flip(2), false).
+evidence(coin_flip(3), true).
+
+q: b>0.5.
+query(q).
+	\end{problog*}
+\end{example}
+Having \dcproblogsys installed on a machine, which we provide as an extension of \problogsys, we can execute the query with the following command line instruction:
+\begin{minted}{bash}
+problog dc simple_coin.pl -n_samples=20000
+\end{minted}
+The instruction simply expresses our desire to run the \mintinline{bash}{simple_coin.pl} file using \problogsys with the \dcproblogsys extension and to furthermore use $20000$ samples (per random variable) to answer the query.
+
+Alternatively, \dcproblogsys can also be used within Python scripts directly, which enhances its flexible as Python code can be mixed with ProbLog programs. For instance, take again the program from Example~\ref{example:bayesian_learning}. We can now extend \dcproblogsys with a new builtin \probloginline{samples} predicate that returns sampled values of random variables instead of querying for probabilities, cf. Example~\ref{example:bayesian_learning_python}.
+
+\begin{example}[Using ProbLog from Python]
+\label{example:bayesian_learning_python}
+We write the program in Example~\ref{example:bayesian_learning} within a Python script and also use the \probloginline{samples} predicates to obtain samples. 
+
+\begin{minted}[linenos]{python}
+#import necessary classes from core ProbLog
+from problog.program import PrologString
+
+# import classes from DC-ProbLog
+from problog.tasks.dcproblog.solver import InferenceSolver
+from problog.tasks.dcproblog.parser import DCParser
+
+# set up the configuration for inference
+configuration = {
+    "n_samples":20000, # set the number of samples to be used
+    "device":"gpu", # use the GPU (alterntively CPU)
+}
+
+# put the ProbLog program in a string
+str_program = """
+    0.2::a.
+    b~beta(1,1):- a.
+    b~beta(1,2):- \+a.
+    B::coin_flip(N):- B is b.
+    
+    evidence(coin_flip(1), true).
+    evidence(coin_flip(2), false).
+    evidence(coin_flip(3), true).
+    
+    samples(b).  % we are interested in samples
+"""
+
+# initiliaze the solver for DC-ProbLog inference
+solver = InferenceSolver(**configuration)
+
+# obtain a ProbLog program from a string 
+# using the DCParser instead of the ProbLog parser
+program = PrologString(str_program, parser=DCParser())
+
+# query the program
+probabilities = solver.probability(program, **configuration)
+\end{minted}
+
+The \mintinline{python}{probabilities} variable now contains the samples for the two beta distributions in the \dcproblogsty program. Retrieving the samples allows us to plot them as a histogram. We do this in Figure~\ref{fig:coins}.
+\end{example}
+
+
+
+
+
+
+
+
+
+
+
+\begin{figure}[h]
+	\begin{center}
+	\includegraphics[width=0.49\linewidth]{../figures/prior.pdf}
+	\includegraphics[width=0.49\linewidth]{../figures/posterior.pdf}
+	\end{center}
+	\caption[Bayesian learning of coins]{On the left we have the histogram for the unconditioned samples (prior) from the program in Example~\ref{example:bayesian_learning} and the histogram on the right demonstrates the effect of conditioning on the outcome of the coin flips (posterior). The green part of the histogram corresponds to the first distributional clause (\probloginline{b~beta(1,1)}) and the red part to the second (\probloginline{b~beta(1,2)}).}
+	\label{fig:coins}
+\end{figure}
+
+
+
+% Figure~\ref{fig:coins} shows the prior and posterior after learning with the dataset {\probloginline{coin_flip(1)=true}, \probloginline{coin_flip(2)=false}, \probloginline{coin_flip(3)=true}}.
+
+
+
+% \subsection{old section intro}
+% We make two observations:
+% \begin{enumerate}
+%     \item Every implementation of \prologsty  (or any other logic programming language)  reserves a set of {\em  system predicates} executing code not written in pure \prologsty~\citep[Chapter 8]{sterling1994art}.
+%     System predicates complement pure \prologsty implementations and give users access to efficient algorithms that are cumbersome to implement in pure logic programming -- for instance algorithms for numeric computations.
+%     \item In Section~\ref{sec:semantics} we have seen that we can separate a probabilistic logic program into a set of independent random choices and a logic program. The independent choices and the logic program communicate to each other via comparison predicates. Comparison predicates are an instance of system predicates.
+% \end{enumerate}
+
+% These observations hint at the possibility of implementing \dcproblogsty as a deterministic logic programming language with access to an external engine with support for random variables.
+% On an implementation level, the key difference between a probabilistic logic programming language and a (deterministic) logic programming language is the availability of probability distributions in the external engine of the former.
+
+% Decoupling independent choices (random variables) and the deterministic system (logic program) does also mean that we should be able to take a probabilistic logic programming language that only supports finite discrete probability distributions and extend it with continuous probability distributions.
+% We will demonstrate how to achieve this by adding continuous random variables to the ProbLog2 system~\citep{dries2015problog2} (the most recent implementation of \problogsty). We dub our implementation \dcproblogsys.

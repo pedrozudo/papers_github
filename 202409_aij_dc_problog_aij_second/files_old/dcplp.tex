@@ -1,0 +1,207 @@
+\section{\dcproblogsty: Core syntax and semantics}\label{sec:semantics}
+
+\todo{better guide the reader through this part; potentially reconsider subsection headings}
+
+In this section, we define the semantics of  \dcproblogsty programs that combine normal logic programs with ground \emph{distributional facts} only, which we also call \emph{core} \dcproblogsty. 
+This restriction is for clarity only, 
+as we will see in Section~\ref{sec:dcproblog}, where 
+we will introduce additional modeling constructs inherited from the ProbLog and DC languages as syntactic sugar defined in terms of this core language. 
+
+\dcproblogsty's semantics is an instance of  Sato's distribution semantics~\citep{sato1995statistical}, which starts from a probability measure over a countable set of facts $F$, the so called \emph{basic distribution},  and then extend this to a probability measure over the Herbrand interpretations of the full program. It is worth noting that the basic distribution is independent of the logical rules. 
+In our case, the set $F$ consists of ground Boolean comparison atoms over the random variables defined by the distributional facts. These comparison atoms form an interface between the random variables (represented as terms) and the logical layer that reasons about truth values of atoms. 
+While \cite{gutmann2011magic} used the same principle to define the declarative semantics for Distributional Clauses without negation, their focus was on the procedural semantics, and only the latter has been extended to include negation \citep{nitti2016probabilistic}; cf.~also Section~\ref{sec:dcproblog-dc}.
+\ak{it seems appropriate to clearly attribute the idea to DC here already, but not sure how to best do this "in passing", without raising too many questions}
+
+
+
+
+\subsection{Syntax}
+In the following, we assume the following reserved vocabulary:
+\begin{itemize}
+    \item A finite set $F_D$ of \emph{distribution functors}, such as \verb|normal/2|, \verb|poisson/1| etc, used to specify the distributions of random variables.
+    \item A finite set $F_A$ of \emph{arithmetic functors}, such as \verb|max/2|, (infix) \verb|+/2| etc, as in Prolog arithmetic.
+    \item The countable set $F_N=\{0,1,2,\ldots\}$ of constants denoting natural numbers.
+    \item $F_M = F_A\cup F_N$
+    \item A finite set $C$ of \emph{comparison predicates}, which we further fix to the binary 
+    operators \verb|<,>,=<,>=,=:=,=\=| (in Prolog syntax and infix notation) for the sake of concreteness.
+\end{itemize}
+The precise definitions of $F_D$ and $F_A$, as well as the syntax for defining queries and observations for inference, are left to system designers. \ak{decide names of sets later, when we know all of them...}
+As logic programming generally operates on a countable universe, we restrict arithmetic to the rational numbers (constructed from the natural numbers and appropriate functors) here. As for Prolog arithmetic, an implementation can of course support floating point numbers as syntactic sugar in programs, and we also use those in our examples for ease of readability. 
+
+\begin{definition}[Distributional Fact]
+A \emph{distributional fact} is of the form \probloginline{x ~ d}, with \probloginline{x} a ground term whose functor is not part of the reserved vocabulary, and \probloginline{d} a ground term with a functor in $F_D$. Such a fact declares \probloginline{x} to be a random variable following the distribution denoted by \probloginline{d}. 
+\end{definition}
+
+\begin{definition}[(Core) DC-ProbLog program]
+A \dcproblogsty program $P=(D,R)$ consists of
+a countable set $D$=\{\probloginline{x1 ~ d1}, \probloginline{x2 ~ d2}, \ldots\} of distributional facts, where the \probloginline{xi} are all different, and a normal logic program $R$ where clause heads do not use reserved predicates. $P$ defines the set of random variables $V=\{\text{\probloginline{x}}~|~\exists \text{\probloginline{d}}. \text{\probloginline{x~d}}\in D\}$. 
+\end{definition}
+
+
+\begin{example}\label{ex:random_choice_dependency}
+Consider the  following \dcproblogsty program $P=(D,R)$.
+\begin{problog*}{linenos}
+% distributional facts D
+x ~ normal(5,2).
+y ~ normal(x,7).
+z ~ normal(y,1).
+% logic program R
+a :- abs(x-y) =< 1. 
+b :- not a, z>10.
+\end{problog*}
+The distributional facts encode a Bayesian network with  normally distributed random variables, two of which serve as parameters in the distribution of another one. We thus have $V=\{$\dcplpinline{x}, \dcplpinline{y}, \dcplpinline{z}$\}$.
+The logic program defines two logical consequences of Boolean comparisons over the BN, where \probloginline{a} is true if the absolute difference between random variables \probloginline{x} and \probloginline{y} is at most one, and \probloginline{b} is true if \probloginline{a} is false and random variable \probloginline{z} is greater than ten. 
+Here, $F$ contains the comparison atoms \probloginline{abs(x-y) =< 1} and \probloginline{z>10} explicitly mentioned in the logic program, but also all other meaningful comparison atoms that can be built from the numbers in the program and the vocabulary for arithmetic and comparisons, \eg, \probloginline{x<y} or \probloginline{7*x=:=y+5}. 
+\end{example}
+\ak{What about eg x/y<5 which divides by zero in some worlds?}
+In Section~\ref{sec:dcproblog}, we will extend the syntax to also include probabilistic facts, annotated disjunctions and distributional clauses.
+
+\subsection{Validity}\label{sec:dcplpvalidity}
+We now discuss validity criteria under which a 
+DC-ProbLog program defines a unique probability distribution over its Herbrand interpretations. 
+
+The semantics of a \dcproblogsty program involves two kinds of assignments. First, each random variable takes a value according to the associated distribution. Second, once fixed, the values of the random variables jointly determine a truth value assignment to the comparison atoms, which we call a \emph{consistent fact database} to distinguish it from arbitrary interpretations of these atoms that may not respect their intended meaning, and which is extended to a Herbrand interpretation of the program via the logical rules. The following definition  introduces corresponding terminology and notation.
+\begin{definition}[Consistent fact database]
+Let $P=(D,R)$ be a \dcproblogsty program. For a distributional fact \probloginline{x~d} $\in D$, we denote by  $\omega$(\probloginline{x}) any value that \probloginline{x} can take according to \probloginline{d}.\todo{proper terminology for "can take"?} We write $\omega = (\omega(v_1),\omega(v_2),\ldots)$ for a combination of value assignments to all random variables $V=v_1,v_2,...$. 
+We denote by $F=\{q_1,q_2,\ldots\}$ the set of all well-typed ground Boolean comparison atoms  that can be built from the reserved vocabulary $F_A\cup C$ together with $V$. \todo{what exactly is "well-typed"?} We define $I_{\omega}(q_i)=1$ if $q_i$ is true after setting all random variables to their values under $\omega$, and $I_{\omega}(q_i)=0$ otherwise. $I_{\omega}$ induces the  \emph{consistent fact database} $F_{\omega}=\{q_i~|~I_{\omega}(q_i)=1\}$. 
+\end{definition}
+
+Informally, in order to obtain a probability distribution over Herbrand interpretations, we  need to ensure that
+\begin{itemize}
+    \item The distributional facts $D$ define a unique joint distribution over the random variables they introduce, which will be our starting point.
+    \item The comparison atoms are measurable under that distribution, such that we can use it to define the basic distribution.
+    \item For any consistent fact database, adding the rules $R$ results in a program whose canonical model is two-valued, \ie, assigns a truth value to every atom in the Herbrand base. This is needed to extend the basic distribution to all atoms.
+\end{itemize}
+
+We further elaborate on the first point in the following. The key idea is to view the set of random variables as the nodes in a Bayesian network, where each node's distribution is parameterized by the parents of that node, as already illustrated in Example~\ref{ex:random_choice_dependency}.  
+\begin{definition}[parent, ancestor]
+Given a program $P$ with facts \probloginline{vp~dp} and \probloginline{vc~dc}  in $D$, the random variable \probloginline{vd}  is a \emph{parent} of the child random variable \probloginline{vc} if and only if  \probloginline{vd} appears in \probloginline{dc}. We define \emph{ancestor} to be the transitive closure of \emph{parent}.
+\end{definition}
+
+
+\begin{example}\label{ex:random_choice_dependency_parents}
+In Example~\ref{ex:random_choice_dependency}, \probloginline{x} is the parent of \probloginline{y}, and \probloginline{y} is the parent of \probloginline{z}. Thus, \probloginline{x} does not have ancestors, \probloginline{y}'s only ancestor is \probloginline{x}, and both \probloginline{x} and \probloginline{y} are ancestors of \probloginline{z}.
+\end{example}
+
+
+The next definition formalizes the BN idea.
+\begin{definition}\label{def:well-defd-facts}
+The set $D$ of distributional facts in a program $P=(D,R)$ is called \emph{well-defined} if and only if it satisfies the following criteria:
+\begin{labeling}{W3}
+\item[W1] Each $v_i\in V$ has a finite set of ancestors.
+\item[W2] The ancestor relation on the variables~$V$ is acyclic.
+\item[W3] For each atom $v_i \sim d_i$ in $D$, and for each combination of possible values the parents of $v_i$ can take given the distributions associated to them in $D$, 
+$d_i$ is a well-defined distribution term. 
+\end{labeling}  
+\end{definition}
+
+%\pedro{do we need finite support condition?}\ak{finite support is something else, and not needed here (not part of DS, only needed for inference)}
+
+
+
+\begin{definition}\label{def:core-valid}
+A \dcproblogsty program $P=(D,R)$ is called \emph{valid} if and only if it satisfies the following criteria:
+\begin{labeling}{V3}
+\item[V1] The set $D$ is well-defined. 
+\item[V2] All Boolean queries in $F$ are Lebesgue-measurable.
+\item[V3] For each consistent fact database $F_{\omega}$, the logic program $F_{\omega}\cup R$ has a two-valued well-founded model~\citep{van1991well}.  
+\end{labeling}
+\end{definition}
+
+
+
+
+
+\subsection{Semantics}
+We follow the common practice of defining the semantics with respect to ground programs; the semantics of a program with non-ground $R$ is defined as the semantics of its grounding with respect to the  Herbrand universe.
+
+Let $P$ be a valid \dcproblogsty program as defined above.
+If $D$ is empty, \ie, $P$ does not define any random variables,  the semantics of $P$ is the well-founded model of $R$. Thus, normal logic programs are a special case of \dcproblogsty.\footnote{Note that in the absence of random variables, all well-typed Boolean queries, and thus all facts in $F$, have deterministic truth values.} In the following, we assume that $D$ is not empty. 
+
+Our definition of the semantics closely follows Sato's distribution semantics \citep{sato1995statistical}, \ie, we first establish a probability measure over interpretations of the countable set of facts $F$, and then  extend this to one over Herbrand interpretations. The key differences are that (1) to support continuous distributions, our measure over facts is in itself induced by a measure over value assignments to the random  variables and (2) to support negation, we use normal logic programs with the well-founded model as canonical model instead of definite clause programs with least Herbrand models.
+
+
+\subsubsection{Probability measure over random variables}
+We first show that a valid DC-ProbLog program $P=(D,F)$ defines a probability measure $P_V$ on truth value assignments $\omega$ to its random variables $V$. To do so, we borrow ideas from Bayesian Logic Programs (BLPs)~\citep{kersting2000bayesian}\footnote{Note that while BLPs also use LP syntax to define the random variables and structure of a Bayesian network, the way they use that syntax is fundamentally different from ours.}, exploiting the analogy between the ancestor structure on $V$ and the structure of a Bayesian network. 
+Validity condition V1 states that $D$ is well-defined, \ie, each random variable has a finite set of ancestors, and the ancestor relation is acyclic. There thus exists an enumeration $v_1,v_2,...$ of the random variables such that $i<j$ for all pairs $(v_i,v_j)$ where $v_i$ is an ancestor of $v_j$.
+V1 further ensures that each variable's distribution is well-defined for every combination of parent values. For each finite subset of random variables closed under the ancestor relation, the joint distribution on that set  thus has the form of a Bayesian network, and factorizes into the product of the individual variables' distributions. It can be shown that under these conditions, there is a unique probability measure $P_V$ over the space of possible assignments to $V$; we refer to \cite[Theorem 4.9]{kersting2000bayesian} for the technical details. 
+
+\luc{not formal enough?}
+\ak{should be a bit more formal than before; I don't know how to make it more formal without reproducing Kristian's work...}
+
+\subsubsection{Probability measure over (consistent) fact databases}
+We now show that the probability measure $P_V$ over assignments to the random variables uniquely induces a probability measure $P_F$ over truth value assignments to the facts $F$; this is the \emph{basic distribution} in the distribution semantics.
+
+We fix an arbitrary enumeration  $A_1,A_2,...$ of the atoms in $F$. 
+Each $A_i$ \emph{depends} on a finite set $V_i$ of random variables, namely  those mentioned in $A_i$ as well as all their ancestors. We write $V_{\leq n}=\bigcup_{1\leq j\leq n}V_j $ for the union of random variables the first $n$ atoms in the enumeration depend on, and $P_{V_{\leq n}}$ for $P_V$ restricted to this set.  
+
+By validity criterion {\bf V2}, all queries $q_i$ are  Lebesgue-measurable, and we thus get a family of distributions
+\begin{align}
+P_F^{(n)}(A_1=x_1,\ldots,A_n=x_n) = \int_{\Omega(V_{\leq n})} \mathbf{1}_{[q_1=x_1\wedge\ldots\wedge q_n=x_n]}(\omega)dP_{V_{\leq n}}(\omega)
+\end{align}
+where the $x_i$ are $0$ or $1$, $P_{V_{\leq n}}$ factorizes over the random variables in $V_{\leq n}$ as discussed above, $\Omega(V_{\leq n})$ denotes the space of possible assignments for variables in $V_{\leq n}$, and $\mathbf{1}_{[\varphi]}$ is the indicator function, \ie, equals $1$ if $\varphi$ is true and $0$ otherwise. The definition in terms of an indicator function and the measurability of the underlying Boolean queries ensures that this family of distributions is of the form required for the distribution semantics, \ie, they are well-defined probability distributions satisfying the compatibility condition\footnote{I.e., $P_F^{(n)}$ can be obtained from $P_F^{(n+1)}$ by summing out $A_{n+1}$, for any $n$.}. There thus exists a completely additive probability measure $P_F$ over the space of truth value assignments to $F$ such that for any $n$, we have
+\begin{align}
+P_F(A_1=x_1,\ldots,A_n=x_n) =P_F^{(n)}(A_1=x_1,\ldots,A_n=x_n)
+\end{align}
+We note that by construction, this measure assigns mass to consistent fact databases only. 
+
+\subsubsection{Probability measure over Herbrand interpretations}
+In the last step, we follow Sato's construction to obtain a probability measure $P_P$ over Herbrand interpretations from $P_F$. To do so, we fix an enumeration $A_1,A_2,\ldots$ of all atoms in the Herbrand base, which includes those in $F$. 
+Validity criterion {\bf V3} ensures that for every consistent fact database $F_{\omega}$, the logic program $F_{\omega}\cup R$ has a total well-founded model $M_{\omega}$, and we can thus define   
+\begin{align}
+P_P^{(n)}(A_1=x_1,\ldots,A_n=x_n) := P_F(\{F_{\omega}~|~ M_{\omega}\models A_1^{x_1}\wedge\ldots\wedge A_n^{x_n}\})
+\end{align}
+
+\pedro{is the $P_F$(of a set) equal to sum of $P_F$(not a set)}\ak{what do you mean? note that the elements of the set are mutually exclusive}
+
+where $A_i^1=A_i$ and $A_i^0=\neg A_i$, and it again follows that there is a completely additive probability measure $P_P$ over Herbrand interpretations, which completes the definition of the semantics. 
+
+\pedro{$P_p^{n}$ never introduced}\ak{(3) introduces it? we could explicitly write the analogue of (2) for $P_p$ as well if needed}
+
+
+
+\subsection{Inference tasks}\label{sec:inference-tasks}
+As in any probabilistic programming language, key inference tasks include computing the marginal probability of a query, \ie, a ground atom, being true in a given program, or the conditional probability of a query being true given observed truth values of one or more other logical atoms.
+\ak{do we need formal details?}
+
+\subsubsection{Conditional Queries}
+\ak{this is mostly adapted from text moved from elsewhere; I am not fully sure whether all of it should stay here (some of it could be related work or details of inference algorithms)}
+
+Queries conditioned  on standard logic atoms only  can be answered as usual by dividing the marginal probabilities of the conjunction of query and evidence by the marginal probability of just the evidence. 
+
+
+As the probability of a random variable with uncountably many outcomes taking a specific value is zero, conditioning on a random variable taking a specific value is slightly more complicated, as the above approach would result in  a division by zero and consequently an undefined conditional probability. 
+This problem is related to the Borel-Kolomogorov paradox~\citep{kolmogorov1950foundations,gyenis2017conditioning}, which is again caused by a zero-division.
+
+We will, analogously to \citet{nitti2016probabilistic},   follow~\citet{kadane2011principles} to resolve the division by zero issue.
+We make the explicit distinction between the probability $P$ and the probability density function $p:\frac{d}{dx}P(X \leq x)=p(x)$. The conditional probability is defined as:\todo{align syntax with rest of semantics section}
+\begin{align}
+	P(\support_q| \support_e)
+	&=P(\support_q|rv=v) & (\support_e \leftrightarrow rv=v )\\
+	&=\lim_{\Delta v\rightarrow 0} \frac{P(\support_q,rv \in [v-\nicefrac{\Delta v}{2},v+\nicefrac{\Delta v}{2}])}{ P(rv \in [v-\nicefrac{\Delta v}{2},v+\nicefrac{\Delta v}{2}])} \label{equ:borel_limit} \\
+	&=\lim_{\Delta v\rightarrow 0} \frac{\int \ive{ \support_q(x,rv=v)} p(x,rv=v)dx \cancel{\Delta v}}{p(rv=v)\cancel{\Delta v}} \\
+	&=\frac{\int \ive{ \support_q(x, rv=v)} p(x,rv=v)dx}{p(rv=v)}
+\end{align}
+This means that we do not divide anymore by zero but by the number obtained when evaluating the probability distribution at the observed point. For example, when evaluating \probloginline{beta(2,3)} (cf. Example~\ref{example:dcproblog:observation}, Line~\ref{example:dcproblog:observation:beta23}) at $4/10$  we get $1.7280$ instead of zero.
+% Note that this is not a probability between zero and one.
+
+In order to guarantee that the limit in Equation~\ref{equ:borel_limit} exists, we restrict this kind of conditioning to equality between a {\em named} random variable and a given constant, cf. Example~\ref{example:dcproblog:observation}.
+Relaxing this restriction might lead to the non-existence of the limit. Exactly this situation gives rise to the Borel-Kolmogorov paradox emerges. 
+
+Nevertheless, some languages lift this restriction, which results in possibly semantically ill-defined programs, such as in Distributional Clauses~\citep[Section 3.2]{nitti2016probabilistic}. A more sophisticated method to tackle the non-uniqueness of the conditional probability is {\em disintegration}~\citep{shan2017exact}, where, instead of returning a conditional probability, a family of conditional probabilities is returned (representing an uncountable number of limits). Other languages, such as BLOG, simply assume the existence of the limit~\citep{wu2018discrete}.
+
+The limitation to direct equality statements might seem too restrictive for the purpose of probabilistic programming. Take for example the following conditional probability~\citep{nitti2016probabilistic}:
+\begin{align}
+	P(nationality| height {=} 160 \lor height {=} 180) \label{eqn:disj_conditioning}
+\end{align}
+We cannot express this query. However, if we think about what a conditioning set represents in the context of probabilistic programming and machine learning, the example above appears quite odd. The conditioning set tells us which observations we have made about the world, \ie data that we collected using a physical device (\eg tape measure for the height of a person). The example in Equation~\ref{eqn:disj_conditioning} now tells us that our measuring device returned two numbers for a single measurement, which means that the measuring protocol is underspecified.
+
+We just stated that a measurement consists of retrieving a number from a measuring device. This is not entirely correct. In the natural sciences a measurement consists always of a number and an upper and lower error bound, which effectively eliminates the problem of zero probability events. However, given the ubiquity of single point measurement, we feel that a probabilistic programming language that is not able to handle single point measurements is greatly hurt in its expressivity.
+
+To conclude,  \dcproblogsty allows a user to condition on zero probability events, while at the same time the imposed restrictions ensure that the encoded probability distribution is well defined.
+
+
+\ak{conditional probabilities: just wondering: is it possible to condition on tests, \eg, observing that someone's height is at most 180? related to that, in (17), what if someone with bad handwriting measured the height and recorded it on a piece of paper, and I can't tell whether it is 160 or 180? :) }
+\pedro{in this case the measurement is the pixels and you would have yes/no for each pixel}
+
+We introduce syntax to specify inference tasks when discussing our implementation of \dcproblogsty in Section~\ref{sec:implementation}.

@@ -1,0 +1,92 @@
+digraph g {
+    graph [fontname = "monospace"];
+    node [fontname = "monospace"];
+    edge [fontname = "monospace"];
+ 
+ 
+    term [label="Term"]
+    
+    distribution [label="Distribution"]
+    symbol [label="Symbol"]
+
+    
+    term -> symbol
+    term -> distribution
+    
+    
+    
+    // Symbol subtypes
+        rv [label="RandomSymbol"]
+        det [label="DeterministicSymbol"]
+        
+        
+   
+    
+    
+        symbol -> rv
+        symbol -> det
+
+    // DeterministicSymbol subtypes
+    
+    
+        atom [label="Atom"]
+        number [label="Number"] 
+        
+        det -> number
+        det -> atom
+        
+        
+        
+
+
+        //Number substypes        
+            int [label="Integer"]
+            float [label="Real"]
+
+            number -> int
+            number -> float
+    
+   
+    // RV subtypes
+    
+        rv_numeric [label="NumericRV"]
+        rv_categorical [label="CategoricalRV"]
+        
+        rv -> rv_numeric
+        rv -> rv_categorical
+        
+        // RV numeric subtypes
+        
+        
+            rv_discrete [label="DiscreteRV"]
+            rv_continuous [label="ContinuousRV"]
+            rv_mixture [label="MixtureRV"]
+
+            
+            rv_numeric -> rv_discrete
+            rv_numeric -> rv_continuous
+            rv_numeric -> rv_mixture
+
+
+    // DistributionTerm subtypes
+    
+        d_numeric [label="NumericD"]
+        d_cat [label="CategoricalD"]
+    
+        distribution -> d_numeric
+         distribution -> d_cat
+
+ 
+        discrete [label="DiscreteD"]
+        continuous [label="ContinuousD"]
+        mixture [label="MixtureD"]
+
+        
+
+ 
+        d_numeric -> discrete
+        d_numeric -> continuous
+        d_numeric -> mixture
+
+    
+}

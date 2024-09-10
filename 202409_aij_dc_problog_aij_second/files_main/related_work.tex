@@ -1,0 +1,125 @@
+\section{\dcproblogsty and the Probabilistic Programming Landscape}\label{sec:related}
+
+In recent years a plethora of different probabilistic programming languages have been developed. 
+We discuss these by pointing out key features present in \dcproblogsty (listed below), which are missing in specific related works.
+We organize these features along the three key contributions stated in Section \ref{sec:introduction}. Our first key contribution is the introduction of the measure semantics with the following features:
+
+
+\begin{enumerate}[label=C1.\arabic*, leftmargin=2\parindent]
+    \item \new{possibly infinite number (even uncountable) number of random variables} 
+    \label{f:infinite_number_of rv}
+    \item random variables with (possibly) infinite sample spaces
+    \label{f:infinite_samplespaces}
+    \item functional dependencies between random variables
+    \label{f:rv_dependencies}
+    \item uniform treatment of discrete and continuous random variables
+    \label{f:dc_rv_uniform}
+    \item negation
+    \label{f:declarative_negation}
+\end{enumerate}
+
+\noindent Our second contribution is the  introduction of  the \dcproblogsty language, which  
+\begin{enumerate}[label=C2.\arabic*, leftmargin=2\parindent]
+    \item has purely discrete PLPs and their semantics as a special case,
+    \label{f:discrete_special}
+    \item supports a rich set of comparison predicates, and
+    \label{f:comparison_predicates}
+    \item is a Turing complete language (\dcplpsty)
+    \label{f:turing_complete}
+\end{enumerate}
+
+\noindent Our last contributions concern inference, which includes 
+\begin{enumerate}[label=C3.\arabic*, leftmargin=2\parindent]
+    \item a formal definition of the hybrid probabilistic inference task,
+    \label{f:definition_inference}
+    \item an inference algorithm called IALW, 
+    \label{f:inference_algorithm}
+    \item that uses standard knowledge compilation in the hybrid domain.
+    \label{f:inference_kc}
+\end{enumerate}
+
+
+% Our focus will lie with probabilistic logic programming languages, and we only touch lightly upon other paradigms of probabilistic programming
+\subsection{\problogsty and \dcsty}
+
+The \dcproblogsty language is a generalization of \problogsty, both in terms of syntax and semantics. A \dcproblogsty program that does not use distributional clauses (or distributional facts) is also a \problogsty program, and both define the same distribution over the logical vocabulary of the program. \dcproblogsty properly generalizes \problogsty to include random variables with infinite sample spaces (\ref{f:infinite_samplespaces}). 
+
+On a syntactical level, \dcproblogsty is closely related to the \dcsty (DC) language, with which it shares the  \predicate{~}{2} predicate used in infix notation. 
+In Appendix~\ref{sec:dcproblog-dc} we discuss in more detail the relationship between \dcproblogsty and the \dcsty language. Concretely, we point out that 
+\dcproblogsty generalizes the original and negation-free version of DC~\citep{gutmann2011magic} (\ref{f:declarative_negation}).
+However, \dcproblogsty differs in its declarative interpretation of negation from the procedural interpretation as introduced to DC by~\citet{nitti2016probabilistic}.
+As a consequence, the semantics of DC and \problogsty differ in the absence of continuous random variables, while \dcproblogsty is a strict generalization of \problogsty (\ref{f:discrete_special}).
+
+
+
+\subsection{Bayesian Logic Programs}
+\label{sec:blp}
+
+\new{
+Bayesian logic programs (BLPs)~\citep{kersting2000bayesian} can be seen as a special case of \dcplpsty: while the semantics of \dcplpsty allow for a (possibly uncountable) infinite number of random variables~\ref{f:infinite_number_of rv}, BLPs are limited to finite distributional databases (expressed as Bayesian networks).
+
+Moreover, using the construct of distributional clauses we introduce syntax to interleave logic programming statements and the declaration of the distributional database. This is not supported in the BLP language.
+Lastly, IAWL equips \dcproblogsty with a sound inference algorithm for the discrete-continuous space. This is again in contrast to BLP's inference algorithm that only handles (discrete mixtures of) continuous random variables. 
+}
+
+
+
+\subsection{\extendedprismsty}
+
+An early attempt of equipping a probabilistic logic programming language with continuous random variables can be found in~\citep{islam2012inference}, which was dubbed {\em \extendedprismsty}. 
+Similar to \dcproblogsty, \extendedprismsty's semantics are based again on \citeauthor{sato1995statistical}'s distribution semantics.
+However, \extendedprismsty assumes, just like \dcsty , pairwise mutually exclusive proofs (we refer again to Appendix~\ref{sec:dcproblog-dc} for details on this).
+On the expressivity side, \extendedprismsty only supports linear equalities -- in contrast to \dcproblogsty, where also inequalities are included in the semantics of the language (\ref{f:comparison_predicates}). 
+An advantage of restricting possible constraints to equalities is the possibility of performing exact symbolic inference. In this regard, \extendedprismsty, together with its symbolic inference algorithm, can be viewed as a logic programming language that has access to a computer algebra system. Swapping out the approximate Sampo-inspired inference algorithm in \dcproblogsty by an exact inference algorithm using symbolic expression manipulations would result in an inference approach closely related to that of \extendedprismsty. One possibility would be to use the Symbo algorithm presented in~\citep{zuidbergdosmartires2019exact}, which uses the PSI-language~\citep{gehr2016psi} as its (probabilistic)  computer algebra system.
+
+
+
+
+\subsection{Probabilistic Constraint Logic Programming}
+
+Impressive work on extending probabilistic logic programs with continuous random variables was presented by~\citet{michels2015new} with the introduction of Probabilistic Constraint Logic Programming (PCLP). The semantics of PCLP are again based on \citeauthor{sato1995statistical}'s distribution semantics and the authors also presented an approximate inference algorithm for hybrid probabilistic logic programs.
+Interestingly, the algorithm presented in~\citep{michels2015new} to perform (conditional) probabilistic inference extends weighted model counting to continuous random variables using imprecise probabilities, and more specifically credal sets.
+
+A shortcoming of PCLP's semantics is the lack of direct support for generative definitions of random variables, \ie, random variables can only be interpreted within constraints, but not within distributions of other random variables as is possible in \dcproblogsty (\ref{f:rv_dependencies}).
+\citet{azzolini2021semantics} define a non-credal version of this semantics using a product measure over a space that explicitly separates discrete and continuous random variables, assuming that a measure over the latter is given as part of the input without further discussion of how this part of the measure is specified in a program. Furthermore, they do not define any inference tasks (\ref{f:definition_inference}), \eg computing conditional probabilities (\cf Section~\ref{sec:inference-tasks}), nor
+do they provide an inference algorithm (\ref{f:inference_algorithm}).
+
+A later proposal for the syntax of such programs~\citep{azzolini:iclp21} combines two classes of terms (logical and continuous ones) with typed predicates and functors, and defines mixture variables as well as arithmetic expressions over random variables through logical clauses. In other words, user-defined predicates define families of random variables through the use of typed arguments of the predicate identifying a specific random variable, arguments providing parameters for the distribution, and one argument representing the random variable itself.
+In contrast, the syntax of \dcproblogsty clearly identifies all  random variables through explicit terms introduced through distributional facts or distributional clauses, explicitly exposes the probabilistic dependency structure by using random variable terms inside distribution terms, and avoids typing through argument positions.
+Moreover, \dcproblogsty takes a uniform view on all random variables in terms of semantics, thereby avoiding treating discrete and continuous random variables separately (\ref{f:dc_rv_uniform}).
+
+\subsection{\blogsty}
+
+
+Notable in the domain of probabilistic logic programming is also the BLOG language~\citep{milch2005blog,wu2018discrete}. Contrary to the aforementioned probabilistic logic programming languages, BLOG's semantics are not specified using \citeauthor{sato1995statistical}'s distribution semantics but via so-called {\em measure-theoretic Bayesian networks} (MTBN), which were introduced in~\citep{wu2018discrete}. MTBNs can be regarded as the assembly language for BLOG: every BLOG program is translated or compiled to an MTBN.
+With \dcproblogsty we follow a similar pattern: every \dcproblogsty program with syntactic sugar (\eg annotated disjunctions)  is transformed into \dfplpsty program. The semantics are defined on the bare-bones program. Note that the assembly language for \dcproblogsty (\dfplpsty) is Turing complete. This is not the case for MTBNs (\ref{f:turing_complete}).
+
+% On the practical side, the default inference algorithm deployed by BLOG is similar in spirit to IALW inference  but does also provide alternatives, such as Metropolis-Hastings MCMC~\citep{milch2006general}. An important difference of \blogsty's inference algorithms with regard to \dcproblogsys is the absence of knowledge compilation. BLOG will, hence, struggle with problems that exhibit rich combinatorial structures, as shown by~\citet{zuidbergdosmartires2019exact}.
+
+
+\subsection{Non-logical Probabilistic Programming}
+
+As first pointed out by~\citet{russell2015unifying} and later on elaborated upon by~\citet{kimmig2017probabilistic}, probabilistic programs fall either into the {\em possible worlds semantics} category or the {\em probabilistic execution traces semantics} category. The former is usually found in logic based languages, while the latter is the prevailing view in imperative and functional probabilistic languages.
+
+While, the probabilistic programming languages discussed so far follow the possible worlds paradigm,
+many languages follow the execution traces paradigm, either as a probabilistic functional language~\citep{goodman2008church,wood2014approach} or as a imperative probabilistic language~\citep{gehr2016psi,salvatier2016probabilistic,carpenter2017stan,bingham2019pyro,ge2018turing}. Generally speaking, functional and imperative probabilistic programming languages target first and foremost continuous random variables, and discrete random variables are only added as an afterthought. A notable exception is the functional probabilistic programming language Dice~\citep{holtzen2020dice}, which targets discrete random variables exclusively.
+
+Concerning inference in probabilistic programming, we can observe general trends in logical and non-logical probabilistic languages. While the latter are interested in adapting and speeding up approximate inference algorithms, such as Markov chain Monte Carlo sampling schemes or variational inference, the former type of languages are more invested in exploiting independences in the probabilistic programs, mainly by means of knowledge compilation. Clearly, these trends are not strict. For instance, \citet{obermeyer2019functional} proposed so-called {\em funsors} to express and exploit independences in \pyrosty~\citep{bingham2019pyro}, an imperative probabilistic programming language, and \citet{gehr2016psi} developed a computer algebra system to perform exact symbolic probabilistic inference.
+
+
+\subsection{Representation of Probabilistic Programs at Inference Time}
+
+Lastly, we would like to point out a key feature of the IALW inference algorithm that sets it apart from any other inference scheme for probabilistic programming in the hybrid domain. But first, let us briefly talk about computing probabilities in probabilistic programming. Roughly speaking, probabilities are computed summing and multiplying weights. These can for example be represented as floating point numbers or symbolic expressions. The collection of all operations that were performed to obtain the probability of a query to a program is called the computation graph. Now, the big difference between IALW and other inference algorithms lies in the structure of the computation graph. IALW represents the computation graph as a directed acyclic graph (DAG), while all other languages, except some purely discrete languages~\citep{fierens2015inference,holtzen2020dice}, use a tree representation. IALW is the first inference algorithm in the discrete-continuous domain that uses DAGs (\ref{f:inference_kc}). In cases where the computation graph can be represented as a DAG the size of the representation might be exponentially smaller compared to tree representations, which leads to faster inference times.
+
+Note that \citet{gutmann2010extending} and more recently~\citet{saad2021sppl} presented implementations of hybrid languages where the inference algorithm leverages directed acyclic graphs, as well. However, the constraints that may be imposed on random variables are limited to univariate equalities and inequalities. In the weighted model integration literature it was shown that such probability computations can be mapped to probability computations of discrete random variables only~\citep{zeng2019efficient}.
+
+
+\subsection{Probabilistic Neurosymbolic AI}
+
+
+\new{
+As noted by \Citet{desmet2023neural} a shortcoming of many neurosymbolic AI systems~\citep{garcez2019neural,marra2024statistical}, \ie systems that combine the function approximation power of neural networks with logic reasoning, is their restriction to only allowing discrete random variables.
+Based on the semantics of \dcplpsty, \citet{desmet2023neural} extended distributional facts to so-called neural-distributional facts. 
+That is, they allowed for neural networks to estimate the parameters of the distribution in the distributional fact.
+Importantly, they showed that endowing a neurosymbolic system in the discrete-continuous domain with proper probabilistic semantics is advantageous when comparing to systems that exhibit, for instance, a fuzzy logic semantics~\citep{badreddine2022logic}.
+}

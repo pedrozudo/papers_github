@@ -1,0 +1,254 @@
+
+\section{Introduction}
+\ak{intro should get to the point more quickly; what is the exciting thing about this work? see Table \ref{tab:features} for a (partial) answer covering the language/semantics side, which would need to be extended to inference and implementation}
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{|p{0.3\textwidth}||c|c|c||c|c|}
+    \hline
+       Feature  & ProbLog & DC & DC & \dcproblogsty & \dcproblogsty  \\
+       & & (Gutmann) & (Nitti) & (core) & (full)\\
+       \hline\hline
+       fully declarative semantics & y & y & n & y & y \\\hline
+       negation & y & n & y & y & y \\\hline
+       RVs with finite, countable and continuous domains & n & y & y & y & y\\\hline
+       RVs with distributions parameterised by other RVs & n & y & y & y & y \\\hline
+       RVs with distributions determined by logical context / (full) DCs & n & y & y & n & y \\\hline
+       probabilistic facts / tuple-independent PDB  & y & n & n & n & y \\\hline
+       annotated disjunctions / independent causation  & y & n & n & n & y \\\hline
+    \end{tabular}
+    \caption{Probabilistic logic programming languages and their features \todo{expand beyond our own languages / refine features further} \ak{adapting a comment from Luc in a different semantics discussion, the goal here is to show that we introduce the first PLP language that brings the range of modeling features / syntax elements together with the fully declarative semantics in a single language; then, the examples in sec 2 should illustrate how cool this is}}
+    \label{tab:features}
+\end{table}
+
+\ak{I think these only motivate part of the whole, and should be adapted to illustrate the full power of the features in table \ref{tab:features} -- show what we can do and discuss that others can't rather than showing how others need to hack approximations }
+
+
+
+
+Uncertainty is ubiquitous in real-world phenomena and successfully modelling such phenomena necessitates taking into account this uncertainty.
+Expressing the knowledge we have about the world in a formal fashion constitutes a necessary first step in mechanizing the reasoning process for these probabilistic phenomena.
+An emerging paradigm of doing so is probabilistic programming~\citep{meent2018introduction}.
+Probabilistic programming languages (PPL) unify the expressive power of general purpose (Turing complete) programming languages and probabilistic modelling.
+
+PPLs come in various different flavors, adhering for example to the declarative programming paradigm or the imperative programming paradigm.
+All PPLs have in common that a user writes down a probabilistic program and the probabilistic inference engine, which is shipped along side the language, takes subsequently care of performing probabilistic inference.\footnote{One could argue that imperative probabilistic programming languages are to a degree declarative: the user only specifies/declares the probability distributions, and does not write any probabilistic inference algorithm.}
+
+The particular PPL flavor that we investigate in this paper is probabilistic logic programming (PLP)~\citep{de2015probabilistic,riguzzi2018foundations}.
+PLP can be seen as the continuation of a long line of research of unifying logic and probability theory~\citep{russell2015unifying}. With the introduction of {\em probabilistic Horn abduction} (PHA) by ~\citet{poole1993probabilistic}, a first important step had been made towards combining (non-probabilistic) logic programming and probability theory. PHA allowed~\citeauthor{poole1993probabilistic} to  construct the {\em Independent Choice Logic} (ICL) language~\citep{poole1997independent}, an expressive universal probabilistic logic programming language.
+In a seminal paper, \citet{sato1995statistical} built on top of the ideas advanced by~\citet{poole1993probabilistic} and introduced the so-called {\em distribution semantics} (DS) for probabilistic logic programs.  
+Since the inception of DS, a variety of  additional PLP languages have appeared, such as {\em PRISM}~\citep{sato1997prism}, {\em Logic Programs with Annotated Disjunctions}~\citep{vennekens2004logic}, and {\em \problogsty}~\citep{de2007problog,fierens2015inference}, to name a few.
+\ak{careful with history claims (eg Dantsin)}
+
+Probabilistic logic programming has first and foremost been concerned with random variables that have finite sample spaces -- mainly due to the fact that it is rather straightforward to turn deterministic logic atoms into probabilistic logic atoms.
+As a consequence, PLP languages that allow for continuous random variables, such as \extendedprismsty~\citep{islam2012inference} and \dcsty\todo{cite on first mention}, have been proposed.
+In the context of probabilistic logic programming such languages have been dubbed {\em hybrid}, as they allow for discrete and continuous random variables alike.
+Unfortunately, the semantics that have been proposed so far for hybrid PLP languages have been imprecise, as pointed out by~\citet{azzolini2021semantics}, or exhibit some caveats. For example, the declarative semantics proposed in~\citep{islam2012inference} or~\citep{gutmann2011magic} do not allow for negation, and while the semantics proposed in~\citep{nitti2016probabilistic}  do allow negation, they are not declarative anymore but procedural. Our first contribution tackles these issues:
+\begin{enumerate}
+    \item We introduce the hybrid probabilistic logic programming language \dcproblogsty, for which we define {\bf declarative semantics} that cover negation and are based on \citeauthor{sato1995statistical}'s distribution semantics.
+\end{enumerate}
+The declarative semantics that we define for the hybrid PLP langugage \dcproblogsty extends the semantics given in~\citep{gutmann2011magic} such that negation is allowed. Furthermore, we simplify the definition of the semantics and eliminate some inconsistencies present in~\citep{gutmann2011magic}.
+
+Eventually, a probabilistic programming language should be able to compute (conditional) probabilities of queries given by the user. This means that PLPs need to be equipped with inference mechanism. We show how inference for the hybrid PLP language \dcproblogsty can be mapped onto weighted model integration (WMI)~\citep{belle2015probabilistic}. 
+
+\begin{enumerate}
+\setcounter{enumi}{1}
+	\item We {\bf reduce inference} in \dcproblogsty to {\bf weighted model integration}, analogous to reducing inference in \problogsty to weighted model counting~\citep{chavira2008probabilistic} when dealing with discrete random variables only.
+	\item We present {\em algebraic likelihood weighting}, an inference algorithm for hybrid probabilistic logic programs that combines {\bf knowledge compilation}~\citep{darwiche2002knowledge}, {\bf algebraic model counting}~\citep{kimmig2017algebraic}, and {\bf likelihood weighting}~\citep{fung1989weighing}.
+\end{enumerate}
+Until now only probabilistic programming languages targeting discrete random variables exclusively have leveraged knowledge compilation. This has allowed them to exploit structure present in the program when performing inference.
+Algebraic likelihood weighting is the first inference algorithm in the hybrid domain exhibiting this feature and is consequently the first inference algorithm to exploit discrete structures in hybrid probabilistic programs. 
+
+
+
+Furthermore, we provide an implementation of \dcproblogsty that we dub \dcproblogsys and which is an extension of the ProbLog2 system~\citep{dries2015problog2}.
+\begin{enumerate}
+\setcounter{enumi}{3}
+% 	\item We introduce a {\bf type system} for \dcproblogsty. The type system allows us to overload the existing \problogsty syntax and use it for hybrid probabilistic logic programming.
+% 	While type systems are omnipresent in non-logic probabilistic programming languages, they have not received any attention in the PLP community.
+    % To the best of our knowledge, we present the first type system for a probabilistic logic programming language.
+	\item We present an {\bf implementation of \dcproblogsty} that uses algebraic likelihood weighting and reduces naturally  to \problogsty in the absence of continuous random variables.
+% 	\item We give two implementations of AWL. An exact implementation that performs exact  probabilistic inference using PSI~\citep{gehr2016psi} in its back end and an approximate implementation using Pyro~\citep{bingham2019pyro}.
+\end{enumerate}
+
+
+
+
+% \begin{itemize}
+%     \item fully unify discrete and continuous semantics
+%     \item disentangle random variables from program
+%     \item perform inference by mapping to WMI -> generalizes WMC
+%     \item what is different to other approaches, non-logical? separation of combinatorial \#P-hardness and integration \#-hardness
+% \end{itemize}
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection*{Paper Organization}
+In Section~\ref{sec:motivation}, we motivate our work by giving introductory examples. We continue in Section~\ref{sec:semantics} by presenting \dcplpsty, a bare bones probabilistic logic programming language with minimal syntax.
+\dcplpsty with its minimal syntax has the advantage of facilitating the definition of a declarative semantics. In Section~\ref{sec:dcproblog} we formally introduce \dcproblogsty.
+The semantics of \dcproblogsty programs are obtained via deterministically transforming \dcproblogsty programs to \dcplpsty programs, for which we will have defined the semantics in Section~\ref{sec:semantics}.
+In Section~\ref{sec:implementation} we describe \dcproblogsys, an implementation of \dcproblogsty built on top of the \problogsys system~\citep{fierens2015inference,dries2015problog2}.
+Subsequently, we map inference in \dcproblogsty to weighted model integration ~\citep{belle2015probabilistic} and describe the implementation of the inference algorithm in \dcproblogsys. 
+In Section~\ref{sec:related} we discuss \dcproblogsty in a broader probabilistic programming context and relate the language to other probabilistic programming languages such as BLOG~\citep{milch2005blog}.
+We end with concluding remarks in Section~\ref{sec:conclusions}.
+
+
+
+
+\subsection*{Prerequisites}
+
+We expect the reader to be familiar with rudimentary language concepts and terms of (non-probabilistic) logic programming and more specifically of Prolog~\citep{lloyd2012foundations,flach1994simply}. We provide a brief summary of these concepts in~\ref{app:lp}. Furthermore, a working knowledge of probabilistic inference with discrete random variables using weighted model counting and integration would be beneficial. A refresher on probabilistic inference using WMC and WMI can be found in~\ref{app:amc}, ~\ref{app:compilation}, and \ref{app:wmi}.
+
+\ak{decide on LP/Prolog citation(s), here vs start of next sec (and elsewhere?)}
+
+
+\subsection{stuff from elsewhere}
+\ak{these are bits and pieces that disturbed the flow of the semantics section but may still be relevant somewhere...}
+
+\ak{the following message seems better placed in the intro/motivation: }
+\citet{poole2010probabilistic} has characterised probabilistic programs as deterministic systems with  independent choices. \dcproblogsty relaxes \citeauthor{poole2010probabilistic}'s independent choices by allowing for connections between the independent choices by means of random variables appearing as parameters of distributions, thus introducing a kind of hierarchical system of independent choices, as illustrated in  Example~\ref{ex:random_choice_dependency}.
+\dcproblogsty is the first probabilistic programming language to make the distinction between:
+\begin{enumerate}
+    \item structure expressed by the the deterministic system
+    \item structure expressed by hierarchically parameterized distributions of random variables
+\end{enumerate}
+\ak{any better term to refer to the structure between RVs than "hierarchical"? }
+
+\ak{We need to decide what to do with this; can we claim it's syntactic sugar and deal with it in that section? }
+Note that while we implicitly assume   univariate (or {\em `atomic'}) random variables here, the principles do also apply to multivariate (or {\em `compound'}) random variables, such as multivariate Gaussians, provided that the usual laws of probability are respected and suitable syntax for such variables is introduced.
+
+
+%Distributional facts are not limited to describe continuous random variables but can, for example, also model discrete probability distributions such as the Poisson distribution.
+%\begin{example}\label{example:dcproblog_poisson_population}
+%The following DC-ProbLog program models the size of a group of people as a Poisson distribution and
+%defines predicates related to that size using the comparison predicates  \probloginline{>}\lstinline[columns=fixed]{/2} and \probloginline{=:=}\lstinline[{columns=fixed}]{/2}, where the latter is standard Prolog syntax for equality comparisons on numbers.
+%\luc{=:= non-standard}\ak{it is standard Prolog}
+%	\begin{problog*}{linenos}
+%n_people ~ poisson(6).
+
+%more_than_five:- n_people>5@.@
+%exactly_five:- n_people=:=5@.@
+%	\end{problog*}
+%\end{example}
+
+%We will provide further examples throughout the text, including showcase examples in Section~\ref{sec:showcase}. \ak{any good reason why we delay the showcases til then?}
+
+% \section{Introduction}
+
+% The mathematical discipline of logic constitutes the bedrock of a large body of work in artificial intelligence (AI) research, including sub-disciplines such as expert systems~\citep{jackson1998introduction}, inductive logic programming~\citep{muggleton1994inductive}, or more broadly knowledge representation and reasoning~\citep{levesque1986knowledge}. One of the main shortcomings of logic based AI systems is that they fail to capture the inherent uncertainty present in the world -- aleatoric and epistemic uncertainty alike~\citep{hullermeier2019aleatoric}. To express such uncertainties, AI researchers have set out to enhance pure logic with probabilities.
+
+% As a matter of fact, the marriage of logic and probability is an enduring endeavor of AI research that predates AI itself~\citep{russell2015unifying}. Grandees of mathematics, philosophy, and economics such as Leibniz, Peirce, and Keynes, undertook early efforts to this end \citep{hailperin1984probability,howson2003probability}. In the field of AI, \citet{nilsson1986probabilistic} and~\citet{pearl1988probabilistic} presented seminal works investigating the combination of logic and probability, which heralded the era of {\em modern AI}: systems were now able to capture the inherent uncertainty present in the world as well as reason about it.
+
+% \luc{Dantsin 89, PDBs, general PP ?}
+
+% \citet{poole1993probabilistic} improved upon these ideas and introduced {\em probabilistic Horn abduction}, which allowed him to later on construct the {\em Independent Choice Logic} (ICL) language~\citep{poole1997independent}. ICL is an expressive universal probabilistic logic programming language (PLP) \citep{de2015probabilistic,riguzzi2018foundations} rooted in logic programming.
+% Subsequently, \citet{sato1995statistical} built on top of the ideas advanced by~\citet{poole1993probabilistic} and introduced the so-called {\em distribution semantics} (DS) for probabilistic logic programs.  
+% After the introduction of DS, a variety of  further PLP languages appeared, such as {\em PRISM}~\citep{sato1997prism}, {\em Logic Programs with Annotated Disjunctions}~\citep{vennekens2004logic}, and {\em \problogsty}~\citep{de2007problog,fierens2015inference}, to name a few.
+
+
+% In this paper we focus on \problogsty, a probabilistic programming language inheriting its syntax from the (non-probabilistic) logic programming language \prologsty~\citep{sterling1994art}. \problogsty  allows one to express, in addition to logic rules and facts, so-called \textit{probabilistic facts}, which are logic facts labeled with the probability of them being satisfied.
+% \begin{example}\label{example:problog_machine}
+% 	We model two machines (Line \ref{program:problog_machines_dec} in the program below).
+% 	We want to know the probability of the first machine working (Line \ref{program:problog_machines_query}), given that the second machine works (Line \ref{program:problog_machines_evidence}) and given a model that describes under which conditions the machines work (Lines \ref{program:problog_machines_work_cool} and \ref{program:problog_machines_work_temp}).
+% 	Additionally the program models the outside temperature (Line \ref{program:problog_machines_temp})  and whether the cooling of each machine works (Lines \ref{program:problog_machines_cool1} and \ref{program:problog_machines_cool2}) as (Boolean) random variables (expressed as probabilistic facts).
+% 	\begin{problog*}{linenos}
+% machine(1). machine(2). @\label{program:problog_machines_dec}@
+
+% 0.8::temperature(low). @\label{program:problog_machines_temp}@
+% 0.99::cooling(1). @\label{program:problog_machines_cool1}@
+% 0.95::cooling(2). @\label{program:problog_machines_cool2}@
+
+% works(N):- machine(N), cooling(N). @\label{program:problog_machines_work_cool}@
+% works(N):- machine(N), temperature(low). @\label{program:problog_machines_work_temp}@
+
+% evidence(works(2)).  @\label{program:problog_machines_evidence}@
+% query(works(1)). @\label{program:problog_machines_query}@
+% 	\end{problog*}
+% Running the program yields $P(\text{\probloginline{works(1)}}|\text{\probloginline{works(2)}})\approx 0.998$.
+% \end{example}
+
+% A major limitation of \problogsty becomes immediately apparent in Example~\ref{example:problog_machine}: we need to model the {\em temperature} as a discrete (Boolean) random variable rather than a continuous probability density.
+
+
+% To repair this deficiency we present \dcproblogsty, a probabilistic logic programming language derived from \problogsty and Distributional Clauses (DC) -- two related but separate probabilistic logic programming languages.
+% \dcproblogsty inherits its syntax and the concept of probabilistic facts from \problogsty. Moreover, \dcproblogsty adapts the idea of defining and querying continuous random variables using so-called {\em distributional facts}.
+% Distributional facts allow a user to express random variables that are distributed according to a certain probability distribution specified by a random function symbol.
+
+% In the following example, the distributional fact in Line~\ref{program:dcproblog_machines_work_temp} introduces the random variable \probloginline{temperature} and associates it with the distribution term \probloginline{normal(20,5)}. This is done using the \probloginline{~}\lstinline[columns=fixed]|/2| predicate in infix notation.
+% In Line~\ref{program:dcproblog_machines_work_temp} the random variable is then queried using the comparison predicate \probloginline{<}\lstinline[columns=fixed]|/2|, again written in infix notation. 
+
+
+% \begin{example}\label{example:dcproblog_machine}
+% 	We model the temperature as a continuous random variable distributed according to a normal distribution with mean $20$ and standard deviation $5$ (Line \ref{program:dcproblog_machines_temp}).
+% 	\begin{problog*}{linenos}
+% machine(1). machine(2).
+
+% temperature ~ normal(20,5). @\label{program:dcproblog_machines_temp}@
+% 0.99::cooling(1).
+% 0.95::cooling(2).
+
+% works(N):- machine(N), cooling(N).
+% works(N):- machine(N), temperature<25.0. @\label{program:dcproblog_machines_work_temp}@
+
+% evidence(works(2)).  @\label{program:dcproblog_machines_evidence}@
+% query(works(1)).
+% 	\end{problog*}
+% \end{example}
+% \luc{query(works(1)|works(2))}
+
+% Distributional facts are not limited to describe continuous random variables but can, for example, also model discrete probability distributions, of which an example would be the Poisson distribution.
+% \begin{example}\label{example:dcproblog_poisson_population}
+% 	In this example we show how to model the size of a group of people as a Poisson distribution and answer queries about the size of the group using the comparison predicates  \probloginline{>}\lstinline[columns=fixed]{/2} and \probloginline{=:=}\lstinline[{columns=fixed}]{/2}.\luc{=:= non-standard}\ak{it is standard Prolog}
+% 	\begin{problog*}{linenos}
+% n_people ~ poisson(6).
+
+% more_than_five:- n_people>5@.@
+% exactly_five:- n_people=:=5@.@
+
+% query(more_than_five).
+% query(exactly_five).
+% 	\end{problog*}
+	
+% \end{example}
+
+
+% \citet{poole2010probabilistic} has characterized probabilistic programming as {\em independent choices plus deterministic systems}.
+% In the case of probabilistic logic programming with discrete random variables the deterministic system is given by a logic program.
+% \dcproblogsty builds on this idea but relaxes the independence assumption by explicitly distinguishing two types of dependencies 1) those expressed by the logic program (the deterministic system) and 2) those expressed by using random variables as parameters of distributions for other random variables (the independent random choices \ak{sounds like  independent random choices are a form of dependencies, which they aren't; in general, this is a line of thought that we repeat in too many places -- we have to pick one and explain it well there}). This explicit distinction is not made by any other probabilistic (logic) programming language including discrete and continuous random variables. Such a programming language is also called {\em hybrid}. \luc{what about BLOG?}
+
+% When writing (hybrid) probabilistic programs, users have a range of options, from encoding entire probability distributions defined by the probabilistic program into a single choice random variable (no deterministic system), all the way to 
+% a set of individual independent choice random variables with minimal use of random variables as parameters tied together by a deterministic system.
+% As already discussed by~\citet{poole2010probabilistic}, not all options work equally well with all inference algorithms. \dcproblogsty provides these options within the same semantic framework, leaving it to system developers to focus the syntax towards a subset of options and/or to exploit the different options when integrating different inference approaches into their system.
+
+% Developing the \dcproblogsty language, leads to the following specific contributions:
+% \todo{update needed}
+
+% \begin{enumerate}
+% 	\item We introduce a {\bf type system} for \dcproblogsty, which allows us to introduce a {\bf neat and clean syntax} to extend \problogsty with function symbols for continuous random variables.
+% 	\item We introduce a purely {\bf declarative semantics for \dcproblogsty} based on \citeauthor{sato1995statistical}'s distribution semantics that allows us to disentangle independent choices and the discrete system underlying a probabilistic program.
+% 	\item We {\bf reduce inference} in \dcproblogsty to {\bf weighted model integration} in the algebraic model counting setting~\citep{kimmig2011algebraic,kimmig2017algebraic}, analogous to reducing inference in \problogsty to weighted model counting~\citep{chavira2008probabilistic}.
+% 	\item We present an {\bf implementation of \dcproblogsty}, which reduces naturally to \problogsty in the absence of continuous random variables.
+% \end{enumerate}
+% \dcproblogsty is heavily influenced by two predecessor languages: 1) \problogsty and 2) Distributional Clauses~\citep{gutmann2011magic,nitti2016probabilistic}. The latter is a probabilistic logic programming languages that allows for continuous random variables. However, its semantics differ from the semantics of \problogsty such that it does not reduce to \problogsty in case of the absence of continuous random variables.
+
+
+% \subsection*{Prerequisites}
+
+% To fully appreciate the paper, we expect the reader to be familiar with rudimentary language concepts and terms of (non-probabilistic) logic programming and more specifically of Prolog~\citep{lloyd2012foundations,flach1994simply}. We provide a brief summary of these concepts in~\ref{app:lp}.
+
+% Furthermore, a working knowledge of probabilistic inference with discrete random variables using weighted model counting would be beneficial (WMC)~\citep{chavira2008probabilistic,darwiche2009modeling}, as we present an inference algorithm for \dcproblogsty that extends WMC. A refresher on probabilistic inference in the discrete domain can be found in~\ref{app:amc} and ~\ref{app:compilation}.
+
+
+% \subsection*{Paper Organization}
+% \todo{}
+
+

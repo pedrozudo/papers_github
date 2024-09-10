@@ -1,0 +1,391 @@
+\section{Grounding via Resolution}
+\label{app:resolution}
+
+In Section~\ref{sec:ALWviaKC} we describe the conversion of a queried \dcproblogsty program to a labeled propositional formula through a sequence of deterministic steps. The first of which is obtaining the relevant ground program with respect to a set of query atoms and evidence atoms.
+
+The goal of this first step of the conversion algorithm is to identify a ground core \dcproblogsty program $\dcpprogram_g$ that defines the same joint distribution over the query and evidence atoms as the original program, and contains only logical rules and distributional facts that are relevant for the query and evidence atoms. 
+
+To achieve this goal, we define a procedure that constructs a ground core program for each potential logical derivation of an atom. We use this procedure to construct the full ground program by iterating over all such derivations for the query and evidence atoms. The procedure itself consists of two steps. First, it constructs a derivation using a set of dedicated resolution rules, where each application of a resolution rule produces a tag consisting of a set of logical rules and a set of rule manipulation instructions. If the first step succeeds, the sequence of tags is then translated to a ground program in the second step by applying the rule manipulation instructions of the tags.
+
+The overall approach 
+%as well as the two rules for  atoms defined by logical rules are 
+is borrowed from the corresponding procedure introduced by \citet{fierens2015inference} for \problogsty. To generalize this approach to \dcproblogsty, we introduce rules to deal with comparison atoms, distributional clauses, and the context-dependent random variables they introduce, in addition to the original rules intriduced by~\citet{fierens2015inference}.\footnote{\citet{nitti2016probabilistic} also introduced modified resolution rules for hybrid probabilistic logic programs but for an inference algorithm that interleaves grounding and sampling, which does not require keeping track of rule groundings.}
+
+%To obtain the relevant ground program for a \problogsty program, \citet{fierens2015inference} introduce a backward chaining procedure that applies SLD resolution~\citep{kowalski1974predicate,sterling1994art}, but ignores negation symbols, as the goal is to \emph{identify}   ground rules that are (potentially) relevant for proving query or evidence atoms rather than to actually  \emph{prove} those atoms. 
+
+%We extend this procedure to \dcproblogsty, where we additionally need to 
+%identify the \emph{relevant distributional facts}, \ie, the random variables that are interpreted in the relevant ground program and their distributions. As we have seen in Sections~\ref{sec:semantics} and~\ref{sec:dcproblog}, random variables can be interpreted both within comparison literals and within distributions of other random variables, and can be context-dependent, \ie, the same random variable term may be used to refer to several random variables introduced by a set of distributional clauses. We therefore  introduce additional  resolution rules to handle these cases.\footnote{\citet{nitti2016probabilistic} also introduced modified resolution rules for hybrid probabilistic logic programs but for an inference algorithm that interleaves grounding and sampling.}
+
+%In order to obtain the relevant ground program we deploy, similarly to \problogsty, {\em selective linear definite clause} resolution~\citep{kowalski1974predicate,sterling1994art} with {\em negation as failure}~\citep{Clark1977NegationAF} (SLDNF). SLDNF resolution allows for computing the relevant ground program for a specific query to the logic program, while avoiding the grounding of unnecessary predicates~\citep{kersting2000bayesian,fierens2015inference}. In the case of range-restricted programs SLDNF resolution is guaranteed to terminate. We refer the reader to \citet{fierens2015inference} for a more detailed account of grounding procedure. However, in order to handle comparison predicates and distributional clauses, we will need to modify the SLDNF-resolution rules\footnote{\citet{nitti2016probabilistic} also introduced modified resolution rules for hybrid probabilistic logic programs but for an inference algorithm that interleaves grounding and sampling.}.
+
+%Before we describe the the adapted SLDNF  resolution rules, which we dub {\em SLDNF-DC resolution}, we need specify two helper functions and a builtin predicate that are used during SLDNF-DC resolution:
+In contrast to the declarative transformation used to define the semantics of full \dcproblogsty, cf.~Definition~\ref{def:adfree-to-core}, which introduces additional atoms and rules to describe the logical contexts in which specific instances of a random variable term are used, the grounding procedure directly incorporates the original context definitions into the bodies of ground rules, without introducing further atoms.  
+Our resolution rules further rely on two global helper functions and an auxiliary predicate:
+\begin{itemize}
+	\item The injective helper function `$\mathrm{createRVname}$' maps a pair consisting of a ground random variable term and a logical context\footnote{We syntactically represent the context as a tuple of terms, which is interpreted as their logical conjunction (and thus independently of order) by the function.} to a unique constant. This constant serves as the name for the random variable term in the specific context, thus providing an external implementation of the \probloginline{refers2rv/2} predicate.
+	\item The function `$\mathrm{symbols}$' maps a term~$t$  to the set of random variable terms in~$t$.  For instance, $\mathrm{symbols}(\text{\probloginline{a(N)+b(1)*2}})$ returns the set $\{ \text{\probloginline{a(N)}}, \text{\probloginline{b(1)}} \}$. This function is crucial to identify relevant random variable terms. 
+	\item The auxiliary predicate \probloginline{rv/3}  takes as first argument a random variable term, as second argument a distribution term, and as third argument a context for the random variable term, which is given as a tuple of terms. \probloginline{rv/3} atoms are inserted into the current conjunctive goal when new random variables are identified, and trigger the creation of the corresponding random variable once its full ground context, which combines the body of the defining distributional clause with the contexts of the parent random variables, is determined.
+\end{itemize}
+
+We describe each resolution rule using three elements: the condition under which the rule applies (\cposlit to \crvone), the actual resolution step performed by the rule (\rposlit to \rrvonea and \rrvoneb), and the tag that labels this step (\tposlit to \trvone). We overload substitution notation to also allow for substitution of a random variable term by a newly introduced context dependent random variable name. The context-dependent rewrite operator $\twoheadleftarrow$ introduced in the last tag (\trvone) will be defined in Definition~\ref{def:context-substitution}.
+
+\begin{definition}[Resolution Rules]
+	\label{def:resolution_rules}
+	
+	%Let $T_{RV}$ be a hash table of $(key, value)$ pairs that keeps track of random variables (key) and their distributions (value), with insertion function $\mathrm{INSERT}(T_{RV},key,value)$. 
+	Let $T_{RV}$ be a hash table that keeps track of random variables, with insertion function $\mathrm{INSERT}(T_{RV},var)$. 
+	The six resolution rules for grounding \dcproblogsty programs with respect to a given goal are defined as follows. 
+	
+	\begin{enumerate}
+		\item[\cposlit] If the goal is $(l_1, l_2, \dots, l_n)$ and  $\exists \theta$ such that  $h \lpif b_1, \dots, b_m \in \dcpprogram$, $\theta  = mgu(l_1, h)$ then:
+		\begin{align*}
+			&{\text{\bf \rposlit:}} \quad (l_1, l_2, \dots, l_n) \vdash (b_1, \dots, b_m, l_2, \dots, l_n) \theta
+			\\
+			&{\text{\bf \tposlit:}} \quad \tau = (\{ h \lpif b_1, \dots, b_m \}, \theta)
+		\end{align*}
+		
+		\item[\bf \cneglit]  If the goal is $(not(l_1), l_2, \dots, l_n)$ and  $\exists \theta$ such that  $h \lpif b_1, \dots, b_m \in \dcpprogram$, $\theta  {=} mgu(l_1, h)$ then:
+		\begin{align*}
+			&{\text{\bf \rneglit:}} \quad (not(l_1), l_2, \dots, l_n) \vdash (b_1, \dots, b_m, l_2, \dots, l_n) \theta
+			\\
+			&{\text{\bf \tneglit:}} \quad \tau = (\{ h \lpif b_1, \dots, b_m \}, \theta)
+		\end{align*}
+		
+		\item[\ccompone]  If the goal is $( l_{comp}, l_1, \dots, l_n )$ where  $l_{comp}$ is a comparison literal, and  there exists a substitution $\theta$ such that for some $s \in symbols(l_{comp})\setminus T_{RV}$ it holds that $h\sim d\lpif b_1, \dots, b_m\in \dcpprogram$, with $\theta = mgu(s,h)$, then:
+		\begin{align*}
+			&{\text{\bf \rcompone:}} \quad ( l_{comp}, l_1, \dots, l_n ) \vdash (b_1, \dots, b_m, rv(h, d, (b_1, \dots, b_m)),  l_{comp}, l_1,\dots ,l_n)\theta
+			\\
+			&{\text{\bf \tcompone:}} \quad \tau = (\emptyset, \theta)
+		\end{align*}
+		
+		\item[\bf \ccomptwo]  If the goal is $( l_{comp}, l_1, \dots, l_n )$  where $l_{comp}$ is a comparison literal, and   $symbols(l_{comp})\subseteq T_{RV}$ then:
+		\begin{align*}
+			&{\text{\bf \rcomptwo:}} \quad  ( l_{comp}, l_1, \dots, l_n ) \vdash  (l_1, \dots, l_n )
+			\\
+			&{\text{\bf \tcomptwo:}} \quad \tau = (\emptyset, \emptyset)
+		\end{align*}
+		
+		\item[\bf \crvtwo]  If the goal is $(rv(x, d, (b_1, \dots, b_{m})), l_1,\dots, l_n)$ and  there exists a substitution $\theta$ such that for some $s \in symbols(d)\setminus T_{RV}$ it holds that $h\sim d' \lpif b'_1, \dots, b'_{k}\in \dcpprogram$, $\theta = mgu(s,h)$, then:
+		\begin{align*}
+			{\text{\bf \rrvtwo:}} \quad 
+			&(rv(x, d, (b_1, \dots, b_{m})), l_1, \dots, l_n) \\
+			&~~~\vdash (b'_1, \dots, b'_{k}, rv(h, d', (b'_1, \dots, b'_{k})), rv(x, d, (b_1, \dots, b_{m})), l_1, \dots, l_n)\theta
+			\\
+			{\text{\bf \trvtwo:}} \quad &\tau =  (\emptyset, \theta)
+		\end{align*}
+		
+		\item[\bf \crvone]  If the goal is $(rv(x, d, (b_1, \dots, b_{m})), l_1,\dots, l_n)$ and   $symbols(d)\subseteq T_{RV}$ then we further  distinguish two cases.
+		$\text{\bf R6a}$ applies if $l_1 = rv(y, d_y, (b'_1, \dots, b'_k))$ and $x\in symbols(d_y)$. $\text{\bf R6b}$ applies in all other cases.  The tag is identical for both.
+		\begin{align*}
+			{\text{\bf \rrvonea:}} \quad
+			&x_{new} = \mathrm{createRVname}(x,(b_1,\dots, b_m)) \\
+			& \mathrm{INSERT}(T_{RV}, x_{new}) \\
+			&\phi = \{ x/ x_{new} \} \\
+			&(rv(x, d, (b_1, \dots, b_{m})), rv(y, d_y, (b'_1, \dots, b'_k)) , l_2, \dots, l_n) \\
+			&~~~    \vdash (rv(y, d_y, (b_1, \dots, b_{m}, b'_1, \dots, b'_k) , l_2, \dots, l_n)\phi
+			\\
+			{\text{\bf \rrvoneb:}} \quad
+			&x_{new} = \mathrm{createRVname}(x,(b_1,\dots, b_m)) \\
+			& \mathrm{INSERT}(T_{RV}, x_{new}) \\
+			&\phi = \{ x/ x_{new} \} \\
+			&(rv(x, d, (b_1, \dots, b_{m})), l_1, \dots, l_n) \vdash (l_1, \dots, l_n)\phi
+			\\
+			{\text{\bf \trvone:}} \quad &\tau =  (\{x\sim d \}, \{x\twoheadleftarrow (x_{new},(b_1,\dots, b_m))\})
+		\end{align*}
+	\end{enumerate}
+	% AK: for R6a, note that: R5 always inserts the parent rv/3-atom to the left of the child rv/3-atom, so if we need to propagate context a generation down, it is always to the goal that directly follows. However, not all pairs of neighboring rv/3-atoms are parent and child (we could also get an unrelated rv/3 from the last subgoal of the parent's context directly before the parent's rv/3), and we thus also need to check the child's distribution mentions the parent. 
+\end{definition}
+Intuitively, the first two rules (\rposlit and \rneglit) apply SLD resolution just as for \problogsty, and record both the rule and substitution used in the tag, while the remaining four rules are responsible for collecting information related to random variables and their distributions. These latter rules use the `$\mathrm{symbols}$' function to extract the interpreted random variable terms from the current subgoal, and compare that set against the hash table storing known random variables to distinguish between cases where all interpretations are already available and cases where the interpretation of some symbol still needs to be determined. Rules \rcompone and \rcomptwo are concerned with comparison literals, which can simply be dropped from the goal once all their random variables are resolved (\rcomptwo), and otherwise are re-considered after resolving the body of a relevant distributional clause and inserting the corresponding random variable via the auxiliary predicate (\rcompone). The last two rules ensure that the parents of a relevant random variable are included recursively using the same principle (\rrvtwo), and that all random variables are recorded in the hash table once their ancestors and context have been fully evaluated (\rrvonea and \rrvoneb). Rules \rcompone--\rrvtwo only record their substitutions in the tag, whereas \rrvonea and \rrvoneb record a new distributional fact as well as contextual rewrite information for its random variable term.  Additionally, \rrvonea propagates the parent random variable's context into the context of the child. 
+
+%Given a query or literal to be proven, the resolution rules in Definition~\ref{def:resolution_rules} allow us to construct a resolution tree from a specific non-ground program with respect to the query. 
+%The conversion algorithm uses these rules to construct a resolution tree for each query or evidence atom, using a shared hash map for the random variables.
+
+
+
+\begin{example}[Derivations and tag sequences]
+	\label{ex:resolution_tree}
+	%Consider the AD-free program obtained in Example~\ref{ex:eliminating_pf}. 
+	%We can construct an SLDNF-DC tree using the resolution rules from Definition~\ref{def:resolution_rules}. We depict the resolution tree in
+	Figures~\ref{fig:sld_tree_left} and~\ref{fig:sld_tree_right} graphically depict the derivations obtained by applying the resolution rules from Definition~\ref{def:resolution_rules} to the AD-free program in Example~\ref{ex:eliminating_pf} as a resolution tree, where nodes represent goals and edges are labeled with the context number of the applied rule. We represent empty context conjunctions resulting from distributional facts using the term \probloginline{true} in \probloginline{rv/3}-atoms and labels. 
+	
+	The tag sequence for the leftmost derivation is\\
+	$(\{$\probloginline{works(N):-cool(N)}$\}, \emptyset)$, \\
+	$(\{$\probloginline{cool(1):-rv_cool(1)=:=1}$\}, \{N/1\})$,\\
+	$(\emptyset, \emptyset)$,\\
+	$(\{$\probloginline{rv_cool(1)~flip(0.99)}$\}, \{$\probloginline{rv_cool(1)}$\twoheadleftarrow ($\probloginline{rv_cool_1_1}, \probloginline{true}$)\})$,\\
+	$(\emptyset, \emptyset)$.
+	
+	The tag sequence for the derivation in the middle is\\
+	$(\{$\probloginline{works(N):-temp(N)<25.0}$\}, \emptyset)$, \\
+	$(\emptyset, \{N/1\})$,\\
+	$(\{$\probloginline{hot :- rv_hot =:=1}$\}, \emptyset)$, \\
+	$(\emptyset, \emptyset)$,\\
+	$(\{$\probloginline{rv_hot~flip(0.2)}$\}, \{$\probloginline{rv_hot}$\twoheadleftarrow ($\probloginline{rv_hot_1}, \probloginline{true}$)\})$,\\
+	$(\emptyset, \emptyset)$,\\
+	$(\{$\probloginline{temp(1)~normal(27,5)}$\}, \{$\probloginline{temp(1)}$\twoheadleftarrow ($\probloginline{temp_1_1}, \probloginline{hot}$)\})$,\\
+	$(\emptyset, \emptyset)$.
+	
+	The tag sequence for the rightmost derivation is\\
+	$(\{$\probloginline{works(N):-temp(N)<25.0}$\}, \emptyset)$, \\
+	$(\emptyset, \{N/1\})$,\\
+	$(\{$\probloginline{hot :- rv_hot =:=1}$\}, \emptyset)$, \\
+	$(\emptyset, \emptyset)$,\\
+	$(\{$\probloginline{rv_hot~flip(0.2)}$\}, \{$\probloginline{rv_hot}$\twoheadleftarrow ($\probloginline{rv_hot_1}, \probloginline{true}$)\})$,\\
+	$(\emptyset, \emptyset)$,\\
+	$(\{$\probloginline{temp(1)~normal(20,5)}$\}, \{$\probloginline{temp(1)}$\twoheadleftarrow ($\probloginline{temp_1_2}, \probloginline{not hot}$)\})$,\\
+	$(\emptyset, \emptyset)$.
+	
+	
+	
+	\begin{figure}[h]
+		\begin{center}
+			\begin{tikzpicture}
+				{\small
+					\node {(\probloginline{works(N)})} [sibling distance = 0.5\linewidth]{
+						child [] { node {(\probloginline{cool(N)}) }
+							child [] { node {(\probloginline{rv_cool(1)=:=1})}
+								child [] { node {(\probloginline{rv(rv_cool(1),flip(0.99),true)}, \probloginline{rv_cool(1)=:=1})}
+									child [] { node  {( \probloginline{rv_cool_1_1=:=1})}
+										child [] {node {()} edge from parent [] node [left] { \scriptsize \ccomptwo } }
+										edge from parent [] node [left] { \scriptsize \crvone }
+									}
+									edge from parent [] node [left] { \scriptsize \ccompone }
+								}
+								edge from parent [] node [left] { \scriptsize \cposlit }
+							}
+							edge from parent [] node [left,above] { \scriptsize \cposlit }
+						}
+						child [] { node {(\probloginline{temp(N)<25.0})} [sibling distance = 0.4\linewidth]
+							child [] { node {} edge from parent [dashed] edge from parent [] node [left, above] { \scriptsize \ccompone   } }
+							child [align=center] { node {} edge from parent [dashed] edge from parent [] node [right, above] { \scriptsize \ccompone  } }
+							edge from parent [] node [right, above] {  \scriptsize \cposlit  }
+						}
+					};
+				}
+			\end{tikzpicture}
+		\end{center}
+		\caption{Left subtree of the resolution tree for the program in Example~\ref{ex:eliminating_pf} with respect to \probloginline{query(works(N))}; dashed lines continue in Figure~\ref{fig:sld_tree_right}.}
+		\label{fig:sld_tree_left}
+	\end{figure}
+	
+	
+	
+	\begin{figure}
+		\begin{center}
+			\begin{tikzpicture}
+				{\small
+					
+					\node {} [sibling distance = 0.55\linewidth]
+					child [] {node {(\probloginline{temp(N)<25.0})} edge from parent [dashed,level distance = 2.5cm] 
+						child [align=center] {node { \probloginline{(hot},\\\probloginline{rv(temp(1),normal(27,5),hot)},\\ \probloginline{temp(1)<25.0}) } edge from parent [solid] 
+							child [align=center] { node {(\probloginline{rv_hot=:=1},\\ \probloginline{rv(temp(1),normal(27,5),hot)},\\ \probloginline{temp(1)<25.0})}
+								child [align=center] { node {(\probloginline{rv(rv_hot, flip(0.2), true) },\\  \probloginline{rv_hot=:=1}, \\ \probloginline{rv(temp(1),normal(27,5),hot)}, \\ \probloginline{temp(1)<25.0}) }
+									child [align=center] { node {( \probloginline{rv_hot_1=:=1}, \\ \probloginline{rv(temp(1),normal(27,5),hot)}, \\ \probloginline{temp(1)<25.0}) }
+										child [align=center, ] { node {( \probloginline{rv(temp(1),normal(27,5),hot)}, \\\probloginline{temp(1)<25.0} ) }
+											child [ level distance = 1.5cm] { node {(\probloginline{temp_1_1<25.0})}
+												child { node {()}  edge from parent [] node [left,] {  \scriptsize \ccomptwo  } }
+												edge from parent [] node [left,] {\scriptsize \crvone } 
+											}
+											edge from parent [] node [left,] { \scriptsize \ccomptwo }
+										}
+										edge from parent [] node [left,] { \scriptsize \crvone }
+									}
+									edge from parent [] node [left,] { \scriptsize \ccompone }
+								}
+								edge from parent [] node [left,] { \scriptsize \cposlit }
+							}
+							edge from parent [] node [left,above] { \scriptsize \ccompone }
+						}
+						child [align=center] {node { (\probloginline{not hot},\\\probloginline{rv(temp(1),normal(20,5),not hot)},\\ \probloginline{temp(1)<25.0} } edge from parent [solid] 
+							child [align=center] { node {(\probloginline{rv_hot=:=1},\\ \probloginline{rv(temp(1),normal(20,5),not hot)},\\ \probloginline{temp(1)<25.0})}
+								child [align=center] { node {(\probloginline{rv(rv_hot, flip(0.2), true) }, \\ \probloginline{rv_hot=:=1}, \\ \probloginline{rv(temp(1),normal(20,5),not hot)}, \\ \probloginline{temp(1)<25.0}) } 
+									child [align=center] { node {( \probloginline{rv_hot_1=:=1}, \\ \probloginline{rv(temp(1),normal(20,5),not hot)},\\\probloginline{temp(1)<25.0}) }
+										child [align=center] { node {( \probloginline{rv(temp(1),normal(20,5),not hot)}, \\\probloginline{temp(1)<25.0}) }
+											child [ level distance = 1.5cm] { node {(\probloginline{temp_1_2<25.0})}
+												child { node {()}  edge from parent [] node [right,] { \scriptsize \ccomptwo } }
+												edge from parent [] node [right,]  { \scriptsize \crvone  }
+											}
+											edge from parent [] node [right]  { \scriptsize \ccomptwo  }
+										}
+										edge from parent [] node [right]  { \scriptsize \crvone  }
+									}
+									edge from parent [] node [right] { \scriptsize \ccompone  }
+								}
+								edge from parent [] node [right] { \scriptsize \cneglit }
+							}
+							edge from parent [] node [right,above] { \scriptsize \ccompone}
+						}
+						edge from parent [] node [right] {\scriptsize \cposlit }
+					}
+					;
+				}
+			\end{tikzpicture}
+		\end{center}
+		\caption{Right subtree of the resolution tree for the program in Example~\ref{ex:eliminating_pf} with respect to \probloginline{query(works(N))}; dashed line continued from Figure~\ref{fig:sld_tree_left}}\label{fig:sld_tree_right}
+	\end{figure}
+\end{example}
+
+
+\newpage
+\clearpage
+
+%The resolution tree functions as an intermediate representation for obtaining the relevant ground program. Defining a tagging function for each edge in the resolution tree will allow us to specify an algorithms that maps a path in a tree (also called derivation) to its corresponding relevant ground program.
+
+%\begin{definition}[Edge Tagging in  Resolution Tree]
+%\label{def:sld_edge_tagging_rules}
+%Let $\mathcal{T}$ be a resolution tree. We tag each edge in the tree with a tuple $\tau=(\tau_r,\tau_s)$, where $\tau_r$ represents a set of logic rules and $\tau_s$ a substitution. The tag of an edge of the tree $\mathcal{T}$ depends on the condition ({\bf C1-C6}) that held when the edge was created.
+%We now define the six tagging rules for edges in a resolution tree in function of the conditions that apply.
+
+
+
+%\begin{enumerate}
+%    \item[\cposlit] If the goal is $(l_1, l_2, \dots, l_n)$ and if  $\exists \theta$ such that  $h \lpif b_1, \dots, b_n \in \dcpprogram$, $\theta  = mgu(l_1, h)$ then:
+%   \begin{align*}
+	%      {\text{\bf \tposlit:}} \quad \tau = (\{ h \lpif b_1, \dots, b_n \}, \theta)
+	% \end{align*}
+
+% \item[\bf \cneglit]  If th goal is $(not(l_1), l_2, \dots, l_n)$ and if $\exists \theta$ such that  $h \lpif b_1, \dots, b_n \in \dcpprogram$, $\theta  {=} mgu(l_1, h)$ then:
+%\begin{align*}
+%   {\text{\bf \tneglit:}} \quad \tau = (\{ h \lpif b_1, \dots, b_n \}, \theta)
+%\end{align*}
+
+%\item[\ccompone]  If the goal is $( l_{comp}, l_1, \dots, l_n )$ and if $l_{comp}$ is a comparison atom (or its negation) and if there exists a substitution $\theta$ such that for an arbitrary symbol $s \in symbols(l_{comp})\setminus keys(T_{RV})$ it holds that $h\sim d\lpif b_1, \dots, b_n\in \dcpprogram$, with $\theta = mgu(s,h)$, then:
+%\begin{align*}
+%   {\text{\bf \tcompone:}} \quad \tau = (\emptyset, \theta)\\
+%\end{align*}
+
+%\item[\bf \ccomptwo]  If the goal is $( l_{comp}, l_1, \dots, l_n )$  and if $l_{comp}$ is a comparison atom (or its negation) and if $symbols(l_{comp})\subseteq keys(T_{RV})$ then:
+%\begin{align*}
+%   {\text{\bf \tcomptwo:}} \quad \tau = (\emptyset, \emptyset)
+%\end{align*}
+
+%  \item[\bf \crvtwo]  If the goal is $(rv(x, d, (b_1, \dots, b_{n})), l_1,\dots, l_m)$ and if there exists a substitution $\theta$ such that for an arbitrary symbol $s \in symbols(d)\setminus keys(T_{RV})$ it holds that $h\sim d^h \lpif b^h_1, \dots, b^h_{n^h}\in \dcpprogram$, $\theta = mgu(s,h)$, then:
+%  \begin{align*}
+	%      {\text{\bf \trvtwo:}} \quad \tau =  (\emptyset, \theta)\\
+	%  \end{align*}
+
+%  \item[\bf \crvone]  If the goal is $(rv(x, d, (b_1, \dots, b_{n})), l_1,\dots, l_m)$ and if  $symbols(d)\subseteq keys(T_{RV})$ then:
+%  \begin{align*}
+	%          {\text{\bf \trvone:}} \quad \tau =  (\{x\sim d \}, \{ x/ x_{b_1,\dots,b_n} \})
+	%   \end{align*}
+%\end{enumerate}
+%\end{definition}
+
+%\begin{definition}[Derivation]
+%Let $\dcpprogram$ be a \dcproblogsty program, and $Q$ a query atom. We call a path in the   resolution tree of $Q$ for \dcpprogram a derivation of $Q$. A derivation consists of a set of edges $\{e^0,\dots, e^N  \}$.
+%Edges in a derivation are ordered, starting at the root.
+%We call a derivation tagged if the rules in Definition~\ref{def:sld_edge_tagging_rules} have been applied.
+%\end{definition} 
+
+In order to define the ground program corresponding to a tag sequence, we first need to define the rewrite operation introduced by \trvone.
+\begin{definition}[RV substitution]\label{def:context-substitution}
+	Let $\theta=\{x\twoheadleftarrow (v, (b_1, \dots ,b_m))\}$ be a random variable substitution. Then,
+	\begin{align*}
+		(h \lpif l_1\dots, l_n)\theta &= (h\lpif b_1, \dots, b_m,l_1, \dots, l_n)\{x/v\}, &\text{~if~x~is~interpreted~in~some~}l_i\\
+		s\theta &= s\{x/v\}, &\text{~otherwise}
+	\end{align*}
+	where we overload regular substitution notation for random variable terms, \ie, $c\{x/v\}$ is $c$ with every occurrence of $x$ replaced by $v$.
+\end{definition}
+That is, we add the  context to the bodies of all rules that interpret $x$, \ie, whose body contains a comparison literal involving $x$, and replace all occurrences of $x$ by the new variable $v$.
+%replace the old random variable term $x$ by the context-dependent random variable $v$ in all statements,  and  
+% we do not need to substitute parents in distribution terms, as (1) R5 ensures that R6 is applied to all parents before it is applied to the child, (2) the moment R6 is applied to a parent, there is a rv/3 atom for the child in the rest of the goal, and R6 substitutes the new parent name there, thus (3) by the time the T6 tag of the child is created, the distribution contains the parent's new name
+Algorithm~\ref{alg:tags2gp} uses this rewrite operation, together with regular substitutions included in other types of tags, to extract a relevant ground program from a tag sequence. 
+
+
+\begin{algorithm}[h!]
+	\SetKwInput{KwOutput}{Output}              
+	\DontPrintSemicolon
+	\KwInput{Derivation tag sequence $S=((P_1,\theta_1),\ldots,(P_N,\theta_N))$}
+	\KwOutput{Corresponding Relevant Ground Program}
+	
+	
+	$\dcpprogram_S \leftarrow \emptyset$\;
+	\For{$i \in \{0,\dots, N\}$  }{
+		$\dcpprogram_S \leftarrow \dcpprogram_S \cup P_i$\;
+		$\dcpprogram_S \leftarrow  \dcpprogram_S\theta_i$
+	}
+	
+	\Return $\dcpprogram_S$
+	\caption{Relevant Ground Program for a Derivation Tag Sequence}
+	\label{alg:tags2gp}
+\end{algorithm}
+%Note that applying a tag's substitutions directly after adding its rules is crucial, as several tags may substitute the same random variable terms
+
+%\begin{algorithm}[h!]
+% \SetKwFor{For}{for (}{}
+%
+%\newlength\mylen
+%\newcommand\myinput[1]{%
+	%  \settowidth\mylen{\KwIn{}}%
+	%  \setlength\hangindent{\mylen}%
+	%  \hspace*{\mylen}#1\\}
+%
+%
+%\SetKwInput{KwOutput}{output}              
+%\DontPrintSemicolon
+%\KwInput{Tagged derivation $\mathcal{R}$ (of depth $N$)}
+%\myinput{Table $tags$ storing the tags of the edges in $\mathcal{R}$}
+%\KwOutput{Relevant Ground Program corresponding to $\mathcal{R}$}
+%
+%
+%$RelGroundProgram \leftarrow \emptyset$\;
+%\For{$i \in \{0,\dots, N\}$  }{
+	%    $\tau_r^i, \tau_s^i \leftarrow tags[i] $\;
+	%    $RelGroundProgram \leftarrow RelGroundProgram \cup \tau_r^i$\;
+	%    $RelGroundProgram \leftarrow  RelGroundProgram/\tau_s^i$
+	%}
+%
+%\Return $RelGroundProg$
+%\caption{Relevant Ground Program with Respect to a Derivation}
+%\label{alg:tags2gp}
+%\end{algorithm}
+
+%\begin{definition}[Relevant Ground Program]
+%Let \dcpprogram be an AD-free program, $Q$ a query atom, and  $\mathcal{T}$ the resolution tree obtained from applying the resolution rules in Definition~\ref{def:resolution_rules} to  \dcpprogram and $Q$, where all derivations have been tagged. We denote these derivations by  $\{\mathcal{R}_0, \dots,  \mathcal{R}_M \}$  and their ground programs as obtained from Algorithm~\ref{alg:tags2gp} by $\dcpprogram
+%_g^{\mathcal{R}} =\{\dcpprogram_g^{\mathcal{R}_0}, \dots, \dcpprogram_g^{\mathcal{R}_M}  \}$. The relevant ground program of \dcpprogram with respect to the atom of interest $Q$, denoted by $\dcpprogram_g^Q$, is then given by: $ \dcpprogram_g^Q = \bigcup_{i\in \{0,\dots,M  \}} \dcpprogram_g^{\mathcal{R}_i}  $.
+%\end{definition}
+
+\begin{example}
+	Algorithm~\ref{alg:tags2gp} constructs the following program for the rightmost tagging sequence in the example:
+	\begin{problog*}{linenos}
+works(1) :- not hot, temp_1_2<25.0.
+hot :- true, rv_hot_1 =:= 1.
+rv_hot_1~flip(0.2).
+temp_1_2~normal(27,5).
+	\end{problog*}
+	Note that all random variable terms have been replaced by the new random variables, and appropriate contexts added to the rules interpreting them. 
+\end{example}
+
+\begin{definition}[Relevant ground program for an atom]
+	Let \dcpprogram be an AD-free program, $A$ an atom and $\mathcal{S}$ be the set of all derivation tag sequences for $A$ in \dcpprogram. The \emph{relevant ground program with respect to $A$}, denoted by $\dcpprogram_g^A$, is given by $\dcpprogram_g^A = \bigcup_{S\in\mathcal{S}}\dcpprogram_S$.
+\end{definition}
+
+\begin{definition}[Relevant ground program]
+	Let \dcpprogram be an AD-free program, $\queryset$ a set of queries of interest, and  $\evidenceset=e$ the evidence. The \emph{relevant ground program}  is $\dcpprogram_g = \bigcup_{A\in (\queryset\cup\evidenceset)}\dcpprogram_g^A$.
+\end{definition}
+
+
+\begin{example}[Relevant Ground Program] 
+	%Applying the edge tagging and the definition of a relevant ground program  to the resolution tree in Example~\ref{ex:resolution_tree} results in the following ground program.
+	The full ground program obtained from the derivations in Example~\ref{ex:resolution_tree} is
+	\begin{problog*}{linenos}
+rv_hot_1 ~ flip(0.2).
+hot :- true, rv_hot_1=:=1.
+rv_cool_1_1 ~ flip(0.99).
+cool(1) :- true, rv_cool_1_1=:=1.
+
+temp_1_1 ~ normal(27,5).
+temp_1_2 ~ normal(20,5).
+
+works(1):- cool(1).
+works(1):- hot, temp_1_1<25.0.
+works(1):- not hot, temp_1_2<25.0.
+	\end{problog*}
+	Note that lines 1 and 2 are generated by both the middle and the rightmost derivation, while all other statements stem from a single derivation in this example.	
+	%Note how the `$\mathrm{createRVname}$' function created unique names for the random variables in the program, which are then also inserted into the arguments of the comparison terms. For instance \probloginline{temp_1_2} in the the comparison \probloginline{temp_1_2<25.0}. 
+\end{example}
+
+
+In order to implement an efficient resolving algorithm, one ought to avoid processing the same atom twice. This is usually done through tabling, which also avoids going into an infinite loop when cyclical rules are present in the (logic part of the) program. 
+%Note also that if we had had multiple query atoms, instead of a single one, our approach would not change dramatically. The main difference would lie in having a multi-rooted resolution tree instead of a single root tree.
+Note also that while the relevant ground program computed by this approach does not contain any rules that are disconnected from the reasoning process related to queries and evidence, it is not necessarily the smallest such program. It may for instance include rules whose bodies are logically inconsistent because of added conjunctions of contexts, or invalidated by the actual values of the evidence. 

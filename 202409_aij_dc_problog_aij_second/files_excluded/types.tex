@@ -1,0 +1,231 @@
+\section{Typing \dcproblogsty}
+\label{app:types}
+
+
+\subsection{Type System}\label{sec:type_system}
+
+A distinctive property of system predicates, which are implemented using an external engine, is their mandatory type signature.
+An instance of such system predicates are comparison predicates.
+Consider for example the comparison (\probloginline{x>20}).
+The right-hand side is an integer and if the \probloginline{x} denotes a numeric random variable we have a well-typed comparison predicate inducing a measurable set.
+Consider for the sake of contrast also the comparison predicate (\probloginline{a>2}), where \probloginline{a} is an atomic formula. This comparison predicate is ill-typed as atomic formulas cannot be compared to (integer) numbers. In other words, the external engine, which implements the system predicates does not know how to commensurate an atomic formula and a number.
+A type system lets us specify which combinations of types are allowed as arguments of comparison predicates, \ie which comparisons encode measurable sets and are supported by the external engine.
+
+
+
+\begin{samepage}
+\begin{definition}\label{def:type_system}
+	The \dcproblogsty type system is a hierarchical type system with each type being a disjoint union of its subtypes.
+	The base type for \dcproblogsty is the \type{Term} type. We subtype terms with a \type{Distribution} type and a \type{Symbol} type. 
+    A diagrammatic overview of the \dcproblogsty type system is given in Figure~\ref{fig:type_system}.
+	\begin{enumerate}
+		\item[] \type{Term} 
+		\begin{enumerate}
+			\item[1.] \type{Distribution}
+			\begin{itemize}
+				\item \type{NumericD}
+				\item \type{CategorialD}
+			\end{itemize}
+			\item[2.] \type{Symbol}
+			\begin{itemize}		
+				\item \type{RandomSymbol}
+				\begin{itemize}
+				    \item \type{NumericRV}
+				    \item \type{CategoricalRV}
+				\end{itemize}
+				\item \type{DeterministicSymbol}
+				\begin{itemize}
+				    \item \type{Number}
+				    \item \type{Atom}
+				\end{itemize}	
+			\end{itemize}
+		\end{enumerate}
+	\end{enumerate}
+\end{definition}
+\end{samepage}
+
+
+
+\begin{figure}[t]
+	\begin{center}
+		\includegraphics[width=\linewidth]{../figures/type_hierarchy_reduced.pdf}
+	\end{center}
+	\caption[Diagrammatic representation of the hierarchical \dcproblogsty type system.]{Diagrammatic representation of the hierarchical \dcproblogsty type system.}
+	\label{fig:type_system}
+\end{figure}
+
+
+
+
+\begin{definition}[\type{Distribution}]
+	Terms of type \type{Distribution} are constructed by using a reserved random function symbol and applying it to a (possible empty) tuple of input arguments, which maps the input tuple to a distribution term.
+	Distribution terms are only allowed to be invoked as a second argument to the reserved distribution predicate \probloginline{~}\lstinline[columns=fixed]|/2|.
+	This also means that random function symbols are only used there as well. 
+% 	\dcproblogsty subtypes the \type{Distribution} type into \type{NumericD} and \type{CategoricalD}.
+% 	\type{DiscreteD}, \type{ContinuousD}, and \type{MixtureD} types.
+\end{definition}
+
+\type{Distribution} terms determine the probability distribution according to which a random variable is distributed.
+\probloginline{poisson(6)} and \probloginline{normal(20,5)} are for instance of type \type{NumericD}.
+
+% Note that distributions of type \type{ContinuousD} denote {\em absolutely continuous} probability distributions\footnote{\dcproblogsty does not support {\em singular continuous} probability distributions such as the Cantor distribution.}. \ak{would be nice to have a hint on why this restriction is there} We give an example of a distribution of type \type{MixtureD} in Example~\ref{ex:indian_gpa_function}.
+%\begin{example} \probloginline{mixed} is a random variables that is a mixture of a continuous part (the truncated normal between $0$ and $4$ with mean $3$ and standard deviation $1$) and a discrete part. 
+%\begin{problog}
+%mixted~Mix((0.998,TruncNormal(3,1,0,4)),(0.001,4),(0.001,4))
+%\end{problog}
+%\end{example}
+
+%For and example, see Example~\ref{example:dcproblog_poisson_population}: we have the random function symbol \probloginline{poisson}\lstinline[columns=fixed]{/1}, apply it to the input tuple \probloginline{(6)}, and obtain a term of type \type{Distribution}.
+
+\begin{definition}[\type{Symbol}]
+  \type{Symbol} terms are the building blocks of the discrete structure that makes up a logic program and as such determine also the deterministic system of a probabilistic logic program. Beyond the reserved syntax, which is used to define the distribution terms, the user is free to use any identifier (following \prologsty conventions) to declare \type{Symbol} terms (this includes standard \prologsty terms such as lists).  
+\end{definition}
+
+
+%The subtyping of the \type{Symbol} type (shown in Figure~\ref{fig:type_system}) follows the convention given in~\citep[Chapter 9]{sterling1994art}.
+
+% \begin{definition}[\type{Arithmetic}]
+% 	Terms of type \type{Symbol} for which arithmetic operations are defined are of type \type{Arithmetic}. \type{Arithmetic} terms can be used as second argument to the builtin \probloginline{is}\lstinline[columns=fixed]|/2| functor. \type{Arithmetic} terms are subtyped with \type{RandomVariable} terms and \type{Number} terms.
+%	\ak{Def 6.3 Arithmetic terms: if (as stated in def 6.1) each type is the disjoint union of its subtypes, that means that "arithmetic" is made up exclusively of numbers and RVs, \ie, terms like 3-2 or min(x,5) for a RV x are not allowed, whereas the first two sentences of def 6.3 suggests they might be allowed (only having numbers and RVs directly on the rhs of is/2 seems quite boring...). Which is it?
+%		Related to this, defs 6.8 and 6.10 talk about RVs and Numbers, why not simply "arithmetic"?}
+% \end{definition}
+
+
+\begin{definition}[\type{RandomSymbol}] \label{def:random_variable}
+	\type{RandomSymbol} terms are named by the programmer using distributional facts with the binary infix predicate \probloginline{~}\lstinline[columns=fixed]|/2| and inherit their subtype from the distribution term. All random variables present in a \dcproblogsty program  explicitly named.
+\end{definition}
+
+Examples of terms of type \type{RandomSymbol} would be \probloginline{temperature} and \probloginline{n_people} in Examples~\ref{example:dcproblog_machine} and~\ref{example:dcproblog_poisson_population}, where we declared the random variables through distributional facts: 
+\begin{problog}
+temperature ~ normal(20,5).
+n_people ~ poisson(6).
+\end{problog}
+As mentioned in Defintion~\ref{def:random_variable}, \type{RandomSymbol} terms inherit their type from the associated \type{Distribution} term, \eg a \type{NumericD} term induces a random variable term of type \type{NumericRV}.
+
+Note that not all probabilistic programming languages enforce the naming of random variables. In the functional probabilistic programming language \anglicansty~\citep{wood2014approach}, for instance, the user can declare anonymous random variables, much like anonymous functions, \ie \textlambda-functions. 
+\ak{Discussion of named/unnamed between Defs 6.4 and 6.5: would be nice to have a brief hint on why you made that choice} \pedro{usually in logic programming everything is global. an unamed random variable would mean that it is only available locally. we could allow that, I guess but would have to introduce new syntax. moreover, internally we would give the unnamed random variable a name anyway.}
+
+\begin{definition}[\type{Atom}]
+	An atom is of the form \probloginline{p(t@$_1$@,@\dots @, t@$_n$@ )} where \dcplpinline{p} is a predicate with arity $n$ and the \probloginline{t@$_i$@} are \type{Symbol} terms. Functors used to construct \type{Atom} terms must not clash with the builtin predicates and reserved functors used to declare \type{Distribution} terms.
+% 	Terms of type \type{Atom} constitute the building blocks of the discrete structure of a probabilistic logic program.
+\end{definition}
+
+Examples of \type{Atom} terms would be \probloginline{foo} or \probloginline{bar(foo,42)}. The latter is constructed using the predicate \lstinline{bar/2} and the tuple of \type{Symbol} terms \probloginline{(foo,42)}. \probloginline{foo} is of type \type{Atom} and \probloginline{42} is a \type{Number} term.
+
+\begin{definition}[\type{Number}] Terms of type \type{Number} are used to express numerical data types such as integers and real numbers.	
+\end{definition}
+
+\paragraph{Strongly Typed \prologsty}
+
+While \prologsty is traditionally not strongly/statically typed, there have been efforts to extend \prologsty with such a type system. Arguably, the most interesting effort is presented in~\citep{Schrijvers2008TowardsTP}, where the authors develop the idea of partially typing a \prologsty program, \ie typing is optional and untyped code is interpreted instead of compiled. Introducing predicates with strongly typed signatures can be regarded as adding predicates with a specific meaning to the \prologsty implementation but the {\em `evaluation'} of these predicates still takes place within \prologsty.
+Our efforts of introducing a type system for system predicates within a probabilistic programming context are orthogonal and complimentary to the efforts of~\citet{Schrijvers2008TowardsTP}.
+
+
+% \dcproblogsty's type system refines the one of DC-PLP to instantiate a conrete version of the abstract language.  Specifically, we have the following refinements:
+% \begin{enumerate}
+%     \item distribution functors are further partitioned into \emph{discrete distribution functors}. \emph{continuous distribution functors} and \emph{mixture distribution functors}
+%     \item arithmetic functors are further partitioned into \emph{operation functors} and \emph{number functors}, with the latter in turn partitioned into \emph{integers} and \emph{floats} \todo{do we have / want a complete list of operations? should we at least give some examples?}
+%     \item we use Boolean query functors 	$\bowtie=\{ \text{\probloginline{=:=}}, \text{\probloginline{=\=}}, \text{\probloginline{<}}, \text{\probloginline{>}},  \text{\probloginline{=<}}, \text{\probloginline{>=}} \}$
+% 	in infix notation (and lift them to predicate level as discussed before)
+% \end{enumerate}
+
+% \ak{I don't think we need to sub-type random variable functors here, as rv terms inherit the \emph{output} type of the distribution only, which should be integer, float etc, not "discrete distribution"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection{External Engine}\label{sec:external_engine}
+
+In the previous subsection we have introduced an abstract type system.
+Abstract types describe the structure/hierarchy of a type system and cannot be instantiated. Concrete types, which are subtypes of abstract types are used for instantiations. This means that abstract types relate collections of concrete types, \ie implementations, to each other. For example, the \type{Integer} \probloginline{3} could be instantiated as an \type{Int32} or also an \type{Int64}, which are both concrete types. The choice taken depends on the external engine used to evaluate arithmetic expressions. 
+
+The only condition that we necessitate for an implementation of \dcproblogsty is that the external engine provides concrete types for the abstract types. Additionally, a practical external engine should also implement operations on these types. For example, an engine should be able to multiply a floating point value and an integer value: (\probloginline{3.12*2}). The type for floating points could be dubbed \type{Float32} and would be a concrete type subtyped from the abstract type \type{Real}. The type of the integer value could be \type{Int32} subtyped from \type{Integer}. The return type could then again be \type{Float32}.
+
+
+
+\begin{example}\label{example:julia_addition}
+We show two functions that perform addition of numbers but with different types. These different number could be invoked on either side of a comparison predicate, \eg (\probloginline{1<3+5} ) or (\probloginline{1<3+5.0} ). We write these functions using Julia like syntax~\citep{bezanson2017julia}. 
+\begin{samepage}
+
+\begin{minted}[
+    breaklines,
+    escapeinside=||,
+    mathescape=true, 
+    linenos,
+    xleftmargin=20pt, 
+    % numbersep=3pt, 
+    % gobble=2, 
+    % framesep=2mm
+]{julia}
+function +(a::Int32, b::Int32)::Int32
+    return int32_addition(a,b)
+end;
+\end{minted}
+
+\end{samepage}
+
+
+\begin{samepage}
+\begin{minted}[
+    breaklines,
+    escapeinside=||,
+    mathescape=true, 
+    linenos,
+    xleftmargin=20pt, 
+    % numbersep=3pt, 
+    % gobble=2, 
+    % framesep=2mm
+]{julia}
+function +(a::Int32, b::Float32)::Float32
+    float_a = convert(Float32, a)
+    return float32_addition(float_a,b)
+end;
+\end{minted}
+
+\end{samepage}
+\end{example}
+
+The programming paradigm followed in Example~\ref{example:julia_addition} is called {\em multiple dispatch} \citep{keene1989object,castagna1995calculus,bezanson2017julia}.
+Multiple dispatching is the process of dynamically selecting at run time a specific implementation of a function based on the types of the arguments.
+Functions with the same functor but a different type signature are called multimethods.
+
+We implement probability distributions using the external engine. As such, the corresponding random funtions symbols are necessarily typed. We recede again to multiple dispatch to implement probability distributions.
+Consider, for instance, the declaration of the normal distribution in Example~\ref{example:dcproblog_machine}.
+The definition of the function is the following:
+$$ \text{\probloginline{normal}}: \type{Number} \times \type{Number} \rightarrow \type{ContinuousD}$$
+However, the arguments of a normal distribution (its mean and standard deviation) might as well be random variables themselves.
+Multiple dispatching then allows us to {\em overload} the \probloginline{normal} function symbol by using arguments of a different type\footnote{For simplicity we omit that the standard deviation has to be a strictly positive (real) number, which can be enforced by extending the type system.}:
+\begin{align*}
+	\text{\probloginline{normal}}&: \type{NumericRV} \times \type{Number} \rightarrow \type{ContinuousD} \\
+	\text{\probloginline{normal}}&: \type{Number} \times \type{NumericRV} \rightarrow \type{ContinuousD} \\
+	\text{\probloginline{normal}}&: \type{NumericRV} \times \type{NumericRV} \rightarrow \type{ContinuousD}
+\end{align*}
+
+Reusing the idea of multimethods in the context of probabilistic logic programming with random function symbols results in a simple and neat syntax.
+The exact implementation of these random function symbols is left to to the actual implementation of the language by providing an external engine capable of performing adequate arithmetic evaluations.
+
+Currently, \dcproblogsys, our implementation of \dcproblogsty, does only emulate multimethods. This is due to the fact that the \dcproblogsys is written in Python, which does not follow the multiple dispatch programming paradigm. The emulation of multimethods is performed by using the \verb|isinstance| function in Python, which checks whether an object is of a certain type or not. This allows us to branch on the type of the arguments passed to a function and call different implementation given differently typed arguments.
+
+An advantage of decoupling the deterministic system from the independent choices and implementing probability distribution using an external engine is that we can a single language with two different external engines, which might perform probabilstic inference differently.
+\dcproblogsys, for instance, provides an interface to two different external engines. The first one uses \pyrosty~\citep{bingham2019pyro}, a probabilistic programming language built on top of the PyTorch~\citep{paszke2019pytorch} deep learning framework.
+The second option uses the probabilistic programming language PSI~\citep{gehr2016psi}. PSI is a computer probabilistic computer algebra system. The main difference between the two different external engines becomes apparent when performing inference. The first one performs approximate inference while the second one exact inference. We will discuss this in more detail in Section~\ref{sec:inference}.

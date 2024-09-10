@@ -1,0 +1,583 @@
+
+
+
+
+\section*{ \Huge Rebuttal}
+Firstly, we would like to thank all reviewers for taking their time and giving such detailed comments. We understand that our manuscript is rather long and that reviewing it takes considerable effort. We would like to stress that we found the reviews detailed and very helpful in improving the manuscript. Please find below our detailed rebuttal.
+
+
+
+\section*{General Comments}
+
+In the following sections we address the points raised by the reviewers one by one. We highlight in \fixedrebuttal{green} where we agree with the reviewers' opinion and where we made adequate changes in the manuscript. We highlight in \commentrebuttal{blue} parts where we do not necessarily agree with a certain opinion and give our justification. Within the paper there are passages that are highlighted in \new{purple}, which indicates new material not present in the previous version of the paper.
+
+We would first like to highlight the three major changes made to the manuscript compared to the initial submission:
+\begin{enumerate}
+    \item As asked by Reviewer 1 we have added a proof that the $sigma$-algbera of the probability measure $P_F$ is indeed (as suggested by the reviewer) a cylinder measure. This let (in our opinion) to a more streamlined exposition of the semantics. In the draft of the paper this manifests itself by the three new Propositiona \ref{prop:omegaf} \ref{prop:pfsigma} and \ref{prop:pf}.
+    \item We have relegated large parts of the syntactic sugar discussion to the appendix (as suggested by Reviewer 3). We hope this increases readability and accessibility of the manuscript. Specifically, we only introduce the syntactic sugar by example and discuss the technical details in the appendix.
+    \item We have added experimental evidence (\cf Section~\ref{sec:experimental}) that our proposed algorithm for the discrete-continuous domain ( (Symbolic IALW)) results in improvements over state-of-the-art approaches.
+\end{enumerate}
+
+
+\section{Reviewer 1}
+
+
+\subsection{Sigma Algebra}
+Overall I believe the paper deserves publication but there is one point that should be clarified: in the proof of
+proposition 3.20 that a valid DF-PLP program induces a unique probability distribution over Herbrand interpretations,
+eq (C.3), it is not obvious that the set $\{F_\omega|M_\omega(V)\models \mu_1^{b_1} \wedge ... \wedge \mu_n^{b_n}\}$ is
+measurable according to $P_F$. In proposition 3.15 the authors proved that $P_F$ exists and is unique but provide no
+information on the $\sigma$-algebra of the probability measure. I think the algebra of $P_F$ is the sigma algebra of
+cylinder sets of value assignments to $F$ but in this case this is not the powerset so it is not evident that
+the set above belongs to the sigma algebra of $P_F$. This should be proved.
+
+\fixedrebuttal{We agree with the reviewer that this was missing. We took the opportunity and restructure the construction of the probability space (using the new Definition~\ref{def:distDB}), which then led to a more explicit construction of the meaure $\probabilitymeasure_\comparisonfacts$. See also our first comment in the general comments above. }
+
+\subsection{Minor comments}
+
+\begin{enumerate}
+    \item Example 5.3 and following: why not using a program clause instead of the mathematical definitions of $\nu_1$ and$ \nu_2$?
+    \\
+    \commentrebuttal{We strictly restricted the clause notation to writing explcit programs. We used math notation everywhere else. This is due to the fact that using clause notation makes it occasionally hard to read formal expression, especially when we make use of indexing.}
+
+    \item Example 5.4: $\eta=1-> \eta=\top$
+    \\
+    \fixedrebuttal{Fixed.}
+    \item Note 3: for a program to be range restricted, all the variables in the head should occur in POSITIVE literals in the body.
+    \\
+    \fixedrebuttal{Fixed.}
+    \item Line 802: Definition 4.14 repeated
+    \\
+    \fixedrebuttal{Fixed.}
+    \item Eq 7.3: I believe $N$ should be $|S|$
+    \\
+    \fixedrebuttal{Fixed.}
+    \item Eq 7.10 $(s,m)->(t,m)$
+    \\
+    \fixedrebuttal{Fixed.}
+    \item line 920 $n>m$ -> n
+    \\
+    \fixedrebuttal{Fixed.}
+    \item line 966 $\phi$->$\varphi$
+    \\
+    \fixedrebuttal{Fixed.}
+    \item line 999: this seems to be removed
+    \\
+    \fixedrebuttal{Fixed.}
+    \item note 5: "(otherwise case in Definition 7.12)"; Def 7.12 does not speak of circuits, why is it mentioned here?
+    \\
+    \fixedrebuttal{Fixed, Indeed we referenced the wrong definition. We changed the footnote to referencing Definition~\ref{def:sample_labeling_function}.}
+    \item Algorithm 7.19: it should return a probability but it actually returns an infinitesimal number
+    \\
+    \fixedrebuttal{Fixed. We also slightly adapted the text describing the final step of the algorithm (just above Algorithm 7.19.)}
+    \item line 1000: computeS
+    \\
+    \fixedrebuttal{Fixed.}
+    \item Figure 7.4: what is the meaning of 1 in \texttt{size\_1(1)} and \texttt{size\_0(1)}? the part in parenthesis does not seem necessary
+    \\
+    \fixedrebuttal{Fixed. Indeed the part in the parenthesis is not necessary. This was a remnant from a previous version. We removed the parenthesis and its argument.}
+    \item Page 44:
+    $Eval(5)=\alpha_IALW(1=1)$->$\alpha_{IALW}(size_0=0.4)$
+    \\
+    \fixedrebuttal{Fixed.}
+    \item line 1029 DC-ProbLog->ProbLog
+    \\
+    \fixedrebuttal{Fixed.}
+    \item page 46 Eval formulas: some formulas have equalities with random variables, other equalities with constants
+     
+    $Eval(4)=..\alpha_{SIALW}(1=1)$->$Eval(4)=..\alpha_{SIALW}(m=1)$
+     
+
+     $Eval(2)=..\alpha_{SIALW}(0.3)$->$Eval(2)=..\alpha_{SIALW}(M=1)$
+     
+     $Eval(5)=\alpha_{IALW}(1=1)$->$\alpha_{IALW}(size_0=0.4)$
+     \\
+     \fixedrebuttal{Fixed.}
+     \item line 1069 inference task repeated
+     \\
+     \fixedrebuttal{Fixed.}
+    \item line 1075 remove "views"
+    \\
+    \fixedrebuttal{Fixed.}
+    \item eq C.3 $F_\omega->F_\omega(V)$
+    \\
+    \fixedrebuttal{Fixed.}
+    \item eq F.11 in the numberator $|S|$ is missing from the limit, in the denominator $N$ should be replaced by $|S|$
+    \\
+    \fixedrebuttal{Fixed.}
+\end{enumerate}
+
+\section{Reviewer 2}
+
+
+
+
+
+\subsection{Weaknesses}
+
+\begin{enumerate}
+    \item The contribution of this work is more conceptual with a focus on extending Problog. It would be much better and more complete if the paper provides concrete evidence of how the extension could benefit real-life applications, and, especially how DC-ProbLog with IALW performs in comparison with related approaches. For example, whether the proposed language can be applied to perform reasoning of mixed variables at a large scale such as images and their labels. There are several attempts with neurosymbolic approach which deserve to be discussed in this paper.
+
+    \fixedrebuttal{We have added an experimental section demonstrating the benefits of the proposed infernce algorithm (\cf Section~\ref{sec:experimental})}
+
+    \fixedrebuttal{In the context of neurosymbolic AI we have already deployed our semantics by developing the neurosymbolic programming language DeepSeaProblog \citep{desmet2023neural}. We discuss this now in the related work section. Note that without the work performed in this paper, developing DeepSeaProblog would have constituted a rather intricate affair.}
+
+
+    The paper should clarify the complexity of the approach, e.g. whether it is scalable in terms of presentation (space complexity) and inference (time complexity). For example, in example 2.2, if the depth of the relation children-parents-ancestors increases the number of distributional facts would grow exponentially.
+
+    \commentrebuttal{Indeed in Example 2.2, the number of distributional facts would grow exponentially. Hinting at the computational hardness of the problem. Note, however, that here we are intersted in defining the semantics of a Turing complete probabilistic programming language. Meaning that performing inference in \dcproblogsty is actually an undecidable problem. While we do not state this explicitly this follows immediately from \dcproblogsty being Turing-complete. 
+        
+    In practice, however, we are concerned with programs that will become ground eventually. In this respect we already state explicitly that computing algebraic model counts is \#P-hard (\cf Section~\ref{sec:ALWviaKC}).
+
+    With these two points we believe we have sufficiently delineated the complexity of inference in \dcproblogsty.
+    }
+
+
+
+    \item The paper's presentation needs to be significantly improved in order to make it more easily comprehensible for a wider range of readers.
+
+    \commentrebuttal{Following the suggestion from Reviewer 3 concerning the syntactic sugar we moved a large part from the main body of the manuscript to the appendix. We hope this improves readability.}
+
+    The numbering is not well-formatted, it is mixed between examples, definitions, propositions, theorems, etc.
+
+    \commentrebuttal{The AIJ author guide does not provide any details on how to number environments (e.g, propositions and theorems)\footnote{\url{https://www.sciencedirect.com/journal/artificial-intelligence/publish/guide-for-authors}}. In our opinion having different environments sharing the same numbering helps to navigate the paper as everything is in order. We would like to note that this is not uncommon. For instance, the template for the "International Conference on Machine Learning" follows a similar convention. }
+
+    Some definitions are not well-written. For example Definition 4.14 is more like a construction/procedure. There are two definitions (3.7 and 4.17) for Parent and Ancestor. Please check other definitions as well.
+
+    \fixedrebuttal{We renamed Definition~\ref{def:df_ancestor} from (Parent, Ancestors) to (Parents and Ancestors of Random Variables). Furthermore, we renamed Definition 4.17 (now Definition~\ref{def:parentancestor2}) from (Parent, Ancestors) to (Parents and Ancestors of Random Terms)}
+
+    \commentrebuttal{While we agree that Definition 4.14 (now Definitino~\ref{def:elim-ad}) and Definition 4.25 (now Definition~\ref{def:adfree-to-core}) have a procedural character we think this is acceptable. Especially, as they define rewrite rules to be applied to a program.}
+
+
+    
+
+    There are too many definitions.
+
+    \commentrebuttal{We hope that moving parts of the syntactic sugar discussion to the appendix sufficiently reduced the number of definitions.}
+
+
+    The paper may be difficult for those who do not have a deep background in probabilistic logic programming. It is a good idea to have the "A Panoramic Overview" section early. However, it goes straight to the CD-Problog concept without laying the ground for readers to understand the basis of probabilistic logic programming.
+
+    \fixedrebuttal{Fixed: we now give an introductory example in Section~\ref{sec:introduction} (Example~\ref{example:intro}).}
+
+\end{enumerate}
+
+
+\subsection{Other comments}
+
+\begin{enumerate}
+    \item Abstract: DC-ProbLog --> DC has not been defined yet.
+    \\
+    % \commentrebuttal{\dcproblogsty is the name of the language and therefore a proper name. We do not believe that it necessistates stating in the abstract that this stands for  "distributional clauses probabilistic Prolog", where "Prolog" stands for the French expression "programmation en logique".}
+    \fixedrebuttal{Fixed.}
+    \item 5-10: can be used represent --> to represent
+    \\
+    \fixedrebuttal{Fixed.}
+    \item 55-60: such e.g --> such as
+    \\
+    \fixedrebuttal{Fixed.}
+    \item 120-125: distributional facts in disguise --> please make the statement more formal
+    \\
+    \fixedrebuttal{Fixed. We now say: Note how probabilistic facts are actually syntactic sugar for distributional facts.}
+    \item 135-14: DF-PLP: first time introduced, please provide the detailed name.
+    \\
+    \fixedrebuttal{Fixed.}
+    \item Example 4.26: T2a and T2b are only mentioned once, the purpose of these notations should be well explained.
+    \\
+    \fixedrebuttal{Fixed. This was indeed a remnant from an earlier draft and the T2a and T2b are referring to the rules in Definition~\ref{def:adfree-to-core}. We now refer to these rules as CR1 and CR2. Note this part of the manuscript moved from the main body to the appendix (Line ~\ref{line:comment_r2_t2a_rule}).}
+    \item 555-560: comparison literals --> check the grammar
+    \\
+    \commentrebuttal{We believe the grammar is correct. Note this part has moved to the Appendix in Line \lineref{line:comment_grammar_r2}}
+    \item 555-560: maintains measurability of the latter --> the measurability
+    \\
+    \fixedrebuttal{Fixed.}
+    \item before 1060: lsited bellow --> listed
+    \\
+    \fixedrebuttal{Fixed.}
+\end{enumerate}
+
+
+
+
+
+
+
+\section{Reviewer 3}
+
+
+
+
+
+
+
+
+
+
+\subsection{Weaknesses}
+
+\begin{enumerate}
+    \setcounter{enumi}{0}
+
+\item The proposal seems very similar to an approach called Bayesian Logic
+Program, but with a different syntax. The semantics look very similar, and
+the basic results are inherited from that work. The authors should clarify
+the similarities and differences between their approach and Bayesian Logic
+Programs, and provide sufficient reasons for introducing a new language.
+This comparison, as far as I can see is not included in the related work
+section at the end of the paper.
+
+\fixedrebuttal{We have added a discussion on the relationship to Bayesian logic programs to the related work section (Section~\ref{sec:blp}). Following the suggestion from Reviewer 1 we reworked the theory in Section~\ref{sec:semantics}. We now substantially generaliize BLPs and do not inherit any of the results from \Citet{kersting2000bayesian} anymore. We discuss the differences in Section~\ref{sec:blp}.}
+
+\item The most novel (and interesting) part of the paper concerns the infinites-
+imal semantics, which comes very late in the paper. I have some doubts
+about the formalisation. If I’m correct this could be a problem. (see
+comments below)
+
+\commentrebuttal{we discuss the reviewer's doubt in more detail in the technical comments section below. While pointing out some minor issues, we were able to readily resolve them.}
+
+\item I have found the part on “syntactic sugar” not very relevant. It’s ok to
+put it in a manual. It does not introduce new important concepts, and it
+distracts the reader from the main message of the paper.
+
+\fixedrebuttal{We relegated a large portion from the "syntactic sugar" discussion to the Appendix. In the main body of the paper we only discuss the syntax, while studying the semantics and specific details in the appendix.}
+
+\item No experimental evaluation is provided.
+
+\fixedrebuttal{We have now included an experimental comparison (Section~\ref{sec:experimental}). Furthermore, we would like to point out the experiments  we have performed in a(n) (already published) follow-up paper in the field of neurosymbolic AI \citep{desmet2023neural}.}
+
+
+
+\end{enumerate}
+
+\subsection{Readability}
+\begin{enumerate}
+    \setcounter{enumi}{7}
+
+\item The paper is not easy to read. I believe it is not well organised. The most
+important part is at the end of the paper. I believe the paper should concentrate mostly on basic primitives and leave the rewriting of ”syntactic
+sugar primitives” later.
+
+\fixedrebuttal{as mentioned above we have relegated large parts of the syntactic sugar discussion to the appendix.}
+
+\item the paper is too long. There are many examples, even for elementary
+concepts. The reader gets lost. I think this style is good for a manual,
+not a scientific paper.
+
+\commentrebuttal{removing the syntactic sugar discussion from the main body has significantly reduced the paper's length. Concerning the examples, we refer the reader to our comment on the next point (\cf AIJ author guidelines)}
+
+\item I have found the panoramic overview not very interesting. It’s good to have
+it in a manual but not in a scientific article. A more compact example
+would do the job.
+
+\commentrebuttal{It seems that this is a question of taste. Reviewer 1 and 2 seem to have a different opinion. Furtheermore, AIJ demands from papers to be accessible to a wider audience. Quoting from the AIJ author guidelines\footnote{https://www.sciencedirect.com/journal/artificial-intelligence/publish/guide-for-authors}: "Papers that are heavily mathematical in content are welcome but should include a less technical high-level motivation and introduction that is accessible to a wide audience and explanatory commentary throughout the paper." We believe the overview section and the examples throughout the paper have this function.}
+
+\item The notation sometimes is heavy, I think that some simplifications are
+possible.
+
+\commentrebuttal{
+We put considerable work into keeping the notation as light as possible yet consistent throughout the paper and also precise. The latter two affect of course, occasionally, readability. However, if there are concrete suggestions on how to improve the notation we would eagerly incorporate them into the manuscript.
+} 
+\end{enumerate}
+
+\subsection{Technical Issues}
+
+
+\begin{enumerate}
+    \setcounter{enumi}{11}
+
+\item I don’t fully understand why you consider “countable” many random variables instead of just a finite set of random variables. It looks to me that
+all the results. I’m not an expert in probability theory but in this way,
+you can represent random processes as for instance $X_i \sim N (\mu = X_i , \sigma)$,
+and this might introduce rather complex aspects. Perhaps you should
+comment on the case of infinite random variables.
+
+\commentrebuttal{We are not entirely sure what the reviewer is referring to: first the reviewer talks about "countably many" (which can be an infinite number but still countable) then in the last sentence the reviewer mentioned infinite random variables. We are not sure whether the reviewer means  countable or uncountable infinity here.
+
+Concerning the distribution above ($X_i \sim N (\mu = X_i , \sigma)$). Here we have a cycle: $X_i$ is used as its own mean and we do not have a valid random variable to begin with. 
+}
+
+\item Definition 3.10 Well-Defined Distributional Database. This coincides with
+the definition of Bayesian network. I might have missed some details but
+I don’t see the difference when the set of random variables is finite. When
+they are infinite, the restriction that every formula has a finite number of
+ancestors
+
+
+\commentrebuttal{We substantially altered the definition of a distritbutional database (Definition~\ref{def:distDB}) and the reviewer's comment does directly apply anymore. We point, however, to the new Section~\ref{sec:fintiedistdb}, which we hope clarifies possible remaining doubts.
+}
+
+
+
+
+\item Condition DC1 This condition is semantically defined. How is it possible
+to check it at the syntactic level without running the program itself? The
+conditions might depend on the entire part of the program e.g., Suppose
+that you have two statements
+\begin{align*}
+    x \sim \delta_1 \lpif A.
+    \\
+    x \sim \delta_2 \lpif B.
+\end{align*}
+2and there are two subpart of the program that imposes conditions on A
+and B may depend on other random variables. As a matter of fact, you
+have to ensure that $P(A \land B)$ is equal to $0$. I believe you have to provide
+some sufficient “syntactic” condition that guarantees such that $A \land B$ is
+not satisfiable.
+
+\commentrebuttal{Indeed, when implementing the language one could think about introducing syntactic sugar that would guarantee validity.
+The problem with such syntactic constructs is that they might be sufficient but not necessary to guarantee validity and thereby they would limit the user.
+
+In our opinion ensuring that a set of distributional clauses is well-defined lies therefore with the user of the language itself or with the programmer who implements the language. In this paper we are, however, concerned with the semantics and therefore refrain from making such restrictions. 
+}
+
+\item Definition 7.4 states that $e^\oplus = (0, 0)$ is the neutral element for $\oplus$, So I
+expect that $(r, n) \oplus  e^\oplus  = e^\oplus  \oplus  (r, n) = (r, n)$, But according to Definition
+7.2 when $n > 0$, $(r, n) \oplus  e^\oplus  = e^\oplus  \oplus  (r, n) = e^\oplus $ . From this definition it
+looks like a neutral element for $\oplus $ is $(0, \infty)$ but you have to include $\infty$ to
+the set $\mathbb{Z}$. However, this implies that the inverse w.r.t. the $\otimes$ does not
+exist. I have probably missed something here, it looks like all the following
+relies on the fact that this structure is a commutative semiring. \citet{jacobs2021paradoxes} introduces explicitly the operation of difference and inverse, without
+considering a neutral elements. Perhaps, the fact that is a semiring is not
+so important for the paper.
+
+
+\fixedrebuttal{indeed this was a mistake and the neutral element should have been defined as $e^\oplus =(0, \infty)$. We have fixed this in the manuscript. Note, however, that this has no serious consequences on any other part of the paper, except minor for the inverse elements. Specifically, we strike (as the reviewer suggested the definition of the inverse elements and define immediately subtraction and division \cf Definition~\ref{def:subdiv}.)
+}
+
+\commentrebuttal{Having no explicit inverse for $\otimes$ and $\oplus$ is not a problem: semirings do not necessitate inverse elements (\cf Definition~\ref{def:comm_semiring}).}
+
+\item The solution to the problem of conditioning with $0$-probability events are
+solved only partially. I.e., only in the case in which the $0$ probable events
+are explicitly stated in an atom by using the primitive delta interval.
+However, there are many other situations of events that are still possible
+but with $0$ probability. As a simple example, the conjunction of the two
+constraints $v \leq 1$ and $v \geq 1$ is equivalent to the constraint $v = 1$, and
+I think that in a pure declarative approach, like the one that is pursued
+by ProbLog they should have the same semantics. While the latter is
+interpreted in terms of infinitesimal number the latter is not. How would
+the infinitesimal approach generalize to the other comparison atoms? A
+possible solution to this problem can be obtained by rewriting $x \leq y$ into
+$(x < y ) \overline{\vee} (x=y)$
+˙ (where $ \overline{\vee}$ denotes the xor operator).
+
+\commentrebuttal{Here we have to disagree with the following statement: "While the latter is
+interpreted in terms of infinitesimal number the [former] is not". This is not correct. Neither of the two are interpreted as infinitesimal numbers!
+We would like to stress here that $x=y$ is not interpreted as an infinitesimal interval but simply as an indicator function where the equality has to hold strictly. This means that the semantics align between $v \leq 1 \land v \geq 1$ and  $v = 1$ as they are equivalent. Note that both of these expressions are, however, not equivalent to $v \doteq 1$, which is the actual infinitesimal interval. We already discuss this issue in Example~\ref{ex:conditional_prob}.
+}
+
+\item I also think that the semantics based on infinitesimals introduces other
+paradoxes, For instance, if $x \sim \mathcal{N} (0, 1)$ $P (x < 0 | x = 1)$ is equal to $(0, 0)$.
+However, by infinitesimal semantics this is equal to $( \frac{2}{y}
+, -1)$ where $y$ is
+the value of $(0, 1)$ in 1 (which is different from $(0, 0)$).
+
+\commentrebuttal{Indeed, following the definition of a conditional probability with a zero probability conditioning event (using a limit), gives us
+$P (x < 0 | x \doteq 1)=0 = (0\epsilon^0) = (0,0)$. Note that here we use the "$\doteq$" notation to indicate that we condition on an infinitesimal interval.
+
+However, using infinitesimal numbers does not yield $(0,-1)$. If we write the conditional probability in question using infinitesimal numbers we get the following result:
+\begin{align}
+    \frac{
+        \sum_{i}^{|S|} \alpha_{SIALW}(\ive{x^{(i)}<0}) \otimes \alpha_{SIALW}(\ive{x^{(i)} \doteq 1})
+    }
+    {
+        \sum_{i}^{|S|} \alpha_{SIALW}(\ive{x^{(i)} \doteq 1})
+    }
+\end{align}
+Because $x^{(i)} \doteq 1$ denotes an observation, all the samples $x^{(i)}$ are forced to take the value $1$. Plugging this into above expression gives:
+\begin{align}
+    \frac{
+        \sum_{i}^{|S|}  (0,0) \otimes (p(1),1)
+    }
+    {
+        \sum_{i}^{|S|}   (p(1),1)
+    }
+    \label{eq:rev3idiot}
+    &=
+    \frac{
+        \sum_{i}^{|S|} (0,1)    
+    }{
+        \sum_{i}^{|S|}  (p(1),1)
+    }
+    \\
+    &=
+    \frac{
+        (0,1)
+    }
+    {
+        (|S|  p(1),1)
+    }
+    \\
+    &=
+    (0,0)
+    \label{eq:r3:misconception}
+\end{align}
+That means if we straightforwardly apply the correct expression (the one that we derived in the manuscript) to compute the conditional probability we do obtain the result we expect.
+}
+
+\item Theorem 7.11 and Proposition 7.14 are not well formulated because the
+meaning of $(x, 0) \approx (y, n)$ when $n \neq 0$ is not defined. Consider the previous
+example $P (x < 0 | x  1) = (0, 0)$, however it is possible that S contains
+at least one sample $S^{(i)}$ such that $S^{(i)}_x = 1$. In this case, the summation
+at the denominator will be some value $(y, 1)$ while at the numerator you
+will have an empty summation, which I suppose it is equal to $(0, 0)$. The
+$\frac{(0,0)}{(x,1)}$
+is equal to $(0, -1)$.
+
+\commentrebuttal{Let us consider the left-hand side of Equation~\ref{eq:rev3idiot} above:
+\begin{align}
+    \frac{
+        \sum_{i}^{|S|}  (0,0) \otimes (p(1),1)
+    }
+    {
+        \sum_{i}^{|S|}   (p(1),1)
+    }
+\end{align}
+Instead of multiplying out the numerator we can also cancel out the $(p(1),1)$ expression to obtain:
+\begin{align}
+    \frac{
+        \sum_{i}^{|S|}  (0,0) \otimes (p(1),1)
+    }
+    {
+        \sum_{i}^{|S|}   (p(1),1)
+    }
+    &
+    =
+    \frac{
+        (0,0) \otimes (p(1),1) \otimes \cancel{\sum_{i}^{|S|} (1,0)}  
+    }
+    {
+        (p(1),1) \otimes  \cancel{\sum_{i}^{|S|} (1,0)}
+    }
+    \\
+    &=
+    \frac{
+        (0,0) \otimes \cancel{(p(1),1) } 
+    }
+    {
+        \cancel{(p(1),1) }
+    }
+    \\
+    &=
+    (0,0)
+\end{align}
+
+
+While here we show that the particular case (pointed out by the reviewer) does not cause any problems (if one correctly applies the defined algebra), we also prove this for the general case in Subsection~\ref{app:proof:alwapproximation}.
+We conclude that the apparent misbehavior never arises when the definitions are applied correctly.
+
+Also note that for the case that we do not condition on $x\doteq 1$ but on $x=1$, we almost surely compute the correct result. We state this explicitly in Proposition~\ref{prop:alw_consistency} already.
+}
+
+
+\end{enumerate}
+
+
+\subsection{Minor Points}
+\begin{enumerate}
+    \setcounter{enumi}{18}
+\item line 150 “on” → “one”
+\\
+\fixedrebuttal{Fixed.}
+\item line 175 “mutually marginally independent” → “mutually independent”
+why you use marginally.
+\\
+\fixedrebuttal{We removed "marginally."}
+
+
+\item Definition 3.3: “regular ground term” → “regular ground atom”
+\\
+\commentrebuttal{No, these are indeed ground terms and not ground atoms.}
+
+
+
+
+\item Paragraph 901 explains the order of sampling, and introduces the term
+“ancestral sample”. This is confusing because every sample must be an
+ancestral sample since you need the value of the parent variables in order
+to sample a variable. I suggest not to use this term and to explain before
+Property 7.1, that to obtain a sample for all the variables we have to
+proceed according to the partial order on the variables.
+
+\commentrebuttal{With using the term "ancestral sampling" we are stressing the fact we perform sampling using ancestral sampling. This is in order to distinguish the samples from other sampling strategies, such as Gibbs sampling or any other MCMC method. As this MCMC methods are ubiquitous in probabilistic programming we us "ancestral sample" to make the sample strategy explicit.}
+
+
+\item line 510: $L > 5$ → $\Lambda \geq 5$
+\\
+\fixedrebuttal{Fixed.}
+\item Definition 4.21. in the first bullet, you assume that only one random
+variable occurs in a random term, however in general this is not the case.
+\\
+\commentrebuttal{We do not believe that we make this assumption. We actually explicitly state "a distribution term that involves exavtly $k$ different random terms". Note this definition has moved and is now called Definition~\ref{def:elim-dc}.}
+\item Definition 4.28: Clarify what is $P^{DF,*}$.
+\\
+\fixedrebuttal{We now clearly state this at the end of Definitino~\ref{def:adfree-to-core}.}
+\item Definition 7.9: revise English and “evaluate” → “denotes”. The defini-
+tion is hard to read. The reference to literals and negated literals is a
+bit confusing. For instance, what happens to the negation of the comparison atom $v =/= 3$? Using the notation $[[s_k = x]]$ could also improve
+readability.
+\\
+\fixedrebuttal{We rewrote the Definiton~\ref{def:sample_labeling_function}, hopefully improving the readability. We also use the Iverson bracket $\ive{\cdot}$ as suggested.}
+\item Lines 1029-1031 it seems that you compare DC problog with itself. Is the
+system introduced in [Fierence et al. 2015] also called DC-ProbLog?
+\\
+\fixedrebuttal{The language introduced by \citep{fierens2015inference} is called \problogsty. This was a typo on our side, and we change "\dcproblogsty" to "\problogsty",}
+\item Definition 7.24: “given is” → “given”
+\\
+\fixedrebuttal{Fixed.}
+\item It’s not completely clear if $\neg(x =/= 2)$ should be considered a negative
+literal, or $x =/= 2$ is a negative literal of the literal $x=2$.
+\\
+\commentrebuttal{We discuss the issue of how to interpret negation in detail in Appendix~\ref{sec:non-mixture-dc} and Appendix~\ref{sec:dcproblog-dc}. Especially as \dcproblogsty and \dcsty have different semantics for negation. In short: when distributional clauses are present $x =/= 2$ is not necessriöy equivalent to $\neg(x=:=2)$ otherwise they are equivalent.}
+\item Paragraph 185: is very obscure at this point of the paper. I believe it
+could be put in a proper related work section.
+\\
+\fixedrebuttal{We removed the discussion in this paragraph and give now forward pointers to the related work Section~\ref{sec:related} and to Appendix~\ref{sec:dcproblog-dc}.}
+\item The definition of infinitesimal interval is not very intuitive. In order to
+grasp it I had to read the paper \citep{jacobs2021paradoxes}. I suggest reporting his explanation provided below the definition 5.2 of that paper.
+\\
+\fixedrebuttal{We added a reference to \Citet[Section 5.2]{jacobs2021paradoxes} just before Definition~\ref{def:inf_number}.}
+\item Bibliography format is not correct.
+
+\fixedrebuttal{Fixed.}
+
+
+\end{enumerate}
+
+
+
+\subsection{Reccomendations}
+
+\begin{enumerate}
+    \setcounter{enumi}{32}
+
+
+\item The paper is potentially interesting but I think it needs to be improved in
+the readability, i.e., make it shorter by concentrating on the major points,
+and optimizing the usage of examples. The technical part should also
+be double-checked. I might be wrong with my comments, in such a case
+the authors should better explain the technical part, or if I’m right the
+authors have to fix and revise (if necessary) the proofs. Since the paper
+does not contain major technical theoretical results, most of the results
+are applications/simple generalization of existing results, the paper should
+provide some experiments that show the potential of the approach. I think
+that to address all the above observations the paper needs a major revision,
+which is my suggestion.
+
+\comment{We hope that the changes we made to the paper addresses the concerns raised by the reviewer. Specifically,
+\begin{enumerate}
+    \item we substantially reduced the section on syntactic sugar
+    \item we corrected our mistake regarding the neutral elements for the addition in our semiring and adapted the manuscript accordingly,
+    \item we added experimental evidence that the developed SIALW algorithm exhibits advantageous behavior when compares to similar algorithms in the presence of low probability events. 
+\end{enumerate}
+
+We would also argue that our technical contribution does not constitute a simple extension of existing ideas. This is exemplified by the fact that a series of papers \citep{kersting2000bayesian,gutmann2010extending,gutmann2011magic,azzolini2021semantics} have indeed tackled the problem of unifying discrete and continuous random variables for probabilistic logic programming but none have succeeded in linking these discrete-continuous languages to the inference method of knowledge compilation -- the de facto standard for exact inference in the discrete domain. We achieve this using our IALW semiring. While we do deploy proof techniques developed in other papers, considerable effort has gone into correctly formulating them for the discrete-continuous domain. We are of the strong opinion that our theoretical contributions are not applications but strong generalizations of existing work.
+}
+\end{enumerate}
+
+
+
+
+
+
+
+

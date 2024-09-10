@@ -1,0 +1,425 @@
+\section{Implementation} \label{sec:implementation}
+\ak{needs an introduction (and I'd suggest reorganization into algorithms first, then system)}
+We make two observations:
+\begin{enumerate}
+    \item Every implementation of \prologsty  (or any other logic programming language)  reserves a set of {\em  system predicates} executing code not written in pure \prologsty~\citep[Chapter 8]{sterling1994art}.
+    System predicates complement pure \prologsty implementations and give users access to efficient algorithms that are cumbersome to implement in pure logic programming -- for instance algorithms for numeric computations.
+    \item In Section~\ref{sec:semantics} we have seen that we can separate a probabilistic logic program into a set of independent random choices and a logic program. The independent choices and the logic program communicate to each other via comparison predicates. Comparison predicates are an instance of system predicates.
+\end{enumerate}
+
+These observations hint at the possibility of implementing \dcproblogsty as a deterministic logic programming language with access to an external engine with support for random variables.
+On an implementation level, the key difference between a probabilistic logic programming language and a (deterministic) logic programming language is the availability of probability distributions in the external engine of the former.
+
+Decoupling independent choices (random variables) and the deterministic system (logic program) does also mean that we should be able to take a probabilistic logic programming language that only supports finite discrete probability distributions and extend it with continuous probability distributions.
+We will demonstrate how to achieve this by adding continuous random variables to the ProbLog2 system~\citep{dries2015problog2} (the most recent implementation of \problogsty). We dub our implementation \dcproblogsys.
+
+% First, we will introduce a type system 
+% (Section~\ref{sec:type_system}), followed by a description of how a type system aids the extension of the ProbLog2 system with continuous random variables (Section~\ref{sec:external_engine}).
+% Followed by a description of the system architecture of \dcproblogsty in Section~\ref{sec:architecture}, which is based on the \problogsys architecture~\citep{dries2015problog2} and which we dub \dcproblogsys.
+
+
+
+
+
+
+
+
+% To this end we will first introduce a type system (Section~\ref{sec:type_system}), followed by a description of how a type system aids the extension of the ProbLog2 system with continuous random variables (Sections~\ref{sec:multiple_dispatch} and~\ref{sec:external_engine}).
+% Lastly, we will also discuss the implementation of ALW (cf. Section~\ref{sec:inference}) and how it uses the existing inference mechanisms already present in the ProbLog2 system.
+
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection{\dcproblogsty System Architecture}
+\label{sec:architecture}
+
+\dcproblogsys, is built on top of the existing \problogsys system. This means we inherit the general architecture of performing inference via a number of deterministic program transformations performed on the source program (written in \dcproblogsty). Figure~\ref{figure:dcproblog_sys} summarizes the program transformation steps in \dcproblogsys. These are grounding, cycle breaking, compiling, and evaluating. Conceptually the transformations are identical to the ones performed in the \problogsys implementation.
+% We will briefly describe the four transformations and give a more detailed account of the compilation and evaluation steps in Section~\ref{sec:inference} as these are the steps where \dcproblogsys and \problogsys differ most.
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=\linewidth]{figures/dcproblog_sys.pdf}
+	\caption[Overview of the program transformation steps in the \dcproblogsys system]{Overview of the program transformation steps in the \dcproblogsys system. (Figure inspired by~\protect\citep[Figure 2]{zuidbergdosmartires2019transforming}.}
+	\label{figure:dcproblog_sys}
+\end{figure}
+
+%%% moved from elsewhere
+\subsection{Conditional \dcproblogsty Programs}
+\ak{this is not the right place for the sec; just moved it from the language section as it is about system}
+
+This lets us, for instance, compute the probability of the query in Example~\ref{example:dcproblog_machine}, where we saw that we can express a conditional probability by using the reserved \probloginline{evidence/1} predicate. \dcproblogsty also has a binary predicate \probloginline{evidence/2}, where the second argument is either the \probloginline{true} symbol or the \probloginline{false} symbol. The former is equivalent to using the unary version, while the latter allows one to express negative evidence. These predicates are also present in \problogsty.
+
+
+
+While the \probloginline{evidence} predicate allows us to express conditional probabilities where we condition on Boolean random variables, its semantics does not extend directly to conditioning on continuous random variables: a continuous random variable can neither be true nor false. In order to allow a user to condition on continuous random variables in \dcproblogsty, we introduce the \probloginline{observation/2} predicate.
+
+\begin{example}\label{example:dcproblog:observation}
+	We model the size of a ball as a mixture of  different beta distributions, depending on whether the ball is made out of wood or metal (Line~\ref{program:dcproblog_machines_observation:ad})\footnote{Annotated disjunctions are used to concisely write down mutually exclusive Boolean random variables. Internally they are compiled down to probabilistic facts and deterministic rules.}.
+	We would now like to know the probability of the ball being made out of wood given that we have a measurement of the size of the ball. In order to condition on a continuous random variable we introduce the \probloginline{observation/2} predicate, which has an analogous functionality as the evidence predicates for Boolean random variables.
+	\begin{problog*}{linenos}
+3/10::material(wood);7/10::material(metal).@\label{program:dcproblog_machines_observation:ad}@
+
+size~beta(2,3):-material(metal)@\label{example:dcproblog:observation:beta23}@.
+size~beta(4,2):-material(wood).
+
+observation(size,4/10).
+query(material(wood)).
+	\end{problog*}
+	This \dcproblogsty program encodes the conditional probability:
+	\begin{align}
+		p(\text{\probloginline{material(wood)}}| \text{\probloginline{size=4/10}})
+	\end{align}
+\end{example}
+
+
+
+%%% end moved from elsewhere
+
+\ak{if we keep this overview, include pointers to the sections that discuss details}
+\paragraph{\bf Grounding}
+
+\dcproblogsys is an extension of the \problogsys system: the logic programming components in both systems are identical. This means that we can simply bootstrap the logic grounding engine of the \problogsys system for \dcproblogsys. Grounding is performed using {\em selective linear definite clause} (SLD) resolution~\citep{kowalski1974predicate,sterling1994art}. SLD resolution allows for computing the relevant ground program for a specific query to the logic program, which avoids grounding of unnecessary predicates~\citep{kersting2000bayesian,fierens2015inference}.\ak{what about negation? SLDNF or something else?}
+
+\paragraph{\bf Cycle Breaking} Logic programs may contain cycles. In order to perform inference these need to be removed from the ground program. As these cycles only occur in the logic program part of a \dcproblogsty program we can again bootstrap the cycle breaking available in \problogsys, which is currently a variation of the algorithm proposed in~\citep{janhunen2004representing} \citet{mantadelis2010dedicated} have also proposed an alternative cycle breaking algorithm.
+
+\paragraph{\bf Compiling} The next step that \problogsys performs to compute probabilities is the compilation of acyclic ground programs. Acyclic ground programs have a one-to-one mapping to propositional logic formulas, which are then compiled into decision diagrams in a process dubbed knowledge compilation~\citep{darwiche2002knowledge}. \dcproblogsys differs in that acyclic ground \dcplpsty programs are not mapped to propositional logic formulas but to so-called {\em satisfiability modulo theory} (SMT) formulas (\eg $x>3$)~\citep{barrett2009handbook}, which are then compiled to decision diagrams that support algebraic constraints~\citep{sanner2011symbolic,zuidbergdosmartires2019exact}.
+
+
+\paragraph{\bf Evaluating} The probability of a query to a (hybrid) logic program is obtained by evaluating the compiled logic formula (decision diagram). While in \problogsys this is performed using the weighted model counting (WMC)~\citep{chavira2008probabilistic} framework, \dcproblogsys uses weighted model integration~\citep{belle2015probabilistic} -- an extension of WMC that allows also for algebraic constraints on random variables.
+
+\bigbreak
+
+We provide the necessary background on knowledge compilation, weighted model counting, weighted model integration, and SMT formulas in~\ref{app:amc}, \ref{app:compilation}, and
+\ref{app:wmi}.
+
+
+\subsection{Grounding}
+As already mentioned, grounding in \dcproblogsys is performed by bootstrapping the existing grounding engine of \problogsys. The sole minor difference concerns the grounding of comparison predicates, \eg (\probloginline{1<2}), (\probloginline{x>20}).
+During the grounding of a \dcproblogsty program, the types of the comparison's arguments are checked and the comparison is considered to be proven if the types of the arguments match the type signature of the comparison predicate.
+The possible types of a comparison's predicate arguments are dictated by the external arithmetic engine. For instance, \prologsty only allows for (deterministic) numbers, in contrast to \dcproblogsty where the external arithmetic engine also allows for comparing random variables.\ak{what if typecheck fails?}
+
+More concretely, if a comparison predicate of the form (\probloginline{x>20}) is encountered during the grounding, the engine checks whether there are distributional facts of the form \probloginline{x ~ Dist} present in the program. If such a clause is present, the type of \probloginline{x} is inferred from the distribution \probloginline{Dist}. The comparison predicate is proven if the external engines allows for comparing the inferred types, \eg can the external arithmetic engine compare continuous random variables to real valued numbers. We give a more detailed account of typing and the external arithmetic engine in \ref{app:types}.
+
+
+\subsection*{Evaluation of Comparison Predicates}
+
+A distinctive property of comparison predicates in \dcproblogsty is that they have a potential infinite and uncountable number of groundings, \ie an infinite number of possible assignment to the variables in the arguments that would satisfy the comparison\ak{careful with grounding (replacing logical variable by ground terms) vs evaluating (replacing random variable by its value)}.
+This cannot to be carried out using a logic grounding engine.
+Therefore, we have to defer the grounding of comparison predicates to a later stage of the inference mechanism and at the same time retain a symbolic representation of the set containing all possible groundings. Probabilistic inference then constitutes of {\em measuring} the size of these sets using integration.
+We call the grounding of a system predicate also an evaluation, as the external engines performs an arithmetic evaluation in the background.
+
+In the special case of a `deterministic' comparison, \ie a comparison not containing any random variables in its arguments, we can interleave the grounding with the evaluation of the predicate.
+That is, we can replace the atom with its corresponding Boolean value. For the comparison (\probloginline{1<2}) we would get \probloginline{true}. Such a type dependent eager evaluation during grounding can be regarded as an instance of multiple dispatch: differently typed predicates induce different run time behavior~\citep{castagna1995calculus}.
+
+Eager evaluation of arithmetic expressions makes most sense when this leads to simplifications of the ground program. More concretely, when a comparison predicate is not satisfied this results in a \probloginline{false} atom and proving a goal during grounding can be stopped pre-maturely.
+Eager evaluation of the comparison predicates allows \dcproblogsty to retain the usual behavior of proving and grounding in \problogsty where a proof fails if a (deterministic) comparison is not satisfied.
+
+Depending on the arithmetic engine deployed, eager evaluation is also possible for evaluations of non-deterministic arithmetic expressions. If the evaluation of arithmetic expressions is purely sampling-based, the random variables in an arithmetic expression are replaced by sampled values. For each sample the arithmetic expressions can then be eagerly evaluated. This is the approach taken by~\citet{nitti2016probabilistic}.\ak{we need to be more explicit about this entire "external engine" stuff; right now, remarks about alternative engines are mingled into the description of a pipeline that seems to be fixed to one such engine (sampling here, Prolog earlier)}
+
+% For symbolic arithmetic engines it does also make sense to perform eager evaluations to some degree. Consider the comparison (\probloginline{3+5>2+1}). A purely symbolic external engine would evaluate two symbolic expression trees and wrap the comparison into a \probloginline{holds}\lstinline[columns=fixed]|/1| predicate. Eagerly evaluation the expression tree however lets us replace the \probloginline{holds(3+5>2+1)} with \probloginline{false}.
+
+
+\begin{example}[\dcproblogsty grounding] \label{example:grounding}
+Consider the non-ground \dcproblogsty program below.
+
+	\begin{problog*}{linenos}
+0.2::hot.
+0.99::cooling(1).
+
+temperature(1) ~ normal(27,5):- hot.
+temperature(1) ~ normal(20,5):- \+hot.
+
+works(N):- cooling(N).
+works(N):- temperature(N)<25.0.
+
+query(works(1)).
+	\end{problog*}
+The grounding mechanism in \dcproblogsys is the same one as in \problogsys and only works on pure logic programs. However, the logic program and the random variables are still interleaved. In a first step we remove syntactic sugar and rewrite the distributional clauses and probabilistic facts  as distributional facts, cf. Section~\ref{sec:semantics}.
+	
+	\begin{dcplp*}{linenos}
+rv_1_hot ~ flip(0.2). @\label{line:dist_hot}@
+map(rv_hot,rv_1_hot).
+hot:- map(rv_hot,R), R=:=1.
+
+rv_1_cooling(1) ~ flip(0.99). @\label{line:dist_cooling}@
+map(rv_cooling(1),rv1_cooling(1)).
+cooling(1):- map(rv_cooling(1),R), R=:=1.
+
+rv_1_temperature(1) ~ normal(27,5). @\label{line:dist_temp_1}@
+map(rv_temperature(1), rv_1_temperature(1)):- hot.
+
+rv_2_temperature(1) ~ normal(20,5). @\label{line:dist_temp2}@
+map(rv_temperature(1), rv_2_temperature(1)):- \+hot.
+
+works(N):- cooling(N).
+works(N):- map(rv_temperature(N),R) , R<25.0.
+
+query(works(1)).
+	\end{dcplp*}
+After removing the syntactic sugar we have a \dcplpsty program constituted of distributional facts in Lines~\ref{line:dist_hot}, \ref{line:dist_cooling}, \ref{line:dist_temp_1} and \ref{line:dist_temp2}, and a (non-probabilistic) logic program in the remaining lines. The logic  part of the \dcplpsty program can now be grounded using the \problogsys grounding engine:
+	
+	\begin{dcplp*}{linenos}
+rv_1_hot ~ flip(0.2). 
+rv_1_cooling(1) ~ flip(0.99). 
+rv_1_temperature(1) ~ normal(27,5).
+rv_2_temperature(1) ~ normal(20,5).
+
+map(rv_hot,rv_1_hot).
+map(rv_cooling(1),rv_1_cooling(1)).
+map(rv_temperature(1), rv_1_temperature(1)):- hot.
+map(rv_temperature(1), rv_2_temperature(1)):- \+hot.
+
+hot:- map(rv_hot,), rv_1_hot=:=1.
+cooling(1):-
+    map(rv_cooling(1),rv_1_cooling(1)), 
+    rv_1_cooling(1)=:=1.
+works(1):- cooling(1).
+works(1):-
+    map(rv_temperature(1),rv_1_temperature(1)) ,
+    rv_1_temperature(1)<25.0.
+works(1):-
+    map(rv_temperature(1),rv_2_temperature(1)) 
+    rv_2_temperature(1)<25.0.
+
+query(works(1)).
+	\end{dcplp*}
+As there are no cycles present in the \dcplpsty program above, we do not need to perform cycle breaking on the logic program part.
+\end{example}
+
+Note that for, the sake of clarity, we performed the rewriting of a \dcproblogsty program to a \dcplpsty program in Example~\ref{example:grounding} as a separate and preliminary step. In the \dcproblogsys implementation the elimination of syntactic sugar is interleaved with the grounding and performed on the fly. This avoids rewriting parts of the program that are irrelevant to computing the probability of a query.\ak{why/when is grounding on the fly possible?}
+
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% In probabilistic programming a recent trend has emerged of mixing eager evaluation (usually in combination with sampling based probabilistic inference) and lazy evaluation (also called delayed evaluation). Examples for this are the probabilistic programming languages Birch~\citep{murray2018automated} or the symbolic probabilistic programming language PSI~\citep{gehr2016psi}. Lazy evaluation of arithmetic expressions do also allow to simplify probabilistic programs such that inference becomes tractable after these simplifications. An obvious example for this is then rewriting a conjugate prior-likelihood pair into a single expression. Lazy evaluation combined with symbolic simplifications goes into the direction of compiling probabilistic programs, \eg~\citep{wu2016swift}.
+
+
+% The key difference between the external arithmetic engine of \prologsty (or \problogsty) and the external arithmetic engine of \dcproblogsty is that the external engine of the latter is capable of performing arithmetic operations (perform evaluations) with random variables. Combining this innovation with multiple dispatch allows us to retain the same syntax (same functor) to perform arithmetic operations on \type{SymbolicRV} terms and/or \type{Number} terms.
+
+
+
+
+
+
+
+
+% \subsubsection{Arithemtics of Random Variables}
+
+% Evaluating arithmetic expressions that contain random variables should not to be confused with performing arithmetic operations on random variables. Writing \probloginline{x+y} in a comparison predicate, where \probloginline{x} and \probloginline{y} are random variables has the semantics of evaluating both random variables (for instance by drawing a sample) and adding up both evaluations.
+
+% In order to perform arithmetic operations on random variables directly, we would need to introduce syntax and an arithmetic engine for random variables. This could, for example, be achieved in the following fashion:
+% \begin{problog*}{linenos}
+%  x ~ normal(20,5).
+%  y ~ normal(25,6).
+%  z ~ x+y.
+% \end{problog*}
+% In this case z would be a normal distribution with mean ($20{+}25$) and standard deviation ($5{+}6$). We leave arithmetic operations on random variables for future research.\pedro{maybe add citation of somebody who has done something like this already?}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+\subsection{Mapping Acyclic Ground \dcproblogsty to Weighted SMT Formulas}
+
+In \problogsys, a query to a probabilistic program is mapped to a weighted propositional formula~\citep{fierens2015inference}. The probability of the query being satisfied is then the weight of the propositional formula. This weight is also called the {\em weighted model count}~\citep{darwiche2009modeling}.
+Inference in \dcproblogsys follows a similar principle, with the difference that a hybrid probabilistic program is mapped to a weighted SMT formula, instead of a weighted propositional formula.
+The weight of a weighted SMT formula is called the {\em weighted model integral}.
+% Weighted model integration (WMI)~\citep{belle2015probabilistic} generalizes weighted model counting in that it also allows for continuous variables.
+
+The probability of a query \probloginline{query(q)} in a \dcproblogsty program is obtained by computing the probability of an equivalent weighted SMT formula using weighted model integration:
+\begin{align}
+	p(\text{\probloginline{query(q)}})= p(\support_q) = \wmi(\support_q, w_q)
+\end{align}
+where $\support_q$ denotes the SMT formula and $\weight_q$ the associated weight.
+
+% We first encode a query to a \dcproblogsty program as a weighed logic formula and present then algebraic likelihood weighting (ALW), a probabilistic inference algorithm that computes the weight of a logic formula in the discrete-continuous domain in the context of probabilistic logic programming.
+
+% We just mapped the probability encoded by a \dcplpsty program to a weighted model integral. Inference in \dcplpsty/\dcproblogsty can hence be performed by any algorithm capable of computing the weighted model integral in question.
+
+
+\begin{example}[Mapping \dcplpsty to WMI] Consider again the \dcplpsty program in Example~\ref{ex:dcproblog_program_without_dc_plpdc}. If we ground the purely logic component of the program we obtain the ground program .
+\begin{dcplp*}{linenos}
+hot ~ flip(0.2). 
+cooling(1) ~ flip(0.99). 
+temperature(hot) ~ normal(27,5).
+temperature(not_hot) ~ normal(20,5).
+
+machine(1).
+works(1):- machine(1), cooling(1)=:=1.
+works(1):-
+	machine(1),
+	temperature(hot)<25.0,
+	hot=:=1. 
+works(1):-
+	machine(1),
+	temperature(not_hot)<25.0,
+	hot=:=0. 
+
+query(works(1)).
+	\end{dcplp*}
+	We map the acyclic ground logic program and the Boolean queries to an SMT formula $\support_q$:
+	\begin{align}
+		\support_q
+		&\leftrightarrow \text{\dcplpinline{machine(1)}} \land (\text{\dcplpinline{cooling(1)}}=1) \lor \nonumber \\
+		&\phantom{{}\leftrightarrow{}} \text{\dcplpinline{machine(1)}} \land (\text{\dcplpinline{temperature(hot)}}<25.0) \land (\text{\dcplpinline{hot}}=1) \lor \nonumber \\
+		&\phantom{{}\leftrightarrow{}} \text{\dcplpinline{machine(1)}} \land (\text{\dcplpinline{temperature(not_hot)}}<25.0) \land  (\text{\dcplpinline{hot}}=0) \nonumber \\
+		&\leftrightarrow (\text{\dcplpinline{cooling(1)}}=1) \lor \nonumber \\
+		&\phantom{{}\leftrightarrow{}} (\text{\dcplpinline{temperature(hot)}}<25.0) \land (\text{\dcplpinline{hot}}=1) \lor \nonumber \\
+		&\phantom{{}\leftrightarrow{}} (\text{\dcplpinline{temperature(not_hot)}}<25.0) \land  (\text{\dcplpinline{hot}}=0)  
+	\end{align}
+	The weight function $w_q$ is simply obtained by multiplying together the functions corresponding to the random variables declared in the \dcplpsty program.
+\end{example}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection{Correctness of the Transformations}
+
+In Algorithm~\ref{algo:inference_dc_problog} we outline the steps that are performed to map a \dcplpsty program to a weighted SMT formula. They closely follows the steps presented in~\citep[Section 5]{fierens2015inference}. 
+\ak{the query should be an inout of the alg as well (note that the Boolean queries in the program are the comparison atoms, not the inference query)}
+
+\begin{mdframed}
+	\begin{algo}[\dcplpsty to Weighted SMT] \label{algo:inference_dc_problog}
+		The algorithm takes as input a \dcplpsty program \dcpprogram, consisting of a countable set $P$ of ground distributional facts, a countable set of measurable Boolean queries $Q$, and a purely logic program $L$. The algorithm then maps $\dcpprogram$ through the following steps to a weighted SMT formula $(\support_q, \weight_q)$.
+		\begin{enumerate}
+			\item Ground out the purely logic program $L$ of $\dcpprogram$ with respect to a query $q$ and obtain the ground program $L_g$. This will also ground the Boolean queries in $Q$, leading to $Q_g$.
+    		\item Break cycles in the ground logic program $L_g$.
+			\item Convert the ground logic program consisting of $L_g$ and the set of measurable queries $Q_g$ to an equivalent SMT formula $\support_q$.
+			\item Define a weight function $\weight_q$, which corresponds to the countable set of random variables in $P$.
+		\end{enumerate}
+	\end{algo}
+\end{mdframed}
+
+
+\begin{theorem}
+The probability of a query $q$ to a valid \dcplpsty program $\dcpprogram$ can be expressed as a weighted model integral of a weighted SMT formula $(\support_q, \weight_q)$.\ak{too vague for a thm? why not make it concrete?}
+\end{theorem}
+
+\proof{The proof consists of showing that we can formulate the relevant ground program $L_g$ of the program $\dcpprogram$ with respect to the query $q$ as an SMT formula, that we can map the  }
+
+
+
+\todo{work this in after Section 2 and 3 are written}
+
+Let us consider the definition of weighted model integration given in \ref{app:wmi} and in particular the formulation given in Equation~\ref{eqn:wmi_sum_ive_weight}.
+\begin{align}
+	\wmi(\support, \weight) = \sum_{\langle\wsupport_i,\wweight_i\rangle \in \wtuples_f} \sum_{\bvars} \int \ive{\wsupport_i(\xvars, \bvars)} \wweight_i(\xvars) d\xvars 
+\end{align}
+
+
+Comparing the definition of the probability of a \dcplpsty program to the definition weighted model integration, and in particular the form of WMI given in Equation~\ref{eqn:wmi_sum_ive_weight}:
+\begin{align}
+	\sum_{\langle\wsupport_i,\wweight_i\rangle \in \wtuples_f} \sum_{\bvars} \int \ive{\wsupport_i(\xvars, \bvars)} \wweight_i(\xvars) d\xvars 
+\end{align}
+We cannot but appreciate the striking similarity between both Equations. The only substantial difference is that Equation~\ref{eq:definition_probability_dcplp} uses Lebesgue integration to marginalize out Boolean random variables, whereas Equation~\ref{eqn:wmi_sum_ive_weight} uses a summation. Other than that it is straight forward to map one equation to the other:
+
+\begin{itemize}
+	\item We associate the sum over the models $l \in MOD(L)$ to the sum over different SMT(\lra) formulas $\wsupport_i$ in weighted model
+	\item We associate a specific product of Iverson brackets of Boolean queries $\prod_{q \in Q(l)} \ive{q}$ to the Iverson bracket of a specific SMT(\lra) formula $\ive{\wsupport_i}$, which is a conjunction of atomic SMT(\lra) formulas.
+	\item We associate the distributions in $ D_l$ with the weight function $\wweight_i$.
+\end{itemize}
+\todo{end}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,357 @@
+\section{\dfplpsty}\label{sec:semantics}
+
+Sato's distribution semantics~\citep{sato1995statistical} start from a probability measure over a countable set of facts $\comparisonfacts$, the so-called \emph{basic distribution}, which he then extends this to a probability measure over the Herbrand interpretations of the full program.
+It is worth noting that the basic distribution is defined independently of the logical rules and that the random variables are mutually independent.
+
+In our case, the set $\comparisonfacts$ consists of ground Boolean comparison atoms over the random variables, for which we drop the mutual independence assumption. These comparison atoms form an interface between the random variables (represented as terms) and the logical layer (clauses) that reasons about truth values of atoms.
+\fixed{This is inspired by the work of \citet{gutmann2011magic} and \citet{nitti2016probabilistic} on the \dcsty language. We discuss this relationship in more detail in the related work Section~\ref{sec:related} and in Appendix~\ref{sec:dcproblog-dc}.
+}
+% While~\citet{gutmann2011magic} used the same principle to define the distribution semantics for \dcsty, they did not support negation. \citep{nitti2016probabilistic} extended the fixed point semantics for hybrid probabilistic logic programs (also introduced by \citet{gutmann2011magic}) to stratified programs with negation . However, by doing so \citet{nitti2016probabilistic} introduced a procedural element to the semantics.
+
+
+In this section we introduce the syntax and declarative semantics of \dfplpsty -- a probabilistic programming language with a minimal set of built-in predicates and functors. 
+We do this in three steps.
+Firstly, we discuss distributional facts and the probability measure over random variables they define (Section~\ref{sec:dist_facts_rand_var}).
+Secondly, we introduce the Boolean comparison atoms that form the interface layer between random variables and a logic program (Section~\ref{sec:boolean_comparison_atoms}).
+Thirdly, we add the logic program itself (Section~\ref{sec:log_cons_bool_comp}).
+Fourht, we discuss practical considerations for constructing sets of distributional facts (Section~\ref{sec:fintiedistdb}).
+An overview table of the notation related to semantics is provided in Appendix~\ref{app:table}.
+
+\begin{definition}[Reserved Vocabulary]
+    \label{def:reserved_vocabulary}
+We use the following {\em reserved} vocabulary (built-ins), whose intended meaning is fixed across programs:
+\begin{itemize}
+    \item a finite set $\distributionfunctors$ of \emph{distribution functors}.
+    \item a finite set $\arithmeticfunctors$ of \emph{arithmetic functors}.
+    % \footnote{
+    %     As logic programming generally operates on a countable universe, we restrict the arithmetic functors to the rational numbers (constructed from the natural numbers and appropriate functors). Similarly to implementations of \prologsty, an implementation of \dcproblogsty can support integers and floating point numbers using external arithmetic engines~\cite[Chapter 9]{sterling1994art}. We will use those in our examples for ease of readability.
+    % }
+    \item A finite set $\comparisonpredicates$ of binary \emph{comparison predicates}, 
+    \item the binary predicate \predicate{~}{2} (in infix notation).
+\end{itemize}
+\end{definition}
+
+Examples of distribution functors that we have already seen in Section~\ref{sec:panorama} are \functor{poisson}{1} and \functor{flip}{1} but may also include further functors such as \functor{normal}{2} to denote normal distributions. Possible arithmetic functors are \functor{*}{2} (\cf Example~\ref{example:sweets_dc}) but also \functor{max}{2}, \functor{+}{2}, \functor{abs}{1}, \etc.
+Binary comparison predicates (in Prolog syntax and infix notation) are \predicate{<}{2}, \predicate{>}{2}, \predicate{=<}{2}, \predicate{>=}{2}, \predicate{=:=}{2}, \predicate{=\=}{2}.
+The precise definitions of $\distributionfunctors$, $\arithmeticfunctors$ and $\comparisonpredicates$ are left to system designers implementing the language.
+
+\begin{definition}[Regular Vocabulary] \label{def:regular_vocabulary}
+    We call an atom $\mu(\rho_1, \dots, \rho_k)$ whose predicate \mathfunctor{\mu}{k} is not part of the reserved vocabulary a \emph{regular} atom. The set of all regular atoms constitutes the regular vocabulary. 
+\end{definition}
+
+
+As a  brief comment on notation: in the remainder of the paper we will usually denote logic program expressions in teletype font (\eg \probloginline{4>x}) when giving examples. When defining new concepts or stating theorems and propositions, we will use the Greek alphabet.
+
+
+\subsection{Distributional Facts and Random Variables}\label{sec:dist_facts_rand_var}
+
+\begin{definition}[Distributional Fact]\label{def:distfact}
+A distributional fact is of the form $\nu \sim \delta$, with $\nu$ a regular ground term, and $\delta$ a ground term whose functor is in $\distributionfunctors$. 
+The distributional fact states that the ground term $\nu$ is interpreted as a random variable distributed according to $\delta$.
+\end{definition}
+
+\begin{definition}[Sample Space]\label{def:samplespace}
+    Let $\nu$ be be a random variable distributed according to $\delta$. The set of possible samples (or values) for $\nu$ is the sample space denoted by $\samplespace_\nu$ and which is determined by $\delta$. We denote a sample from $\samplespace_\nu$ by $\samplefunction(\nu)$, where $\samplefunction$ is the {\em sampling} or {\em value} function. 
+\end{definition}
+
+
+\begin{definition}[Distributional Database]\label{def:distDB}
+A \emph{distributional database} is a \new{(not necessarily countable)} set $\distdb=\{\nu_1 \sim \delta_1,\nu_2 \sim \delta_2, \ldots \}$ of distributional facts, with distinct $\nu_i$. We let $\randomvariableset= \{\nu_1, \nu_2, \dots \}$ denote the set of random variables.
+\end{definition}
+
+
+\begin{example}\label{ex:dist_db} 
+The following distributional database encodes a Bayesian network with  normally distributed random variables, two of which serve as parameters in the distribution of another one. We thus have $\randomvariableset= \{ \text{\probloginline{x}}, \text{\probloginline{y}},\text{\probloginline{z}} \}$.
+\begin{problog*}{linenos}
+% distributional facts $\distdb$
+x ~ normal(5,2).
+y ~ normal(x,7).
+z ~ normal(y,1).
+\end{problog*}
+\end{example}
+
+
+
+\new{
+\begin{definition}[Well-Defined Distributional Database]
+    \label{def:well-distdb}
+    We call a distributional database $\distdb$ well-defined if and only if the product of probability spaces induced by the random variables in $\distdb$ is unique. We denote this product probability space by
+    $\probabilityspace_\distdb=(\samplespace_\distdb, \sigmaalgebra_\distdb, \probabilitymeasure_\distdb)$, where $\samplespace_\distdb$ is the sample space, $\sigmaalgebra_\distdb$ the sigma-algebra, and  $\probabilitymeasure_\distdb$ the probability measure. 
+\end{definition}
+
+\new{
+Note that in Definition~\ref{def:distDB} we do not impose the restriction of having a countable set of random variables. This allows for modelling a rich class of probabilistic models, including random processes that are described via uncountable sets of random variables. We discuss the construction of well-defined databases in Section~\ref{sec:fintiedistdb}.
+}
+
+
+}
+
+
+
+% \begin{restatable}{proposition}{proppv}
+% 	\label{prop:pv}
+% A well-defined distributional database~$\distdb$  defines a unique probability measure $\measurerandomvariableset$ on value assignments $\samplefunction(\randomvariableset)$.
+% \end{restatable}
+
+% \begin{proof}
+%     See Appendix~\ref{app:proof:pv}.
+% \end{proof}
+
+%%%%%% comparison atom layer %%%%%%%%%%
+
+\subsection{Boolean Comparison Atoms over Random Variables} \label{sec:boolean_comparison_atoms}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Starting from a well-defined distributional database, we now introduce the \new{probability space $\probabilityspace_\comparisonfacts$ induced by Boolean comparison atoms}, which corresponds to the basic (discrete) distribution in Sato's distribution semantics.
+
+\begin{definition}[Boolean Comparison Atoms]\label{def:comparison-atoms-set}
+Let $\distdb$ be a well-defined distributional database. 
+A binary \emph{comparison atom} $\gamma_1 {\bowtie} \gamma_2$ over $\distdb$ is a ground atom with predicate $\bowtie \in \comparisonpredicates$. The ground terms $\gamma_1$  and $\gamma_2$ are either random variables in $\randomvariableset$ or terms whose functor is in $\arithmeticfunctors$.
+We denote by $\comparisonfacts$ a countable set of \new{$\probabilitymeasure_\distdb$-measurable} 
+Boolean comparison atoms over $\distdb$.
+\end{definition}
+
+\begin{example}
+    Examples of Boolean comparison atoms over the distributional database of Example~\ref{ex:dist_db} include   \probloginline{z>10},  \probloginline{x<y}, \probloginline{abs(x-y)=<1},  and \probloginline{7*x=:=y+5}. 
+\end{example}
+
+\new{
+\begin{restatable}{proposition}{propomegaf}
+    \label{prop:omegaf}
+The Boolean comparison atoms $\comparisonfacts$ induce a product sample space $\samplespace_\comparisonfacts$.
+\end{restatable}
+
+\begin{proof}
+    See Appendix~\ref{app:proof:omegaf}.
+\end{proof}
+
+
+}
+
+\new{
+
+\begin{restatable}{proposition}{proppfsigma}
+    \label{prop:pfsigma}
+    The Boolean comparison atoms $\comparisonfacts$ induce a sigma-algebra $\sigmaalgebra_\comparisonfacts{\subseteq}\sigmaalgebra_\distdb$.
+\end{restatable}
+
+
+\begin{proof}
+    See Appendix~\ref{app:proof:pfsigma}.
+\end{proof}
+
+}
+
+\new{
+
+\begin{restatable}{proposition}{proppf}
+    \label{prop:pf}
+Let $\distdb$ be a well-defined distributional database, the function $\probabilitymeasure_\comparisonfacts$ defined via
+$
+\probabilitymeasure_\comparisonfacts(A)
+=
+\frac
+{
+    \probabilitymeasure_\distdb(A)
+}
+{
+    \probabilitymeasure_\distdb(\samplespace_\comparisonfacts)
+}
+$ defines a unique probability measure over the sample space $\samplespace_\comparisonfacts$ and the sigma algebra $\sigmaalgebra_\comparisonfacts$.
+\end{restatable}
+
+\begin{proof}
+    See Appendix~\ref{app:proof:pf}.
+\end{proof}
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+\new{
+
+
+\begin{proposition}
+    The triplet $\probabilityspace_\comparisonfacts= (\samplespace_\comparisonfacts, \sigmaalgebra_\comparisonfacts, \probabilitymeasure_\comparisonfacts)$ forms a probability space.
+\end{proposition}
+
+\begin{proof}
+    This follows immediately from Propositions \ref{prop:omegaf}, \ref{prop:pfsigma}, and \ref{prop:pf}.
+\end{proof}
+Note that, while \citeauthor{sato1995statistical} refers to $\probabilitymeasure_{\comparisonfacts}$ as the \textit{basic distribution}, we use the term  \textit{basic measure}. This is due to the fact that we do not necessarily have a distribution.
+}
+
+
+%%%%%% logic program layer %%%%%%%%%%
+
+\subsection{Logical Consequences of Boolean Comparisons}\label{sec:log_cons_bool_comp}
+We now define the semantics of a \dfplpsty program, \ie, extend the basic measure $\measurecomparisonfacts$ over the comparison atoms to a measure over the Herbrand interpretations of a logic program.
+
+\begin{definition}[\dfplpsty Program]\label{def:core-prog}
+A \dfplpsty program $\dfprogram= \distdb \cup \logicprogram $ consists of a well-defined distributional database $\distdb$ (Definition~\ref{def:well-distdb}), comparison atoms $\comparisonfacts$ (Definition~\ref{def:comparison-atoms-set}), and a normal logic program $\logicprogram$ where clause heads belong to the regular vocabulary (cf. Definition~\ref{def:regular_vocabulary}), and which can use comparison atoms from $\comparisonfacts$ in their bodies.
+\end{definition}
+
+\begin{example}\label{ex:random_choice_dependency}
+We further extend the running example.
+\begin{problog*}{linenos}
+% distributional facts $\distdb$
+x ~ normal(5,2).
+y ~ normal(x,7).
+z ~ normal(y,1).
+% logic program $\logicprogram$
+a :- abs(x-y) =< 1. 
+b :- not a, z>10.
+\end{problog*}
+The logic program defines two logical consequences of Boolean comparisons, where \probloginline{a} is true if the absolute difference between random variables \probloginline{x} and \probloginline{y} is at most one, and \probloginline{b} is true if \probloginline{a} is false, and the random variable \probloginline{z} is greater than $10$. 
+\end{example}
+
+In order to extend the basic measure to logical consequences, \ie logical rules, we require the notion of a {\em consistent comparisons database} (CCD).
+The key idea is that samples of the random variables in $\distdb$ jointly determine a truth value assignment to the comparison atoms in $\comparisonfacts$.
+
+
+\begin{definition}
+    A {\em value assignment}
+    $\samplefunction(\randomvariableset)$ is a combined value assignment to all random variables $\randomvariableset=\{\nu_1,\nu_2,... \}$, \ie,  $\samplefunction(\randomvariableset)=(\samplefunction(\nu_1),\samplefunction(\nu_2),\ldots)$.
+\end{definition}
+
+
+\begin{definition}[Consistent Comparisons Database]\label{def:consistent-fact-db}
+    Let $\distdb$ be a well-defined distributional database,  $\comparisonfacts=\{\kappa_1, \kappa_2,\ldots\}$ a set of measurable Boolean comparison atoms, and  $\samplefunction(\randomvariableset)$ a  value assignment to all random variables $\randomvariableset=\{ \nu_1,\nu_2,... \}$. 
+    We define $I_{\samplefunction(\randomvariableset)}(\kappa_i)=\top$ if $\kappa_i$ is true after setting all random variables to their values under $\samplefunction(\randomvariableset)$, and $I_{\samplefunction(\randomvariableset)}(\kappa_i) = \bot$ otherwise. $I_{\samplefunction(\randomvariableset)}$ induces the consistent comparisons database $\comparisonfacts_{\samplefunction(\randomvariableset)}=\{\kappa_i \mid I_{\samplefunction(\randomvariableset)}(\kappa_i) = \top\}$.
+\end{definition}
+
+To define the semantics of a \dfplpsty program $\dfprogram$, we now require that, given a CCD $\comparisonfacts_{\samplefunction(\randomvariableset)}$, the logical consequences in $\dfprogram$ are uniquely defined.
+As common in the PLP literature, we achieve this by requiring the program to have a two-valued well-founded model~\citep{van1991well} for each possible value assignment $\samplefunction(\randomvariableset)$.
+
+
+\begin{definition}[Valid \dfplpsty Program]\label{def:core-valid}
+A \dfplpsty program $\dfprogram=\distdb \cup\logicprogram $ is called \emph{valid} if and only if for each CCD $\comparisonfacts_{\samplefunction(\randomvariableset)}$, the logic program $\comparisonfacts_{\samplefunction(\randomvariableset)} \cup  \logicprogram$ has a two-valued well-founded model. 
+\end{definition}
+
+
+
+We follow the common practice of defining the semantics with respect to ground programs; the semantics of a program with non-ground $\logicprogram$ is defined as the semantics of its grounding with respect to the  Herbrand universe.
+
+\begin{restatable}{proposition}{proppp}
+\label{prop:pp}
+A valid \dfplpsty program \dfprogram  induces a unique probability measure $\probabilitymeasure_\dfprogram$ over Herbrand interpretations.
+\end{restatable}
+
+\begin{proof}
+    See Appendix~\ref{app:proof:pp}.
+\end{proof}
+
+
+\begin{definition}
+    We define the declarative semantics of a \dfplpsty program \dfprogram to be the probability measure $\probabilitymeasure_\dfprogram$, and we call this the {\em measure semantics}.  
+\end{definition}
+
+In contrast to the imperative semantics of~\citet{nitti2016probabilistic}, in \dfplpsty the connection between comparison atoms and the logic program is purely declarative. That is, logic program negation on comparison atoms negates the (interpreted) comparison. For example, if we have a random variable \probloginline{n}, then \probloginline{n>=2} is equivalent to \probloginline{not n<2}. Such equivalences do not hold in the stratified programs introduced by~\citet{nitti2016probabilistic}.
+This then allows the programmer to refactor the logic part as one would expect. 
+
+
+
+\subsection{Constructing Distributional Databases}
+\label{sec:fintiedistdb}
+
+\new{
+In the definition of the measure semantics, we simply assumed that the distributional database $\distdb$ was valid, and we forewent an explicit construction of such databases.
+When implementing \dcplpsty we would, however, ideally have a prescription for constructing $\distdb$.
+A practical choice that is often made in probabilistic logic programming~\citep{kersting2000bayesian,fierens2015inference} restricts the distributional database to be a finite (and consequently countable) set.
+For such distributional databases with a countable number of random variables to be meaningful, they have to encode a unique joint distribution over the variables~$\randomvariableset$.
+}
+
+We will now provide the conditions under which a finite distributional database is valid, but first we define the concepts of parents and ancestors that, which also hold for non-finite distributional databases.
+\begin{definition}[Parents and Ancestors of Random Variables]
+    \label{def:df_ancestor}
+Let $\distdb$ be a distributional database. For facts $\nu_p\sim\delta_p$ and $\nu_c\sim\delta_c$  in $\distdb$.  The random variable $\nu_p$  is a \emph{parent} of the child random variable $\nu_c$ if and only if  $\nu_p$ appears in $\delta_c$. We define \emph{ancestor} to be the transitive closure of \emph{parent}. A node's ancestor set is the set of all its ancestors.
+\end{definition}
+
+\begin{example}[Ancestor Set]
+    We graphically depict the ancestor set of the distributional database in Example~\ref{ex:dist_db} in Figure~\ref{fig:ex:dist_db_ancestor}.
+
+  
+    \begin{figure}[h]
+        \centering
+    \tikzstyle{node}=[circle, text centered, draw,thick]
+        \begin{tikzpicture}[remember picture]
+			
+
+            \node[node] (x) {\probloginline{x}};
+            \node[node] (y) [right=of x] {\probloginline{y}};
+            \node[node] (z) [right=of y] {\probloginline{z}};
+
+			\draw[->,thick] (x) to  (y);
+			\draw[->,thick] (y) to  (z);
+
+
+        \end{tikzpicture}
+        \caption{Directed acyclic graph representing the ancestor relationship between the random variables in Example~\ref{ex:dist_db}. The ancestor set of \probloginline{x} is the empty set, the one of \probloginline{y} is $\{\mathprobloginline{x} \}$ and the one of \probloginline{z} is $\{\mathprobloginline{x}, \mathprobloginline{y} \}$.}
+        \label{fig:ex:dist_db_ancestor}
+    \end{figure}
+
+\end{example}
+
+
+
+
+
+% \new{
+% \begin{definition}[Ancestor Chain]
+%     \label{def:df_ancestor_chain}
+% An ancestor chain is an ordered set of random variables $\nu_1, \nu_2, \dots$ for which we have that $\nu_{i+1}$ is a parent of $\nu_{i}$. 
+% \end{definition}
+% }
+
+
+
+
+
+
+
+\begin{definition}[Well-Defined Finite Distributional Database]\label{def:well-defd-facts}
+A finite distributional database~$\distdb$  is called \emph{well-defined} if and only if it satisfies the following criteria:
+\begin{description}
+    \item[W!] Each $\nu \in \randomvariableset$ has a finite set of ancestors.
+    \item[W1] The ancestor relation on the variables~$\randomvariableset$ is acyclic.
+\item[W3] If $\nu \sim \delta \in \distdb$ and the parents of $\nu$ are $\{ \nu_1, \dots, \nu_m \}$, then replacing each occurrence of $\nu_i$ in $\delta$ by a sample $\samplefunction(\nu_i)$ always results in a well-defined distribution for~$\nu$. 
+\end{description}  
+\end{definition}
+
+The distributional database in Example~\ref{ex:dist_db} is well-defined: the ancestor relation is acyclic and finite, and as normally distributed random variables are real-valued, using such a variable as the mean of another normal distribution is always well-defined. The database would no longer be well-defined after adding \probloginline{w ~ poisson(x)}, as not all real numbers can be used as a parameter of a Poisson distribution. 
+
+\new{
+Constructing valid finite distributional databases can be viewed as building Bayesian networks over a finite set of variables, where nodes represent (conditional) random variables and where each node's distribution is parameterized by the node's parents.
+This approach was, for instance, taken by~\citep{kersting2000bayesian}.
+More recently, \citet{wu2018discrete} extended these finite Bayesian network to allow also (under certain conditions) for infinite and uncountable numbers of nodes in these Bayesian networks. They dub this extension {\em measure theoretic Bayesian network} (MTBNs). 
+
+While our measure semantics allow for MTBNs as the distributional database, we will restrict ourselves in the remainder of the paper to distributional databases that are finite. We leave it as future work on how to effectively use MTBNs in probabilistic logic programming. This would necessitate developing novel syntax and inference algorithms able to handle, for example, stochastic processes.
+}

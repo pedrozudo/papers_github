@@ -1,0 +1,277 @@
+\section{A Panoramic Overview}
+\label{sec:panorama}
+
+Before diving into the technical details of the paper we first give a high-level overview of the \dcproblogsty language. This will also serve us as roadmap to the remainder of the paper.  
+We will first introduce, by example, the \dcproblogsty language (Section~\ref{sec:panorama_semantics}). The formal syntax and semantics of which are discussed in Section~\ref{sec:semantics} and Section~\ref{sec:dcproblog}.
+In Section~\ref{sec:panorama_inference} we demonstrate how to perform probabilistic inference in \dcproblogsty by translating a queried \dcproblogsty program to an algebraic circuit~\citep{zuidbergdosmartires2019transforming}. 
+Before giving the details of this transformation in Section~\ref{sec:dc2smt} and Section~\ref{sec:alw}, we define conditional probability queries on \dcproblogsty programs (Section~\ref{sec:inference-tasks}).
+The paper ends with a discussion on related work (Section~\ref{sec:related}) and concluding remarks in Section~\ref{sec:conclusions}.
+
+Throughout the paper, we assume that the reader is familiar with basic concepts from logic programming and probability theory. We provide, however, a brief refresher of basic logic programming concepts in Appendix~\ref{app:lp_new}. In Appendix~\ref{app:table} we give a tabular overview of notations used, and in the remaining sections of the appendix we give proofs to propositions and theorems or discuss in more detail some of the more subtle technical issues.
+
+\subsection{Panorama of the Syntax and Semantics}
+\label{sec:panorama_semantics}
+
+
+\begin{example}
+    \label{example:sweets_dc}
+    A shop owner creates random bags of  sweets with two independent random binary properties (\emph{large} and \emph{balanced}).  He first picks the number of red sweets from a Poisson distribution whose parameter is 20 if the bag is large and 10 otherwise, and then the number of yellow sweets from a Poisson whose parameter is the number of red sweets if the bag is balanced and twice that number otherwise. His favorite type of bag contains more than 15 red sweets and no less than 5 yellow ones. We model this in \dcproblogsty as follows:
+\begin{problog*}{linenos}
+0.5::large.
+0.5::balanced.
+
+red ~ poisson(20) :- large.
+red ~ poisson(10) :- not large.
+
+yellow ~ poisson(red) :- balanced.
+yellow ~ poisson(2*red) :- not balanced.
+
+favorite :- red > 15, not yellow < 5.
+\end{problog*}
+
+In the first two lines we encounter {\em probabilistic facts}, a well-known modelling construct in discrete PLP languages (\eg~\citep{de2007problog}). Probabilistic facts, written as logical facts labeled with a probability, express Boolean random variables that are true with the probability specified by the label. For instance, \probloginline{0.5::large} expresses that \probloginline{large} is true with probability \probloginline{0.5} and false with probability \probloginline{1-0.5}.
+
+In Lines 4 to 8, we use {\em distributional clauses} (DCs); introduced by~\citet{gutmann2011magic} into the PLP literature. DCs are of the syntactical form \probloginline{v~d:-b} and define random variables \probloginline{v} that are distributed according to the distribution \probloginline{d}, given that \probloginline{b} is true.
+For example, Line 4 specifies that when \probloginline{large} is true, \probloginline{red} is distributed according to a Poisson distribution. 
+We call the left-hand argument of a \predicate{~}{2} predicate in infix notation a {\em random term}. The random terms in the program above are \probloginline{red} and \probloginline{yellow}.
+
+Note how random terms reappear in three distinct places in the \dcproblogsty program. First, we can use them as parameters to other distributions, \eg \probloginline{yellow ~ poisson(red)}. 
+Second, we can use them within arithmetic expression, such as \probloginline{2*red} in Line 8.
+Third, we can use them in comparison atoms (\probloginline{red>15}) in Line 10. The comparison atoms appear in the bodies of logical rules that express logical consequences of probabilistic event, for example having more than 15 red sweets and less than 5 yellow ones.
+\end{example}
+
+
+
+
+Probabilistic facts and distributional clauses are the main modelling constructs to define random variables in probabilistic logic programs.
+As they are considered to be fundamental building blocks of a PLP language, the semantics of a language are defined in function of these syntactical constructs (\cf.~\citep{fierens2015inference,gutmann2011magic}). 
+We now make an important observation: probabilistic facts and distributional clauses can be deconstructed into a much more fundamental concept, which we call the {\em distributional fact}.  
+Syntactically, a distributional fact is of the form \probloginline{v~d}. That is, a distributional clause with an empty body.
+As a consequence, probabilistic facts and distributional clauses do not constitute fundamental concepts in PLP but are merely special cases, \ie while helpful for writing concise programs, they are only of secondary importance when it comes to semantics.
+
+
+\begin{example}\label{ex:sweets_df}
+We now rewrite the program in Example~\ref{example:sweets_dc} using distributional facts only. Note how probabilistic facts are actually syntactic \fixed{sugar for distributional facts}. The random variable is now distributed according to a Bernoulli distribution (\probloginline{flip}) and the atom of the probabilistic fact is the head of a rule with a probabilistic comparison in its body (\eg Lines 1 and 2 in the program below). Rewriting distributional facts is more involved. The main idea is to introduce a distinct random term for each distributional clause. Take for example, the random term \probloginline{red} in Example~\ref{example:sweets_dc}. This random term encodes, in fact, two distinct random variables, which we denote in the program below \probloginline{red_large} and \probloginline{red_small}. We now have to propagate this rewrite through the program and replace every occurrence of \probloginline{red} with \probloginline{red_large} and \probloginline{red_small}. This is why we get instead of two distributional clauses for \probloginline{yellow}, four distributional facts. It explains also why we get instead of one rule for \probloginline{favorite} in Example~\ref{example:sweets_dc} four rules now.
+
+    \begin{problog*}{linenos}
+rv_large ~ flip(0.5).
+large :- rv_large=:=1.
+rv_balanced ~ flip(0.5).
+balanced :- rv_balanced=:=1.
+
+red_large ~ poisson(20).
+red_small ~ poisson(10).
+
+yellow_large_balanced ~ poisson(red_large).
+yellow_large_unbalanced ~ poisson(2*red_large).
+yellow_small_balanced ~ poisson(red_small).
+yellow_small_unbalanced ~ poisson(2*red_small).
+
+favorite :- large, red_large > 15, 
+              balanced, not yellow_large_balanced < 5.
+favorite :- large, red_large > 15, 
+              not balanced, not yellow_large_unbalanced < 5.
+favorite :- not large, red_small > 15, 
+              balanced, not yellow_small_balanced < 5.
+favorite :- not large, red_small > 15, 
+              not balanced, not yellow_small_unbalanced < 5.
+\end{problog*}
+\end{example}
+
+The advantage of using probabilistic facts and distributional clauses is clear. They allow us to write much more compact and readable programs. However, as they do not really constitute fundamental building blocks of PLP, defining the semantics of a PLP language is much more intricate. For this reason we adapt a two-stage approach to define the semantics of \dcproblogsty. We first define the semantics of \dfplpsty (distributional fact PLP), a bare-bones language with no syntactic sugar only relying on distributional facts to define random variables. This happens in Section~\ref{sec:semantics}. During the second stage we define the program transformations to rewrite syntactic sugar (\eg distributional clauses) as distributional facts. The semantics of \dfplpsty and the program transformations then give us the \dcproblogsty language (\cf Section~\ref{sec:dcproblog}).
+
+
+
+
+
+
+
+
+\subsection{Panorama of the Inference}
+\label{sec:panorama_inference}
+
+The part of the paper concerning inference consists of three sections. First, we start in Section~\ref{sec:inference-tasks} to define a query to a \dcproblogsty program.
+For instance, we might be interested in the probability
+$$
+P(\mathprobloginline{favorite}=\top, \mathprobloginline{large}=\bot)
+$$
+In other words, the joint probability of \probloginline{favorite} being true and \probloginline{large} being false. While the example query above is simply a joint probability, we generalize this in Section~\ref{sec:inference-tasks} to conditional probabilities (possible with zero-probability events in the conditioning set).
+
+Second, we map the queried ground program to a labeled Boolean formula. Contrary to the approach taken by~\citet{fierens2015inference} the labels are not probabilities (as usual in PLP) but indicator functions. This mapping to a labeled Boolean formula happens again in a series of program transformations, which we describe in Section~\ref{sec:dc2smt}. One of these steps is obtaining the relevant ground program to a query. For example, for the query above 
+only the last two rules for  \probloginline{favorite} matter.
+\begin{problog*}{}
+favorite :- not large, rs > 15, balanced, not ysb < 5.
+favorite :- not large, rs > 15, not balanced, not ysu < 5.
+\end{problog*}
+Here, we abbreviated \probloginline{red_small} as \probloginline{rs} and \probloginline{yellow_small_balanced} and \probloginline{yellow_small_unbalanced} as \probloginline{ysb} and \probloginline{ysu}, respectively. We can further rewrite these rules by replacing \probloginline{large} and \probloginline{balanced} with equivalent comparison atoms and pushing the negation into the comparisons:
+\begin{problog*}{}
+favorite :- rvl=:=0, rs > 15, rvb=:=1, ysb >= 5.
+favorite :- rvl=:=0, rs > 15, rvb=:=0, ysu >= 5.
+\end{problog*}
+Again using abbreviations: \probloginline{rvl} for \probloginline{rv_large} and \probloginline{rvb} for \probloginline{rv_balanced}.
+
+In Section~\ref{sec:alw} we then show how to compute the expected value of the labeled propositional Boolean formula corresponding to these rules by compiling it into an algebraic circuit, which is graphically depicted in Figure~\ref{fig:circuit:panorama}. In order to evaluate this circuit and obtain the queried probability (expected value), we introduce the IALW algorithm.
+
+The idea of IALW is the following: sample the random variables dangling at the bottom of the circuit by sampling parents before children. For instance, we first sample from $\mathprobloginline{poisson}(10)$ (at the very bottom) before sampling from $\mathprobloginline{poisson}(rs)$ using the sampled value of the parent as the parameter of the child. Once we reach the comparison atoms (\eg $ysb\geq5$) we stick in the sampled values for the mentioned random variables. This evaluates the comparisons to either $1$ or $0$, for which we then perform the sums and products as prescribed by the circuit. We get a Monte Carlo estimate of the queried probability by averaging over multiple such evaluations of the circuit.
+
+The method, as sketched here, is in essence the probabilistic inference algorithm Sampo presented in~\citep{zuidbergdosmartires2019exact}. The key contribution of IALW, which we discuss in Section~\ref{sec:alw}, is to extend Sampo such that conditional inference with zero probability events is performed correctly.  
+
+\begin{figure}
+	\resizebox{\linewidth}{!}{%
+
+		\tikzstyle{distribution}=[rectangle, text centered, fill=white, draw, dashed,thick]
+		\tikzstyle{leaf}=[rectangle, text centered, fill=gray!10, draw,thick]
+
+
+
+		\tikzstyle{negate}=[
+			rectangle split,
+			rectangle split parts=3, 
+			rectangle split horizontal,
+			text centered,
+			rectangle split part fill={gray!10,white,gray!10},
+			draw,
+			rectangle split draw splits=false,
+			anchor=center,
+			align=center,
+			thick
+		]
+		\newcommand{\minus}{  ${\bm e^\otimes}$ \nodepart{second} ${{\bm \ominus}}$ \nodepart{third}  \phantom{${\bm e^\otimes}$}}
+
+		\tikzstyle{sumproduct}=[
+			rectangle split,
+			rectangle split parts=3, 
+			rectangle split horizontal,
+			text centered,
+			rectangle split part fill={gray!10,white,gray!10},
+			draw,
+			rectangle split draw splits=false,
+			anchor=center,
+			align=center,
+			thick
+		]
+		\newcommand{\supr}[1]{  \phantom{${\bm e^\otimes}$} \nodepart{second} ${{\bm #1}}$ \nodepart{third} \phantom{${\bm e^\otimes}$}}
+		
+		\tikzstyle{circuitedge}=[ultra thick, thick,->]
+		\tikzstyle{distributionedge}=[thick,->, dashed, in=-90]
+		
+		\tikzstyle{indexnode}=[draw,circle, inner sep=1pt]				
+		
+		\begin{tikzpicture}[remember picture]
+			
+			\node[sumproduct] (r) at (200.54bp,378.0bp) {\supr{\otimes}};
+			\draw[ultra thick, thick,->] (r.90) to  ([shift={(0,1)}]r.90);
+			
+			\node[sumproduct] (l1) [below left = of r] {\supr{\oplus}};
+			\node[sumproduct] (r1) [below right = of r,  yshift=-5.5cm]  {\supr{\otimes}};
+
+			\node[leaf] (r21) [below right=of r1,  xshift=-1.3cm] {$\subnode{var_rvl}{rvl}=0$};
+			\node[leaf] (r22) [below left=of r1, xshift=1.3cm] {$\subnode{var_rs}{rs}>15$};
+
+
+
+
+			\node[sumproduct] (l21) [below left=of l1, xshift=0.5cm] {\supr{\otimes}};
+			\node[sumproduct] (l22) [below right=of l1, xshift=-0.5cm] {\supr{\otimes}};
+
+
+			\node[leaf] (l31) [below right=of l21,  xshift=-1.5cm] {$\subnode{var_rvb}{rvb}=1$};
+			\node[leaf] (l32) [below left=of l21,  xshift=1.5cm] {$\subnode{var_ysb}{ysb}\geq5$};
+
+			\node[distribution] (rvb)  [below=of l1,  yshift=-3.5cm,xshift=-0.5cm] {$\mathprobloginline{flip}(0.5)$};
+			\node[distribution] (ysb)  [left=of rvb, xshift=0.4cm ]{$\mathprobloginline{poisson}(\subnode{poisson_rs_ysb}{rs})$};
+			\node[distribution] (ysu)  [right=of rvb, xshift=-0.4cm] {$\mathprobloginline{poisson}(2\times \subnode{poisson_rs_ysu}{rs})$};
+
+			\node[leaf] (l33) [below left=of l22,  xshift=1.5cm] {$\subnode{var_rvbbis}{rvb}=0$};
+			\node[leaf] (l34) [below right=of l22,  xshift=-1.5cm] {$\subnode{var_ysu}{ysu}\geq5$};
+
+			\node[distribution] (rvl)  [below=of r21] {$\mathprobloginline{flip}(0.5)$};
+			\node[distribution] (rs)  [below=of rvb, yshift=-2cm] {$\mathprobloginline{poisson}(10)$};
+
+			\draw[circuitedge] (l1) to  (r.mid);
+			\draw[circuitedge] (r1) to  (r.three south |- r.mid);
+
+			\draw[circuitedge] (l21) to  (l1.mid);
+			\draw[circuitedge] (l22) to  (l1.three south |- l1.mid);
+
+			\draw[circuitedge] (l21) to  (l1.mid);
+			\draw[circuitedge] (l22) to  (l1.three south |- l1.mid);
+
+			\draw[circuitedge] (l32) to  (l21.mid);
+			\draw[circuitedge] (l31) to  (l21.three south |- l21.mid);
+
+			\draw[circuitedge] (l33) to  (l22.mid);
+			\draw[circuitedge] (l34) to  (l22.three south |- l22.mid);
+
+			\draw[circuitedge] (r22) to  (r1.mid);
+			\draw[circuitedge] (r21) to  (r1.three south |- r1.mid);
+
+			\draw[distributionedge,out=90]  (ysb) to (var_ysb);
+			\draw[distributionedge,out=90]  (ysu) to (var_ysu);
+			\draw[distributionedge,out=90]  (rvb) to (var_rvb);
+			\draw[distributionedge,out=90]  (rvb) to (var_rvbbis);
+
+			\draw[distributionedge,out=90]  (rs) to (poisson_rs_ysb);
+			\draw[distributionedge,out=90]  (rs) to (poisson_rs_ysu);
+			\draw[distributionedge,out=90]  (rs) to (var_rs);
+
+			\draw[distributionedge,out=90]  (rvl) to (var_rvl);
+
+
+			
+
+			% \draw[circuitedge] (9) to  (14.mid);
+			% \draw[circuitedge] (13) to  (14.three south |- 14.mid);
+
+
+
+			% \node[leaf] (l41) [below left=of l31,  xshift=1.3cm] {$\subnode{var_l_rv}{rv\_b}=0$};
+			% \node[leaf] (l42) [below right=of l32, xshift=-1.3cm] {$\subnode{var_rs}{rs}>15$};
+
+			% \node[sumproduct] (12)  [below  = of 13] {\supr{\oplus}};
+			
+			% \node[sumproduct] (8)  [below=of 12]  {\supr{\otimes}};
+			
+			% \node[indexnode, left=of 14, xshift=0.9cm, yshift=0.4cm] {\footnotesize {$6$}};			
+			% \node[indexnode, left=of 13, xshift=0.9cm, yshift=0.4cm] {\footnotesize {$5$}};			
+			% \node[indexnode, left=of 8, xshift=0.9cm, yshift=0.4cm] {\footnotesize {$2$}};			
+			% \node[indexnode, left=of 12, xshift=0.9cm, yshift=0.4cm] {\footnotesize {$4$}};			
+			% \node[indexnode, left=of 9, xshift=0.9cm, yshift=0.4cm] {\footnotesize {$3$}};			
+			% \node[indexnode, left=of m1, xshift=0.9cm, yshift=0.4cm] {\footnotesize {$1$}};	
+			
+			
+			% \node[leaf, below= of 8, xshift=-0.2cm] (4)   {$\subnode{var_m0}{$m$}=1$};
+			% \node[leaf, below= of 8, xshift=1.8cm] (2) {$\subnode{var_m1}{$m$}=0$};				
+			% \node[leaf] (size1obs) [left=of 4, xshift=0cm]  {$\subnode{var_s_11_un}{size_{1}(1)} \doteq 0.4$};
+			% \node[leaf] (size0obs) [left=of 4, xshift=-4cm] {$\subnode{var_s_01_un}{size_{0}(1)} \doteq 0.4$};				
+
+			% \node[distribution] (size0)  [below=of size0obs] {\probloginline{beta(2,3)}};
+			% \node[distribution] (size1)  [below=of size1obs] {\probloginline{beta(4,2)}};
+			% \node[distribution] (flip)  [below= of 4, xshift=1cm] {\probloginline{flip(0.3)}};				
+
+
+			% \draw[distributionedge,out=90]  (size1) to (var_s_11_un);
+			% \draw[distributionedge,out=90] (size0) to  (var_s_01_un);
+			% \draw[distributionedge,out=160] (flip) to  (var_m0);
+			% \draw[distributionedge] (flip) to  (var_m1);
+
+
+			% %https://tex.stackexchange.com/questions/447989/anchor-node-names-for-tikz-rectangle-split-horizontal			
+			% \draw[circuitedge] (9) to  (14.mid);
+			% \draw[circuitedge] (13) to  (14.three south |- 14.mid);
+			% \draw[circuitedge] (m1) to  (9.mid);
+			% \draw[circuitedge] (12) to  (13.three south |- 13.mid);
+			% \draw[circuitedge] (size0obs) to   (m1.three south |- m1.mid);	
+			% \draw[circuitedge] (2) to  (12.three south |- 12.mid);				
+			% \draw[circuitedge] (size1obs) to   (8.mid);
+			% \draw[circuitedge] (4) to  (8.three south |- 8.mid);	
+			% \draw[circuitedge] (8) to  (9.three south |- 9.mid);	
+			% \draw[circuitedge] (8) to   (12.mid);
+			% \draw[circuitedge] (size0obs) to  (13.mid);
+
+		\end{tikzpicture}
+	}
+    \captionof{figure}{Graphical representation of the computation graph (\ie algebraic circuit) used to compute the  probability $(\mathprobloginline{favorite}=\top, \mathprobloginline{large}=\bot)$ using the IALW algorithm introduced in Section~\ref{sec:alw}.}
+    \label{fig:circuit:panorama}
+\end{figure}
+

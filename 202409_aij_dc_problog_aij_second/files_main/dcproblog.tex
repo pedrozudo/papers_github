@@ -1,0 +1,162 @@
+\section{\dcproblogsty} \label{sec:dcproblog}
+
+\fixed{
+While the previous section has focused on the core elements of the \dcproblogsty language, we now introduce syntactic sugar to ease modeling.
+We  consider three kinds of modeling patterns in \dfplpsty, and introduce a more compact notation for each of them.
+Here we focus on examples and intuitions and relegate the more technical details to Appendix~\ref{sec:detaileddcproblog}.
+Specifically, we discuss the precise semantics of the syntactic sugar introduced below and how to map it onto \dfplpsty language constructs (Appendix~\ref{sec:semantics_syntactic_sugar} and~\ref{sec:dcvalidity}).
+In Appendix~\ref{sec:Additionalsyntacticsugar} we introduce additional syntactic sugar constructs for user-defined sample spaces and multivariate distributions, and in Appendix~\ref{sec:beyondmixtures} we study the intricacies introduced by negation when using syntactic sugar. 
+}
+
+
+\subsection{Boolean Random Variables}
+
+The first modelling pattern concerns Boolean random variables, which we already encountered in Section~\ref{sec:panorama_semantics} as probabilistic facts (in \dcproblogsty) or as a combination of a Bernoulli random variable, a comparison atom, and a logic rule (in \dfplpsty). Below we give a more concise example.
+
+\begin{example}
+    We model, in \dfplpsty, an alarm that goes off for different reasons.
+    \begin{problog*}{linenos}
+issue1 ~ flip(0.1).
+issue2 ~ flip(0.6).
+issue3 ~ flip(0.3).
+
+alarm :- issue1=:=1, not issue2=:=1.
+alarm :- issue3=:=1, issue1=:=0.
+alarm :- issue2=:=1.
+    \end{problog*}
+\end{example}
+To make such programs more readable, we borrow the well-known notion of \emph{probabilistic fact} from discrete PLP, which directly introduces a logical atom as alias for the comparison of a random variable with the value \probloginline{1}, together with the probability of that value being taken.
+
+\begin{definition}[Probabilistic Fact]
+    A probabilistic fact is of the form $p\prob\mu$, where  $p$ is an arithmetic term that evaluates to a real number in the interval $[0,1]$ and $\mu$ is a regular ground atom.
+\end{definition}
+\begin{example}
+    We use probabilistic facts to rewrite the previous example.
+    \begin{problog*}{linenos}
+0.1::problem1.
+0.6::problem2.
+0.3::problem3.
+
+alarm :- problem1, not problem2.
+alarm :- problem3, not problem1.
+alarm :- problem2.
+    \end{problog*}
+\end{example}
+
+
+
+\subsection{Probabilistically Selected Logical Consequences}
+The second pattern concerns situations where a random variable with a finite domain is used to model a choice between several logical consequences:
+\begin{example}
+    We use a random variable to model a choice between whom to call upon hearing the alarm.
+    \begin{problog*}{linenos}
+call ~ finite([0.6:1,0.2:2,0.1:3]).
+alarm.
+call(mary) :- call=:=1, alarm.
+call(john) :- call=:=2, alarm.
+call(police) :- call=:=3, alarm.
+    \end{problog*}
+\end{example}
+To more compactly specify such situations, we borrow the concept of an \emph{annotated disjunction} from discrete PLP~\citep{vennekens2004logic}.
+
+\begin{definition}[Annotated Disjunction]
+    An annotated disjunction (AD) is a rule of the form
+    $$
+        p_1\prob \mu_1; \dots; p_n \prob \mu_n \lpif \beta.
+    $$
+    where the  $p_i$'s are arithmetic terms each evaluating to a number in $[0,1]$ with a total sum of at most $1$. The $\mu_i$'s are regular ground atoms, and $\beta$ is a (possibly empty) conjunction of literals.
+\end{definition}
+The informal meaning of such an AD is "if $\beta$ is true, it probabilistically causes one of the $\mu_i$ (or none of them, if the probabilities sum to less than one) to be true as well".
+
+
+\begin{example}
+    We now use an AD for the previous example.
+    \begin{problog}
+alarm.
+0.6::call(mary); 0.2::call(john); 0.1::call(police) :- alarm.
+    \end{problog}
+\end{example}
+
+It is worth noting that the same head atom may appear in multiple ADs, whose bodies may be non-exclusive, \ie, be true at the same time. That is, while a single AD \emph{can} be used to model a multi-valued random variable, \emph{not all} ADs  encode such variables.
+\begin{example}
+    The following program models the effect of two kids throwing stones at a window.
+    \begin{problog}
+0.5::throws(suzy).
+throws(billy).
+
+0.8::effect(broken); 0.2::effect(none) :- throws(suzy).
+0.6::effect(broken); 0.4::effect(none) :- throws(billy).
+    \end{problog}
+    Here, we have $P(\text{\probloginline{effect(broken)}})=0.76$ and $P(\text{\probloginline{effect(none)}})=0.46$, as there are worlds where both \probloginline{effect(broken)} and \probloginline{effect(none)} hold. The two ADs do hence not encode a categorical distribution.
+    This is explicit in the \dfplpsty program, which contains two  random variables (\probloginline{x1} and \probloginline{x2}):
+    \begin{problog}
+x0 ~ flip(0.5).
+throws(suzy) :- x0=:=1.
+throws(billy).
+
+x1 ~ finite([0.8:1,0.2:2]).
+effect(broken) :- x1=:=1, throws(suzy).
+effect(none) :- x1=:=2, throws(suzy).
+x2 ~ finite([0.6:1,0.4:2]).
+effect(broken) :- x2=:=1, throws(billy).
+effect(none) :- x2=:=2, throws(billy).
+    \end{problog}
+    % From a modeling perspective, it is good practice to prefer explicit random variables over ADs when encoding multi-valued random variables, \eg, 
+    % \begin{problog}
+    % 0.5::throws(suzy).
+    % throws(billy).
+
+    % hit(suzy) ~ flip(0.8).
+    % hit(billy) ~ flip(0.6).
+
+    % effect(broken) :- throws(X), hit(X)=:=1.
+    % effect(none) :- not effect(broken).
+    % \end{problog}
+\end{example}
+
+
+
+
+
+
+\subsection{Context-Dependent Distributions}\label{sec:sugar-dc}
+The third pattern is concerned with situations where the same conclusion is based on random variables with different distributions depending on specific properties of the situation, as illustrated by the following example.
+\begin{example}
+    We use two separate random variables to model that whether a machine works depends on the temperature being below or above a threshold. The temperature follows different distributions based on whether it is a hot day or not, but the threshold is independent of the type of day.
+    \begin{problog*}{linenos}
+0.2::hot.
+
+temp_hot ~ normal(27,5).
+temp_not_hot ~ normal(20,5).
+
+works :- hot, temp_hot<25.0.
+works :- not hot, temp_not_hot<25.0.
+    \end{problog*}
+\end{example}
+To more compactly specify such situations, we borrow the syntax of \emph{distributional clauses} from the DC  language~\citep{gutmann2011magic}, which we already encountered in Section~\ref{sec:panorama_semantics}.
+
+\begin{definition}[Distributional Clause]
+    A distributional clause (DC) is a rule of the form
+    $$
+        \tau \sim \delta \lpif \beta.
+    $$
+    where $\tau$ is a regular ground expression, the functor of $\delta$ is in $\distributionfunctors$, and $\beta$ is a conjunction of literals.
+\end{definition}
+
+We call the left-hand side of the \mathpredicate{\sim}{2} prediate in a distributional clause a {\em random term} and the right-hand side a {\em distribution term}. Note that random terms cannot always be interpreted as random variables, which we discuss now.
+
+The informal meaning of a distributional clause is "if $\beta$ is true, then the random term $\tau$ refers to a random variable that follows a distribution given by the distribution term $\delta$". Here, the distinction between \emph{refers to} a random variable and \emph{is} a random variable becomes crucial, as we will often have several distributional clauses for the same random term. This is also the case in the following example.
+\begin{example}
+    Using distributional clauses, we can rewrite the previous example with a single random term \probloginline{temp} as
+    \begin{problog*}{linenos}
+0.2::hot.
+
+temp ~ normal(27,5) :- hot.
+temp ~ normal(20,5) :- not hot.
+
+works :- temp < 25.0.
+    \end{problog*}
+    The idea is that we still have two underlying random variables, one for each distribution, but the logic program uses the same term to refer to both of them depending on the logical context. The actual comparison facts are on the level of these implicit random variables, and \probloginline{temp<0.25} refers to one of them depending on context, just as in the original example.
+\end{example}
+
+

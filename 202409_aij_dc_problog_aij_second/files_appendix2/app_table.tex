@@ -1,0 +1,45 @@
+\section{Table of Notations}\label{app:table}
+\begin{center}
+    \rowcolors{2}{gray!15}{white}
+
+\begin{tabular}{c|p{0.5\textwidth}|c}
+symbol & meaning & for details, see \\ \hline
+ 
+  $\distributionfunctors$  & set of distribution functors  & Definition~\ref{def:reserved_vocabulary}\\
+  $\arithmeticfunctors$   &  set of arithmetic functors & Definition~\ref{def:reserved_vocabulary}\\
+  $\comparisonpredicates$   &  set of comparison  predicates & Definition~\ref{def:reserved_vocabulary}\\
+  \hline
+  $\samplespace_\nu$ & sample space of random variable $\nu$ & Definition~\ref{def:samplespace}\\
+  $\samplefunction(\cdot)$ & value assignment function & Definition~\ref{def:samplespace}\\
+  $\distdb$ & distributional database & Definition~\ref{def:distDB}\\
+  $\randomvariableset$ & set of random variables & Definition~\ref{def:distDB}\\
+  $(\samplespace_\distdb, \sigmaalgebra_\distdb, \probabilitymeasure_\distdb)$ & probability space induced by $\distdb$ & Definition~\ref{def:well-distdb}\\
+  % $\measurerandomvariableset$ & probability measure over $\randomvariableset$ defined by $\distdb$ & Proposition~\ref{prop:pv}\\
+  \hline
+  $\comparisonfacts$ & set of Boolean comparison atoms & Definition~\ref{def:comparison-atoms-set}\\
+  $\samplespace_\comparisonfacts$ & sample space induced by $\comparisonfacts$ & Proposition~\ref{prop:omegaf}\\
+  $\sigmaalgebra_\comparisonfacts$ & sigma algebra induced by $\comparisonfacts$ & Proposition~\ref{prop:pfsigma}\\
+  $\probabilitymeasure_\comparisonfacts$ & probability measure induced by $\comparisonfacts$ & Proposition~\ref{prop:pf}\\
+  \hline
+  $\dfprogram=\distdb  \cup \logicprogram$ & \dfplpsty program & Definition~\ref{def:core-prog}\\
+  $\comparisonfacts_{\samplefunction(\randomvariableset)}$ & consistent comparison database induced by $\samplefunction$ on the random variables in $\randomvariableset$ & Definition~\ref{def:consistent-fact-db}\\
+  $\probabilitymeasure_\dfprogram$ & probability measure over Herbrand interpretations defined by $\dfprogram$ & Proposition~\ref{prop:pp}\\
+  \hline
+  $\program$  & \dcproblogsty program & Definition~\ref{def:fullprog}\\
+  \adfreeprogram & AD-free \dcproblogsty program & Definition~\ref{def:ad_free_program}\\
+  $\headsdc_\adfreeprogram$ & set of heads of distributional clauses in \adfreeprogram & Definition~\ref{def:ad_free_program}\\
+  $\randomtermset_\adfreeprogram$ & random terms in $\headsdc _\adfreeprogram$ & Definition~\ref{def:ad_free_program}\\
+  $\dclauses_{\adfreeprogram}$ & set of distributional clauses in $\adfreeprogram$ & Definition~\ref{def:dc-df-well-def}\\
+  $\contextfunc(\cdot)$ &  contextualization function & Definition~\ref{def:context_function}\\
+  $\dfadfreeprogram$ &  \dfplpsty program providing the semantics of $\adfreeprogram$ & Definition~\ref{def:adfree-to-core}\\
+  \hline
+  $MOD(\dcpprogram)$ & models of a program $\dcpprogram$ & Theorem~\ref{theo:model_equivalence} \\
+  $ENUM(\phi)$ & models of a propositional formula $\phi$ & Theorem~\ref{theo:model_equivalence} \\
+  $\alpha(\cdot)$ & labeling function of a propositional literal & Definition~\ref{def:labeling_function} \\
+  $\ive{\cdot}$ & Iverson bracket denoting an indicator function & Definition~\ref{def:labeling_function} \\
+  $\E[\cdot]$ & expected value & Theorem~\ref{theo:label_equivalence} \\
+  \hline
+  $\mathbb{I}$ & set of infinitesimal numbers & Equation~\ref{def:inf_number} \\
+  $\mathcal{S}$ & set of ancestral samples & Equation~\ref{eq:ancestral_samples}
+\end{tabular}
+\end{center}

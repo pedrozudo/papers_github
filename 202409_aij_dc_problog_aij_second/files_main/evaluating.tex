@@ -1,0 +1,948 @@
+\section{Computing Expected Labels via Algebraic Model Counting}
+\label{sec:alw}
+
+
+In this section we will adapt the approach taken by~\citet{zuidbergdosmartires2019exact}, dubbed {\em Sampo} to compute the expected value of labeled propositional Boolean formulas.
+The method approximates intractable integrals that appear when computing expected labels using Monte Carlo estimation. The main difference between Sampo and our approach, which we dub {\em infinitesimal algebraic likelihood weighting} (IALW) is that IALW can also handle infinitesimally small intervals, which arise when conditioning on zero probability events. 
+
+
+
+
+
+
+\subsection{Monte Carlo Estimate of Conditional Query}
+
+In Definition~\ref{def:conditional_prob} we defined the conditional probability as:
+\begin{align}
+    P_\dcpprogram(\mu=\top\mid\evidenceset=e)= \frac{P_{\dcpprogram}(\mu=\top, \evidenceset=e)}{P_\dcpprogram(\evidenceset=e)} 
+\end{align}
+and we also saw in Definition~\ref{def:conditional_prob_zero_event} that using infinitesimal intervals allows us to consider zero probability events, as well. Computing the probabilities in the numerator and denominator in the equation above is, in general, computationally hard. We resolve this using a Monte Carlo approximation. 
+
+\begin{restatable}[Monte Carlo Approximation of a Conditional Query]{proposition}{mcapproxconditional}
+\label{prop:mcapproxconditional}
+Let the set 
+\begin{align}
+    \mathcal{S} = \left\{ \left(s_1^{(1)}, \dots, s_M^{(1)} \right), \dots , \left(s_1^{(\lvert \mathcal{S} \rvert)}, \dots, s_M^{(\lvert \mathcal{S} \rvert)} \right)  \right\} \label{eq:rejection_samples}
+\end{align}
+denote $\lvert \mathcal{S} \rvert$ i.i.d. samples for each random variable in $ \dcpprogram_g$.
+A conditional probability query to a  \dcproblogsty program \dcpprogram can be approximated as: 
+\begin{align}
+P_\dcpprogram(\mu = q \mid \evidenceset = e) 
+&\approx  \frac{ \sum_{i=1}^{\lvert \mathcal{S} \rvert}  \sum_{\varphi \in ENUM(\phi \land \phi_q) } \alpha^{(i)}(\varphi) } { \sum_{i=1}^{\lvert \mathcal{S} \rvert} \sum_{\varphi \in ENUM(\phi) } \alpha^{(i)}(\varphi) }, & \quad |\mathcal{S}|<\infty
+\end{align}
+The index $(i)$ on $\alpha^{(i)}(\varphi)$ indicates that the label of $\varphi$ is evaluated at the $i$-th ordered set of samples $ \left(s_1^{(i)}, \dots, s_M^{(i)} \right)$. 
+\end{restatable}
+
+\begin{proof}
+    See Appendix~\ref{app:proof:mcapproxconditional}.
+\end{proof}
+
+
+
+In the limit $\lvert \mathcal{S} \rvert\rightarrow \infty$ this sampling approximation scheme is perfectly valid. However, in practice, with only limited resources available, such a rejection sampling strategy will perform poorly (in the best case) or even give completely erroneous results. After all, the probability of sampling a value from the prior distribution that falls exactly into an infinitesimally small interval given in the evidence tends to zero.
+To make the computation of a conditional probability, using Monte Carlo estimates, feasible, we are going to introduce {\em infinitesimal algebraic likelihood weighting}. But first, we will need to introduce the concept of infinitesimal numbers.
+
+
+\subsection{Infinitesimal Numbers}
+Remember that infinitesimal intervals arise in zero probability conditioning events and describe an infinitesimally small interval around a specific observed value, \eg $\nu \in [w-\nicefrac{\Delta w}{2}, w+\nicefrac{\Delta w}{2} ]$ for a continuous random variable $\nu$ that was observed to take the value $w$ (cf. Definition~\ref{def:conditional_prob_zero_event}).
+We will describe these infinitesimally small intervals using so-called {\em infinitesimal numbers}, which were first introduced by~\citet{nitti2016probabilistic} and further formalized in~\citet{wu2018discrete}, \citep{zuidberg2020atoms} and~\citep{jacobs2021paradoxes}. The latter work also coined the term {\em `infinitesimal number'} \fixed{and we refer the reader specifically to \citet[Section 5.2]{jacobs2021paradoxes} for an intuitive exposition of infinitesimal numbers.}
+
+\begin{definition}[Infinitesimal Numbers]
+    \label{def:inf_number}
+An infinitesimal number is a pair \fixed{$(r, n) \in \mathbb{R} \times (\mathbb{N} \cup +\infty )$}, also written as $r\epsilon^n$, and which corresponds to a real number when $n=0$. We denote the set of all infinitesimal numbers by $\mathbb{I}$.
+\end{definition}
+
+
+\begin{definition}[Operations in $\mathbb{I}$]
+\label{def:inf_number_ops}
+Let $(r, n)$ and $(t,m)$ be two numbers in $\mathbb{I}$. We define the addition and multiplication as binary operators:
+\begin{align}
+	(r,n) \oplus
+	(t,m)
+	&\coloneqq
+	\begin{cases}
+		(r+t,n) &\quad  \text{if $n=m$} \\
+		(r,n) &\quad  \text{if $n<m$} \\
+		(t,m) &\quad  \text{if $n>m$}
+	\end{cases} 
+    \label{eq:infininumber_plus}
+    \\
+	(r,n) \otimes
+	(t,m)
+	&\coloneqq (r \times t , n+m)  &
+    \label{eq:infininumber_times}
+\end{align}
+The operations $+$ and $\times$ on the right hand side denote the usual addition and multiplication operations for real and integer numbers.
+\end{definition}
+
+\begin{definition}[Neutral Elements]
+\label{def:inf_number_neutral_elem}
+The neutral elements of the addition and multiplications in $\mathbb{I}$ are, respectively, defined as:
+\begin{align}
+	e^\oplus  \coloneqq (0,+\infty)  &&
+	e^\otimes  \coloneqq (1,0)
+\end{align}
+\end{definition}
+
+
+Probabilistic inference and generalization thereof can often be cast as performing computations using commutative semirings~\citep{kimmig2017algebraic}. We will follow a similar strategy.
+
+\begin{definition}\label{def:comm_semiring} 
+	A {\bf  commutative semiring} is an algebraic structure $(\mathcal{A},\oplus,\otimes,\allowbreak e^{\oplus},e^\otimes)$ equipping a set of elements $\mathcal{A}$ with addition and multiplication such that
+	\begin{enumerate}
+		\item addition $\oplus$ and multiplication $\otimes$ are binary operations $\mathcal{A}\times \mathcal{A}\rightarrow \mathcal{A}$
+		\item addition $\oplus$ and multiplication $\otimes$ are  associative and commutative binary operations over the set $\mathcal{A}$
+		\item $\otimes$ distributes over $\oplus$
+		\item  $e^\oplus \in \mathcal{A}$ is the neutral element of $\oplus$
+		\item  $e^\otimes \in \mathcal{A}$ is the neutral element of $\otimes$
+		\item $e^\oplus \in \mathcal{A}$ is an annihilator for $\otimes$
+	\end{enumerate}
+\end{definition}
+
+
+\begin{lemma}
+The structure $(\mathbb{I}, \oplus, \otimes, e^\oplus , e^\otimes )$ is a commutative semiring.
+\end{lemma}
+\begin{proof}
+This follows trivially from the operations defined in Definition~\ref{def:inf_number_ops} and the neutral elements in Definition~\ref{def:inf_number_neutral_elem}.
+\end{proof}
+We will also need to perform subtractions and divisions in $\mathbb{I}$,
+
+% \st{
+% \fixed{
+% \begin{definition}[Inverse Elements]
+% Let $(r, n)$ be a number in $\mathbb{I}$. We define its inverse with respect to the addition $-(r,n)$, also called negation, as:
+% \begin{align}
+%     -(r,n) \coloneqq (-r, n)
+% \end{align}
+% Moreover, we define its inverse with respect to the multiplication $(r,n)^{-1}$, also called the reciprocal, as:
+% \begin{align}
+%     (r,n)^{-1}\coloneqq
+%     \begin{cases}
+%         (r^{-1}, -n) &\quad \text{if $r\neq 0$} \\
+%         \text{undefined} &\quad \text{if $r=0$}
+%     \end{cases}
+% \end{align}
+% \end{definition}
+%     }
+% }
+
+\begin{definition}[Subtraction and Division in $\mathbb{I}$]
+    \label{def:subdiv}
+    Let $(r, n)$ and $(s,m)$ be two numbers in $\mathbb{I}$. We define the subtraction and division as:
+    \begin{align}
+            (r,n) \ominus (t,m) &\coloneqq  (r,n) \oplus (-t,m) \\
+            (r,n) \oslash (t,m) &\coloneqq 
+            \begin{cases}
+                \text{undefined} &\quad \text{if $|n|=|m|=\infty$ and $sign(n) \neq sign(m)$} \\
+                (\nicefrac{r}{t}, n-m)  &\quad \text{if $t\neq 0$} \\
+                \text{undefined} &\quad \text{if $t=0$}
+            \end{cases}
+    \end{align}
+
+\end{definition}
+
+We would like to note that similar algebraic structures have been used for counting optimal variable assignments in graphical models~\citep{marinescu2019counting} and probabilistic inference in generating circuits~\citep{harviainen2023inference}.
+
+
+\subsection{Infinitesimal Algebraic Likelihood Weighting}
+The idea behind IALW is that we do not sample random variables that fall within an infinitesimal small interval, encoded as a delta interval (cf. Definition~\ref{def:delta_interval}), but that we force, without sampling, the random variable to lie inside the infinitesimal interval. 
+To this end, assume again that we have $\lvert \mathcal{S} \rvert$ i.i.d. samples for each random variable. That means that we have again a set of ordered sets of samples:
+\begin{align}
+    \label{eq:ancestral_samples}
+    \mathcal{S} = \left\{ \left(s_1^{(1)}, \dots, s_M^{(1)} \right), \dots , \left(s_1^{(\lvert \mathcal{S} \rvert)}, \dots, s_M^{(\lvert \mathcal{S} \rvert)} \right)  \right\}
+\end{align}
+
+This time the samples are drawn with the infinitesimal delta intervals taken into account. For example, assume we have a random variable $\nu_1$ distributed according to a normal distribution $\mathcal{N}(5,2)$ and we have an atom \probloginline{delta_interval(@$\nu_1$@,4)} in the propositional formula $\phi$. Each sampled value of $s_1^{(i)}$ will then equal $4$ ( $1\leq i\leq \lvert \mathcal{S} \rvert$). Furthermore, when sampling, we sample the parents of a random variable prior to sampling the random variable itself. For instance, take the random variable $\nu_2\sim \mathcal{N}(\nu_3=w,2)$, where $\nu_3$ is itself a random variable. We first sample $\nu_3$ and once we have a value for $\nu_3$ we plug that into the distribution for $\nu_2$, which we sample subsequently. In other words, we sample according to the ancestor relationship between the random variables.
+We call the ordered set of samples $\varset{s}^{(i)} \in \mathcal{S}$ an {\em ancestral sample}.
+
+
+
+
+\begin{definition}[IALW Label] \label{def:sample_labeling_function}
+    \fixed{
+Let $\delta_k$ denote the probability distribution of a random variable $\nu_k$.
+Given an ancestral sample $\varset{s}^{(i)}= (s_1^{(i)}, \dots,  s_M^{(i)} ) $ for the random variables $\randomvariableset = (\nu_1,\dots, \nu_M)$, we denote by $\delta_k( \varset{s}^{(i)} )$ the evaluation of the density $\delta_k$ at $\varset{s}^{(i)}$, where $i$ specifies the $i$-th sample.
+}
+The IALW label of a positive literal $\ell$ is an infinitesimal number given by:
+\begin{align}
+    &\alpha_{IALW}^{(i)}( \ell) \nonumber \\
+    &=\begin{cases}
+    (\delta_k(\varset{s}^{(i)}) , 1),  &  \text{if $\ell$ is a \probloginline{delta_interval} whose first argument } \\
+    & \text{is a continuous random variable} \\
+    % (p_k(\varset{s}^{(i)}) , 0),  &  \text{if $\ell$ is a \probloginline{delta_interval} having as first argument the random} \\
+                        % & \text{variable $\nu_k$, which is countable} \\
+    ( \ive{ c_\ell(\varset{s}^{(i)}) }, 0), & \text{if $\ell$ is any comparison atom}
+    \\
+    (1, 0), & \text{otherwise} 
+    \end{cases}
+    \nonumber
+\end{align}
+The expression $\ive{ c_\ell(\varset{s}^{(i)}) }$ denotes the indicator function on the constraint that corresponds to the literal $\ell$ and which is evaluated using the samples $\varset{s}^{(i)}$. 
+
+For the negated literals we have the following labeling function:
+\begin{align}
+    &\alpha_{IALW}^{(i)}( \neg \ell) \nonumber \\
+    &=\begin{cases}
+    (1 , 0),  &  \text{if $\ell$ is a \probloginline{delta_interval} whose first argument } \\
+                        & \text{is a continuous random variable} \\
+    % (1{-}w_k(\varset{s}^{(i)}) , 0),  &  \text{if $\ell$ is a \probloginline{delta_interval} having as first argument the random} \\
+                        % & \text{variable $X_k$, which is countable} \\
+    (1{-}\ive{ c_\ell(\varset{s}^{(i)}) }, 0), & \text{if $\ell$ is any other comparison atom}
+    \\
+    (1, 0), & \text{otherwise} 
+    \end{cases}
+    \nonumber
+\end{align}
+\end{definition}
+
+Intuitively speaking and in the context of probabilistic inference,
+the first part of an infinitesimal number accumulates (unnormalized) likelihood weights, while the second part counts the number of times we encounter a \probloginline{delta_interval} atom. This counting happens with $\oplus$ operation of the infinitesimal numbers (Equation~\ref{eq:infininumber_plus}). The $\oplus$ operation tells us that for two infinitesimal numbers $(r,n)$ and $(t,m)$ with $n<m$, the event corresponding to the first of the two infinitesimal numbers is infinitely more probable to happen and that we drop the likelihood weight of the second infinitesimal number (Equation~\ref{eq:infininumber_plus}). 
+In other words, an event with fewer \probloginline{delta_interval}-atoms is infinitely more probable than an event with more such intervals.
+
+
+
+\begin{example}[IALW Label of \probloginline{delta_interval} with Continuous Random Variable]
+Let us consider a random variable \probloginline{x}, which is normally distributed: $p(\mathprobloginline{x}|\mu, \sigma)=\nicefrac{1}{(\sigma \sqrt{2 \pi})} \exp \left( - \nicefrac{(\mathprobloginline{x}-\mu)^2}{2 \sigma^2 } \right) $), 
+where $\mu$ and $\sigma>0$ are real valued parameters that we can choose freely.
+The atom \probloginline{delta_interval(x,3)} gets the label
+$$
+\left( \frac{1}{(\sigma \sqrt{2 \pi})} \exp \left( - \nicefrac{(\mathprobloginline{3}-\mu)^2}{2 \sigma^2 } \right)  , 1\right)
+$$
+The first element of the infinitesimal number is the probability distribution evaluated at the observation, in this case \probloginline{3}. As this is a zero probability event, the label also picks up a non-zero second element.
+
+The label of $\neg \mathprobloginline{delta_interval(x,3)}$ is $(1,0)$. The intuition here being that the complement of an event with zero probability of happening will happen with probability $1$. As the complement event is not a zero probability event the second element of the label is $0$ instead of $1$. 
+\end{example}
+
+\begin{example}[IALW Label of \probloginline{delta_interval} with Discrete Random Variable]
+    Let us consider a discrete random variable \probloginline{k}, which is Poisson distributed: 
+    $$
+    p(\mathprobloginline{k}|\lambda)=\nicefrac{\lambda^\mathprobloginline{k} e^{-\lambda}}{\mathprobloginline{k}!}
+    $$
+    where $\lambda>0$ is a real-valued parameter that we can freely choose.
+
+    As a \probloginline{delta_interval} with a discrete random variable is equivalent to a \probloginline{=:=} comparison (\cf Definition~\ref{def:delta_interval}), we get for the label of the atom \probloginline{delta_interval(k,3)}:
+    $(\ive{s_x^{(i)}=3}, 0)$, where $s_\mathprobloginline{k}^{(i)}$ is the $i$-th sample for \probloginline{k}.  
+    % The atom \probloginline{delta_interval(x,3)} gets the label $( \nicefrac{\lambda^3 e^{-\lambda}}{3!}  , 0)$. The first element of the infinitesimal number is the probability of \probloginline{x} taking the the value 3. Because this is a non-zero probability event, the label does not pick up a non-zero second element. The label of $\neg \text{\probloginline{delta_interval(x,3)}}$ is now simply $(1-  \nicefrac{\lambda^3 e^{-\lambda}}{3!}  , 0)$.
+\end{example}
+
+
+
+
+% \begin{align}
+%     P\Bigl(\text{\probloginline{american}}{=}\top \mid (\text{\probloginline{gpa(student)}}\doteq4)=\top \Bigr)&=1 
+%     \nonumber \\
+%     P \Bigl(\text{\probloginline{indian}}{=}\top \mid (\text{\probloginline{gpa(student)}}\doteq4)=\top \Bigr)&=0 \nonumber
+%     \end{align}
+
+
+
+\begin{definition}[Infinitesimal Algebraic Likelihood Weighting]
+\label{def:alw}
+Let $\mathcal{S}$ be a set of ancestral samples and let $ DI(\varphi)$ denote the subset of literals in $\varphi$ that are delta intervals. We then define IALW as expressing the expected value of the label of a propositional formula (given a set of ancestral samples) in terms of a fraction of two infinitesimal numbers:
+\begin{align}
+    \left( \E \left[ \sum_{\varphi\in ENUM(\phi)} \prod_{\ell \in \varphi}  \alpha \left(\ell \right) \bigg| \mathcal{S} \right] ,0 \right)
+    \approx
+    \frac
+    {\displaystyle \bigoplus_{i=1}^{\lvert \mathcal{S} \rvert}  \bigoplus_{\varphi\in ENUM(\phi)} \bigotimes_{\ell \in \varphi}  \alpha_{IALW}^{(i)} \left(\ell \right)}
+    {\displaystyle \bigoplus_{i=1}^{\lvert \mathcal{S} \rvert} \bigoplus_{\varphi\in ENUM(\phi)} \bigotimes_{\ell \in  DI(\varphi)}  \alpha_{IALW}^{(i)} \left(\ell \right)  } \label{eq:ALW}
+\end{align}
+The left hand side expresses the expected value as an infinitesimal number.
+\end{definition}
+
+% \begin{proposition}[Consistency of ALW]
+\begin{restatable}[Consistency of IALW]{proposition}{alwconsistency}
+\label{prop:alw_consistency}
+Infinitesimal algebraic likelihood weighting is consistent, that is, the approximate equality in Equation~\ref{eq:ALW} is almost surely an equality for $\lvert \mathcal{S} \rvert \rightarrow \infty$.
+% \begin{align}
+%     \left( \E \left[ \sum_{\omega\in ENUM(\phi)} \prod_{\ell \in \omega}  \alpha \left(\ell \right) \right] ,0 \right)
+%     =
+%     \frac{\displaystyle \sum_{i=1}^N  \sum_{\omega\in ENUM(\phi)} \prod_{\ell \in \omega}  \alpha^{(i)} \left(\ell \right)}
+%     {\displaystyle \sum_{i=1}^N  \sum_{\omega\in ENUM(\phi)} \prod_{\ell \in  DI(\omega)}  \alpha^{(i)} \left(\ell \right)  } 
+% \end{align}
+% holds almost surely for $N\rightarrow \infty$.
+\end{restatable}
+\begin{proof}
+    See Appendix~\ref{app:proof:alw_consistency}.
+\end{proof}
+
+
+
+Likelihood weighting, the core idea behind IALW, is a well known technique for inference in Bayesian networks~\citep{fung1990weighing} and probabilistic programming~\citep{milch2005approximate,nitti2016probabilistic}, and falls within the broader class of self-normalized importance sampling~\citep{kahn1950random,kloek1978bayesian,casella1998post}.
+Just like IALW, the inference approaches proposed by \citet{nitti2016probabilistic}, \citet{wu2018discrete}, and \citet{jacobs2021paradoxes}  generalize the idea of likelihood weighting to the setting with infinitesimally small intervals. What sets IALW apart from these methods is its semiring formulation. The semiring formulation will allow us to seamlessly combine IALW with knowledge compilation~\citep{darwiche2002knowledge}, a technique underlying state-of-the art probabilistic inference algorithms in the discrete setting. We examine this next.
+
+
+
+
+
+
+
+
+
+Having proven the consistency of IALW, we can now express the probability of a conditional query to a \dcproblogsty program in terms of semiring operations for infinitesimal numbers $\mathbb{I}$.
+
+
+\begin{restatable}{proposition}{alwapproximation}
+\label{prop:alwapproximation}
+% \begin{proposition}
+A conditional probability query to a  \dcproblogsty program \dcpprogram can be approximated as: 
+    \begin{align}
+    P_\dcpprogram(\mu=q|\evidenceset=e) 
+    \approx    
+    \frac
+    { \bigoplus_{i=1}^{\lvert \mathcal{S} \rvert}  \bigoplus_{\varphi\in ENUM(\phi \land \phi_{q})} \bigotimes_{\ell \in \varphi}  \alpha_{IALW}^{(i)} \left(\ell \right)}
+    { \bigoplus_{i=1}^{\lvert \mathcal{S} \rvert}  \bigoplus_{\varphi\in ENUM(\phi)} \bigotimes_{\ell \in \varphi}  \alpha_{IALW}^{(i)} \left(\ell \right)}  
+    \label{eq:prop:alwapproximation}
+    \end{align}
+    
+% \end{proposition}
+\end{restatable}
+
+\begin{proof}
+    See Appendix~\ref{app:proof:alwapproximation}.
+\end{proof}
+
+
+
+% In Example~\ref{ex:indian_gpa} we showed how to write down the Indian GPA problem in \dcproblogsty and also agave the probabilities for the conditional queries. After having introduced infinitesimal numbers we can now also explicitly perform the computation of the probabilities. 
+
+% \begin{example}[Computing the Indian GPA Problem]
+%     \label{example:compute_indian}
+%     Let us first write the relevant ground program for the query
+%     \begin{align*}       
+%     P \Bigl(\mathprobloginline{american}{=}\top \mid (\text{\probloginline{gpa(student)}}\doteq4)=\top \Bigr)
+%     \end{align*}
+%     where we also transform distributional clauses into distributional facts and introduce an atom \probloginline{ev} for the evidence.
+    
+
+%     \begin{problog*}{linenos}
+% rva ~ flip(1/4).
+% american:- rva=:=1.
+% rvisd ~ flip(19/20).
+% isdensity(a):-  rvisd=:=1.
+% rvp ~ flip(17/29).
+% perfect_gpa(a):- rvp=:=1.
+
+% gpa1~uniform(0,4).
+% gpa2~delta(4.0).  
+% gpa3~delta(0.0)
+
+% ev:- american, delta_interval(gp1,4), isdensity(a).
+% ev:- american, delta_interval(gp2,4), not isdensity(a),
+%     perfect_gpa(a). 
+% ev:- american, delta_interval(gp3,4), not isdensity(a),
+%     not perfect_gpa(a).
+% \end{problog*}
+% The query for the transformed program is now:
+% \begin{align*}
+% P\Bigl(\text{\probloginline{american}}{=}\top \mid \mathprobloginline{ev} =\top\Bigr)
+%     =
+%     \frac{
+%         P\Bigl(\mathprobloginline{american}{=}\top, \mathprobloginline{ev}=\top \Bigr)
+%     }
+%     {
+%         P \Bigl(\mathprobloginline{ev}=\top \Bigr)
+%     }
+% \end{align*}
+
+
+
+
+% \end{example}
+
+
+
+
+
+\subsection{Infinitesimal Algebraic Likelihood Weighting via Knowledge Compilation}
+\label{sec:ALWviaKC}
+
+
+Inspecting Equation~\ref{eq:prop:alwapproximation} we see that we have to evaluate expressions of the following form in order to compute the probability of a conditional query to a \dcproblogsty program.
+\begin{align}
+    \bigoplus_{i=1}^{\lvert \mathcal{S} \rvert} \underbrace{\bigoplus_{\omega\in ENUM(\varphi)} \bigotimes_{\ell \in \varphi}  \alpha_{IALW}^{(i)} \left(\ell \right)}_{= \text{algebraic model count}} \label{eq:alw_show}
+\end{align}
+In other words, we need to compute $\lvert \mathcal{S} \rvert$ times a sum over products -- each time with a different ancestral sample. Such a sum over products is also called the algebraic model count of  a formula $\phi$~\citep{kimmig2017algebraic}. 
+Subsequently, we then add up the $\lvert \mathcal{S} \rvert$ results from the different algebraic model counts giving us the final answer.
+
+Unfortunately, computing the algebraic model count is in general a computationally hard problem~\citep{kimmig2017algebraic} -- \#P-hard to be precise~\citep{valiant1979complexity}.
+A popular technique to mitigate this hardness is to use a technique called knowledge compilation~\citep{darwiche2002knowledge}, which splits up the computation into a hard step and a subsequent easy step. The idea is to take the propositional Boolean formula underlying 
+an algebraic model counting problem (cf. $\varphi$ in Equation~\ref{eq:alw_show}) and compile it into a logically equivalent formula that allows for the tractable computation of algebraic model counts. The compilation constitutes the computationally hard part (\#P-hard). Afterwards, the algebraic model count is performed on the compiled structure, also called {\em algebraic circuit}~\citep{zuidbergdosmartires2019transforming}. Intuitively speaking, knowledge compilation takes the sum of products and maps it to recursively nested sums and products. Effectively, finding a dynamic programming scheme~\citep{bellman1957dynamic} to compute the initial sum of products.
+
+Different circuit classes have been identified as valid knowledge compilation targets~\citep{darwiche2002knowledge} -- all satisfying different properties.
+Computing the algebraic model count on an algebraic circuit belonging to a specific target class is only correct if the properties of the circuit class match the properties of the deployed semiring.
+The following three lemmas will help us determining which class of circuits we need to knowledge-compile our propositional formula $\phi$ into.
+
+\begin{lemma}
+\label{lem:non_idem}
+The operator $\oplus$ (c. Definition~\ref{def:inf_number_ops}) is not idempotent. That is, it does not hold for every $a \in \mathbb{I}$ that $a\oplus a =a$. 
+\end{lemma}
+\begin{lemma} The pair  $(\oplus, \alpha_{\ialw})$ is not neutral. That is, it does not hold that $\alpha_{\ialw}(\ell)\oplus \alpha_{\ialw}(\neg \ell) = e^{\otimes}$ for arbitrary $\ell$.
+\end{lemma}
+\begin{lemma} 
+\label{lem:non_cons}
+The pair  $(\otimes, \alpha_{\ialw})$ is not consistency-preserving. That is, it does not hold that $\alpha_{\ialw}(\ell)\otimes \alpha_{\ialw}(\neg \ell) = e^{\oplus}$ for arbitrary $\ell$.
+\end{lemma}
+
+
+
+From~\citep[Theorem 2 and Theorem 7]{kimmig2017algebraic} and the three lemmas above, we can conclude that we need to compile our propositional logic formulas into so-called smooth, deterministic and decomposable negation normal form (sd-DNNF) formulas~\citep{darwiche2001tractable}.\footnote{Note that we only require smoothness over derived atoms (otherwise case in Definition~\ref{def:sample_labeling_function}), as for the other cases the neutral sum property holds. Certain encodings of logic programs eliminate derived atoms. For such encodings the smoothness property can be dropped~\citep{vlasselaer2014compiling}. A more detailed discussion on the smoothness requirement of circuits in a PLP context can be found in \citep[Appendix C]{fierens2015inference}.}
+
+
+
+
+% \begin{proposition}[ALW on d-DNNF]
+\begin{restatable}[ALW on d-DNNF]{proposition}{alwonddnnf}
+\label{prop:alwonddnnf}
+    We are given the propositional formulas $\phi$ and $\phi_q$ and a set $\mathcal{S}$ of ancestral samples, we can use Algorithm~\ref{alg:prob_via_alw_kc} to compute the conditional probability $P_\dcpprogram(\mu=q|\evidenceset=e)$.
+\end{restatable}
+
+\begin{proof}
+    See Appendix~\ref{app:proof:alwonddnnf}.
+\end{proof}
+
+
+Algorithm~\ref{alg:prob_via_alw_kc} takes as input a two propositional logic formulas $\phi$ and $\phi_q$, and a set of ancestral samples. It then knowledge-compiles the formulas $\phi \land \phi_q$ and $\phi$ into circuits $\Gamma_q$ and $\Gamma$. These circuits are then evaluated using Algorithm~\ref{alg:unormalize_alw}. The variables $ialw_q$ and $ialw$ hold infinitesimal numbers.
+\fixed{
+The ratio of these two numbers, which corresponds to the ratio in Equation~\ref{eq:prop:alwapproximation}, is an infinitesimal number having as second argument $0$ and as first argument the conditional probability.}
+\begin{algorithm}[h]
+    \SetKwFunction{ProbALW}{ProbALW}
+    \SetKwFunction{KC}{KC}
+    \SetKwFunction{IALW}{IALW}
+
+
+    \SetKwProg{Fn}{function}{}{}
+    \SetKwProg{ElseComment}{function}{}{}
+
+    \caption{Conditional Probability via IALW and KC}
+	\label{alg:prob_via_alw_kc}
+\Fn{\ProbALW{$\phi$, $\phi_q$, $\mathcal{S}$ }}{
+    $\Gamma_{q}$ $\leftarrow$ \KC{$\phi \land \phi_q$}\;
+     \label{alg:prob_via_alw_kc:kc_qe} 
+    $\Gamma$ $\leftarrow$ \KC{$\phi$}\;
+    \label{alg:prob_via_alw_kc:kc_e}
+    $ialw_{q}$ $\leftarrow$ \IALW{$\Gamma_{q}$,$\mathcal{S}$} \label{alg:prob_via_alw_kc:alw_qe}
+    \tcp*[r]{cf. Algorithm~\ref{alg:unormalize_alw}} 
+    $ialw$ $\leftarrow$ \IALW{$\Gamma$,$\mathcal{S}$}   \label{alg:prob_via_alw_kc:alw_e} 
+    \tcp*[r]{cf. Algorithm~\ref{alg:unormalize_alw}}
+    $(p,0)$ $\leftarrow$ $ialw_{q} \oslash ialw$\;
+    \Return $p$ \label{alg:prob_via_alw_kc:conditional}
+	}
+\end{algorithm}
+
+
+\begin{algorithm}[h]
+    \SetKwFunction{IALW}{IALW}
+    \SetKwFunction{Eval}{Eval}
+    \SetKwProg{Fn}{function}{}{}
+    \SetKwProg{ElseComment}{function}{}{}
+    \caption{Computing the IALW}
+	\label{alg:unormalize_alw}
+\Fn{\IALW{$\Gamma$, $\mathcal{S}$}}{
+    $ialw$ $\leftarrow$ (0,0) \;
+    \For{$\varset{s}^{(i)} \in \mathcal{S}$  }{
+        $ialw$ $\leftarrow$ $ialw$ $\oplus$ \Eval{$\Gamma$, $\varset{s}^{(i)}$}
+        \tcp*[r]{cf. Algorithm~\ref{alg:eval}}  
+    }
+    \Return $ialw$
+	}
+\end{algorithm}
+
+Algorithm~\ref{alg:unormalize_alw} computes the IALW given as input a circuit $\Gamma$ and a set of ancestral samples.
+The loop evaluates the circuit (using Algorithm~\ref{alg:eval}) for each ancestral sample $\varset{s}^{(i)}$ and accumulates the result, which is then returned once the loop terminates. The accumulation inside the loop corresponds to the  $\bigoplus_{i=1}^{\lvert \mathcal{S} \rvert}$ summation in Equation~\ref{eq:alw_show}.
+Algorithm~\ref{alg:eval} evaluates a circuit $\Gamma$ for a single ancestral sample $\varset{s}^{(i)}$ and is a variation of the circuit evaluation algorithm presented by~\citet{kimmig2017algebraic}.
+
+\begin{algorithm}[h]
+    \SetKwFunction{EvalFn}{Eval}
+    \SetKwProg{Fn}{function}{}{}
+    \SetKwProg{ElseComment}{function}{}{}
+
+	\caption{Evaluating an sd-DNNF circuit $\Gamma$ for labeling function $\alpha^{(i)}$ (Definition~\ref{def:sample_labeling_function}) and semiring operations $\oplus$  and $\otimes$ (Definition~\ref{def:inf_number_ops})}
+	\label{alg:eval}
+\Fn{\EvalFn{$\Gamma$,$\varset{s}^{(i)}$}}{
+		\If{  $\Gamma$ is a literal node $l$}{ \Return $\alpha^{(i)}(l)$}
+		\ElseIf{$\Gamma$ is a disjunction $\bigvee_{j=1}^m \Gamma_j$}
+		{\Return $\bigoplus_{j=1}^m$ \EvalFn{$\Gamma_j$, $\varset{s}^{(i)}$}}
+		\Else( \tcp*[f]{$\Gamma$ is a conjunction $\bigwedge_{j=1}^m \Gamma_j$}){
+		 \Return $\bigotimes_{i=j}^m$ \EvalFn{$\Gamma_j$, $\varset{s}^{(i)}$}}
+	}
+\end{algorithm}
+
+
+
+\begin{example}[IALW on Algebraic Circuit]
+\label{example:eval_observation}
+
+Consider a version of the program in Example~\ref{example:dcproblog:observation} where the annotated disjunction has been eliminated and been replaced with a binary random variable $m$ and a \probloginline{flip} distribution.
+	\begin{problog*}{linenos}
+m~flip(0.3).
+
+size~beta(2,3):- m=:=0.
+size~beta(4,2):- m=:=1.
+	\end{problog*}
+We query the program for the conditional probability $P((\mathprobloginline{m=:=1}) =\top \mid \mathprobloginline{size}\doteq 4/10 )$.
+Following the program transformations introduced in Section~\ref{sec:dc2smt} and then compiling the labeled propositional formula, we obtain a circuit representation of the queried program. Evaluating this circuit yields the probability of the query. To be precise, we actually obtain two circuits, one representing the probability of relevant program with the evidence enforced and with additionally having the value of the query atom set. 
+In Figure~\ref{fig:circuit:ialw} we show the circuit where only the evidence is enforced.
+
+
+
+
+	\begin{figure}[h]
+	\resizebox{\linewidth}{!}{%
+
+		\tikzstyle{distribution}=[rectangle, text centered, fill=white, draw, dashed,thick]
+		\tikzstyle{leaf}=[rectangle, text centered, fill=gray!10, draw,thick]
+
+
+
+		\tikzstyle{negate}=[
+			rectangle split,
+			rectangle split parts=3, 
+			rectangle split horizontal,
+			text centered,
+			rectangle split part fill={gray!10,white,gray!10},
+			draw,
+			rectangle split draw splits=false,
+			anchor=center,
+			align=center,
+			thick
+		]
+		\newcommand{\minus}{  ${\bm e^\otimes}$ \nodepart{second} ${{\bm \ominus}}$ \nodepart{third}  \phantom{${\bm e^\otimes}$}}
+
+		\tikzstyle{sumproduct}=[
+			rectangle split,
+			rectangle split parts=3, 
+			rectangle split horizontal,
+			text centered,
+			rectangle split part fill={gray!10,white,gray!10},
+			draw,
+			rectangle split draw splits=false,
+			anchor=center,
+			align=center,
+			thick
+		]
+		\newcommand{\supr}[1]{  \phantom{${\bm e^\otimes}$} \nodepart{second} ${{\bm #1}}$ \nodepart{third} \phantom{${\bm e^\otimes}$}}
+		
+		\tikzstyle{circuitedge}=[ultra thick, thick,->]
+		\tikzstyle{distributionedge}=[thick,->, dashed, in=-90]
+		
+		\tikzstyle{indexnode}=[draw,circle, inner sep=1pt]				
+		
+		\begin{tikzpicture}[remember picture]
+			
+			\node[sumproduct] (14) at (200.54bp,378.0bp) {\supr{\oplus}};
+			\draw[ultra thick, thick,->] (14.90) to  ([shift={(0,1)}]14.90);
+			
+			\node[sumproduct] (9) [below left = of 14] {\supr{\otimes}};
+			\node[sumproduct] (13) [below right = of 14]  {\supr{\otimes}};
+			
+			\node[negate] (m1) [below=of 9] {\minus};
+			\node[sumproduct] (12)  [below  = of 13] {\supr{\oplus}};
+			
+			\node[sumproduct] (8)  [below=of 12]  {\supr{\otimes}};
+			
+			\node[indexnode, left=of 14, xshift=0.9cm, yshift=0.4cm] {\footnotesize {$6$}};			
+			\node[indexnode, left=of 13, xshift=0.9cm, yshift=0.4cm] {\footnotesize {$5$}};			
+			\node[indexnode, left=of 8, xshift=0.9cm, yshift=0.4cm] {\footnotesize {$2$}};			
+			\node[indexnode, left=of 12, xshift=0.9cm, yshift=0.4cm] {\footnotesize {$4$}};			
+			\node[indexnode, left=of 9, xshift=0.9cm, yshift=0.4cm] {\footnotesize {$3$}};			
+			\node[indexnode, left=of m1, xshift=0.9cm, yshift=0.4cm] {\footnotesize {$1$}};	
+			
+			
+			\node[leaf, below= of 8, xshift=-0.2cm] (4)   {$\subnode{var_m0}{$m$}=1$};
+			\node[leaf, below= of 8, xshift=1.8cm] (2) {$\subnode{var_m1}{$m$}=0$};				
+			\node[leaf] (size1obs) [left=of 4, xshift=0cm]  {$\subnode{var_s_11_un}{size_{1}} \doteq 0.4$};
+			\node[leaf] (size0obs) [left=of 4, xshift=-4cm] {$\subnode{var_s_01_un}{size_{0}} \doteq 0.4$};				
+
+			\node[distribution] (size0)  [below=of size0obs] {\probloginline{beta(2,3)}};
+			\node[distribution] (size1)  [below=of size1obs] {\probloginline{beta(4,2)}};
+			\node[distribution] (flip)  [below= of 4, xshift=1cm] {\probloginline{flip(0.3)}};				
+
+
+			\draw[distributionedge,out=90]  (size1) to (var_s_11_un);
+			\draw[distributionedge,out=90] (size0) to  (var_s_01_un);
+			\draw[distributionedge,out=160] (flip) to  (var_m0);
+			\draw[distributionedge] (flip) to  (var_m1);
+
+
+			%https://tex.stackexchange.com/questions/447989/anchor-node-names-for-tikz-rectangle-split-horizontal			
+			\draw[circuitedge] (9) to  (14.mid);
+			\draw[circuitedge] (13) to  (14.three south |- 14.mid);
+			\draw[circuitedge] (m1) to  (9.mid);
+			\draw[circuitedge] (12) to  (13.three south |- 13.mid);
+			\draw[circuitedge] (size0obs) to   (m1.three south |- m1.mid);	
+			\draw[circuitedge] (2) to  (12.three south |- 12.mid);				
+			\draw[circuitedge] (size1obs) to   (8.mid);
+			\draw[circuitedge] (4) to  (8.three south |- 8.mid);	
+			\draw[circuitedge] (8) to  (9.three south |- 9.mid);	
+			\draw[circuitedge] (8) to   (12.mid);
+			\draw[circuitedge] (size0obs) to  (13.mid);
+
+		\end{tikzpicture}
+	}
+    \captionof{figure}{At the bottom of the circuit we see the distributions feeding in. The \probloginline{flip} distribution feeds into its two possible (non-zero probability) outcomes. The two \probloginline{beta} distributions feed into an observation statement each. We use the `$\doteq$' symbol to denote such an observation. Note how we identify each of the two random variables for the size by a unique identifier in their respective subscripts. The circled numbers next to the internal nodes, \ie the sum and product nodes, will allow us to reference the nodes later on and do not form a part of the algebraic circuit.}
+    \label{fig:circuit:ialw}
+\end{figure}
+
+
+
+The probability of the query (given the evidence) can now be obtained by evaluating recursively the internal nodes in the algebraic circuit using Algorithm~\ref{alg:eval}.
+We perform the evaluation  of the circuit in Figure~\ref{fig:circuit:ialw} for a single iteration of the loop in Algorithm~\ref{alg:unormalize_alw}, and we assume that we have sampled the value $m=0$ from the \probloginline{flip(0.3)} distribution.
+
+\begin{minipage}{0.49\linewidth}
+    \begin{align*}
+        &\mathtt{Eval}(\footcircled{$1$})\\
+        &=
+        e^\otimes \ominus \alpha_{IALW}\big(size_0\doteq 0.4\big) \\
+        &=
+        (1,0) \ominus (1.728,1) \\
+        &= (1,0)
+        \\
+        \hfill
+        \\
+        % 
+        &\mathtt{Eval}(\footcircled{$2$})\\
+        &=
+        \alpha_{IALW}\big( size_1\doteq 0.4) \otimes \alpha_{IALW}\big(  m=1 \big) \\
+        &=
+        (0.768,1) \otimes (0,0) \\
+        &=
+        (0,1)\\
+        \hfill
+        \\
+        % 
+        &\mathtt{Eval}(\footcircled{$3$})\\
+        &=
+        \mathtt{Eval}(\footcircled{$1$}) \otimes \mathtt{Eval}(\footcircled{$2$}) \\
+        &=
+        (1,0) \otimes (0,1) \\
+        &=
+        (0,1)\\
+    \end{align*}
+\end{minipage}
+\vline
+\begin{minipage}{0.49\linewidth}
+    \begin{align*}
+        &\mathtt{Eval}(\footcircled{$4$})\\
+        &=
+        \mathtt{Eval}(\footcircled{$2$}) \oplus \alpha_{IALW}\big(  m=0 \big) \\
+        &=
+        (0,1) \oplus (1,0) \\
+        &=
+        (1,0)\\
+        \hfill
+        \\
+        % 
+        &\mathtt{Eval}(\footcircled{$5$})\\
+        &=
+        \alpha_{IALW}\big(  size_0\doteq 0.4 \big) \otimes \mathtt{Eval}(\footcircled{$2$})  \\
+        &=
+        (1.728,1) \otimes (1,0) \\
+        &=
+        (1.728,1)\\
+        \hfill
+        \\
+        % 
+        &\mathtt{Eval}(\footcircled{$6$})\\
+        &=
+        \mathtt{Eval}(\footcircled{$3$}) \oplus \mathtt{Eval}(\footcircled{$5$})  \\
+        &=
+        (0,1) \oplus (1.728,1) \\
+        &=
+        (1.728,1)\\
+    \end{align*}
+\end{minipage}
+
+
+If we evalute the circuit for a sample $m=1$ we obtain in a similar fashion the result $\mathtt{Eval}(\footcircled{$6$})= (0.768,1)$. Moreover, if we evaluate the circuit multiple times we obtain (in the limit) 70\% of the time the outcome $(1.728,1)$ and 30\% of the time the value $(0.768,1)$. This yields an average of $(0.7\times 1.728, 1)\oplus (0.3\times 0.768, 1)= (1.440,1)$ and represents the unnormalized infinitesimal algebraic likelihood weight of the evidence.
+The unnormalized infinitesimal algebraic likelihood weight of the query conjoined with the evidence is obtain again in a similar fashion but with the samples for $m=0$ being discarded. This then yields the result $(0.3\times 1.728, 1)$.
+Dividing these two (unnormalized) infinitesimal algebraic likelihood weights by each other gives the probability of the query.
+\begin{align*}
+    &P((\mathprobloginline{m=:=1}) =\top \mid \mathprobloginline{size}\doteq 4/10 )\\
+    &=(0.3\times 1.728, 1) \oslash \Big( (0.7\times 0.768,1 ) \oplus (0.3\times 1.728,1) \Big) \\
+    &= (0.2304/1.440 , 1{-}1) \\
+    &= (0.16,0)
+\end{align*}
+\end{example}
+
+
+
+\subsection{Partial Symbolic Inference}
+
+Evaluating circuits using binary random variables is quite wasteful: on average half of the samples are unused for one of the two possible outcomes ($0$ or $1$). We can remedy this by performing (exact) symbolic inference on binary random variables and replace the comparisons where they appear with their expectation. For instance, we replace \probloginline{m=:=1} by the infinitesimal number $(0.3,0)$ instead of sampling a value for \probloginline{m} and testing whether the sample satisfies the constraint. This technique is also used by other probabilistic programming languages such as \problogsty~\citep{fierens2015inference} and Dice~\citep{holtzen2020dice}. The main difference to \dcproblogsty is that those languages only support binary random variables (and by extension discrete random variables with finite support), while \dcproblogsty interleaves discrete and continuous random variables.
+
+In a sense, the expectation gets pushed from the root of the algebraic circuit representing a probability to its leaves. This is, however, only possible if the circuit respects specific properties. Namely, the ones respected by \mbox{d-DNNF} formulas (cf. Section~\ref{sec:ALWviaKC}), which we use as our representation language for the probability.
+
+
+\begin{definition}[Symbolic IALW Label of a Literal] \label{def:sample_probability_labeling_function}
+Given an ancestral sample $\varset{s}^{(i)}= (s_1^{(i)}, \dots,  s_M^{(i)} ) $ for the random variables $\randomvariableset = (\nu_1,\dots, \nu_M)$.
+The  Symbolic IALW (SIALW) label of a positive literal $\ell$ is an infinitesimal number given by:
+\begin{align}
+    \alpha_{SIALW}^{(i)}( \ell)
+    =\begin{cases}
+    (p_{\ell}, 0), & \text{if $\ell$ encodes a probabilistic fact} \\
+    \alpha^{(i)}_{IALW}(\ell), & \text{otherwise} 
+    \end{cases}
+    \nonumber
+\end{align}
+For the negated literals we have the following labeling function:
+\begin{align}
+    \alpha_{SIALW}^{(i)}( \neg \ell)
+    =\begin{cases}
+    (1{-}p_{\ell}, 0), & \text{if $\ell$ encodes a probabilistic fact} \\
+    \alpha^{(i)}_{IALW}(\neg \ell), & \text{otherwise}
+    \end{cases}
+    \nonumber
+\end{align}
+The number $p_\ell$ is the label of the probabilistic fact in a \dcproblogsty program.
+\end{definition}
+
+In the definition above we replace the label of a comparison that corresponds to a probabilistic fact with the probability of that fact being satisfied. This has already been shown to be beneficial when performing inference, both in terms of inference time and accuracy of Monte Carlo estimates~\citep{zuidbergdosmartires2019exact}. Following the work of~\citep{kolb2019exploit} one could also develop more sophisticated methods to detect which comparison in the leaves can be replaced with their expectation. We leave this for future work.
+
+
+
+
+
+
+
+
+\begin{example}[Symbolic IALW on Algebraic Circuit]
+\label{example:eval_observation_marginalized}
+
+Symbolic inference for the random variable $m$ from the circuit in Example~\ref{example:eval_observation} results in annotating the leaf nodes for the different outcomes of the random variable $m$ with the probabilities of the respective outcomes. This can be seen in the red dashed box in the bottom right of Figure~\ref{fig:circuit:sialw}.
+
+	\begin{figure}[h]
+		\resizebox{\linewidth}{!}{%
+			
+			\tikzstyle{distribution}=[rectangle, text centered, fill=white, draw, dashed,thick]
+			\tikzstyle{leaf}=[rectangle, text centered, fill=gray!10, draw,thick]
+			
+			
+			
+			\tikzstyle{negate}=[
+			rectangle split,
+			rectangle split parts=3, 
+			rectangle split horizontal,
+			text centered,
+			rectangle split part fill={gray!10,white,gray!10},
+			draw,
+			rectangle split draw splits=false,
+			anchor=center,
+			align=center,
+			thick
+			]
+			\newcommand{\minus}{  ${\bm e^\otimes}$ \nodepart{second} ${{\bm \ominus}}$ \nodepart{third}  \phantom{${\bm e^\otimes}$}}
+			
+			\tikzstyle{sumproduct}=[
+			rectangle split,
+			rectangle split parts=3, 
+			rectangle split horizontal,
+			text centered,
+			rectangle split part fill={gray!10,white,gray!10},
+			draw,
+			rectangle split draw splits=false,
+			anchor=center,
+			align=center,
+			thick
+			]
+			\newcommand{\supr}[1]{  \phantom{${\bm e^\otimes}$} \nodepart{second} ${{\bm #1}}$ \nodepart{third} \phantom{${\bm e^\otimes}$}}
+			
+			\tikzstyle{circuitedge}=[ultra thick, thick,->]
+			\tikzstyle{distributionedge}=[thick,->, dashed, in=-90]
+			
+	    	\tikzstyle{indexnode}=[draw,circle, inner sep=1pt]				
+			
+			\begin{tikzpicture}[remember picture]
+				
+				\node[sumproduct] (14) at (200.54bp,378.0bp) {\supr{\oplus}};
+				\draw[ultra thick, thick,->] (14.90) to  ([shift={(0,1)}]14.90);
+				
+				\node[sumproduct] (9) [below left = of 14] {\supr{\otimes}};
+				\node[sumproduct] (13) [below right = of 14]  {\supr{\otimes}};
+				
+				\node[negate] (m1) [below=of 9] {\minus};
+				\node[sumproduct] (12)  [below  = of 13] {\supr{\oplus}};
+				
+				\node[sumproduct] (8)  [below=of 12]  {\supr{\otimes}};
+				
+    			\node[indexnode, left=of 14, xshift=0.9cm, yshift=0.4cm] {\footnotesize {$6$}};			
+    			\node[indexnode, left=of 13, xshift=0.9cm, yshift=0.4cm] {\footnotesize {$5$}};			
+    			\node[indexnode, left=of 8, xshift=0.9cm, yshift=0.4cm] {\footnotesize {$2$}};			
+    			\node[indexnode, left=of 12, xshift=0.9cm, yshift=0.4cm] {\footnotesize {$4$}};			
+    			\node[indexnode, left=of 9, xshift=0.9cm, yshift=0.4cm] {\footnotesize {$3$}};			
+    			\node[indexnode, left=of m1, xshift=0.9cm, yshift=0.4cm] {\footnotesize {$1$}};	
+			
+				
+				\node[leaf, below= of 8, xshift=-0.2cm] (4)   {$3/10$};
+				\node[leaf, below= of 8, xshift=1.8cm] (2) {$7/10$};
+				\draw[red,ultra thick,dashed] ($(4.north west)+(-0.2,0.2)$)  rectangle ($(2.south east)+(0.2,-0.2)$);		
+				
+						
+				\node[leaf] (size1obs) [left=of 4, draw,  xshift=0cm]  {$\subnode{var_s_11}{size_{1}} \doteq 0.4$};
+				\node[leaf]  (size0obs) [left =of 4, xshift=-4cm] {$\subnode{var_s_01}{size_{0}} \doteq 0.4$};				
+				
+		    	\node[distribution] (size0)  [below=of size0obs] {\probloginline{beta(2,3)}};
+		    	\node[distribution] (size1)  [below=of size1obs] {\probloginline{beta(4,2)}};
+
+				
+				
+				\draw[distributionedge,out=90]  (size1) to (var_s_11);
+				\draw[distributionedge,out=90] (size0) to  (var_s_01);
+				
+				
+				%https://tex.stackexchange.com/questions/447989/anchor-node-names-for-tikz-rectangle-split-horizontal			
+				\draw[circuitedge] (9) to  (14.mid);
+				\draw[circuitedge] (13) to  (14.three south |- 14.mid);
+				\draw[circuitedge] (m1) to  (9.mid);
+				\draw[circuitedge] (12) to  (13.three south |- 13.mid);
+				\draw[circuitedge] (size0obs) to   (m1.three south |- m1.mid);	
+				\draw[circuitedge] (2) to  (12.three south |- 12.mid);				
+				\draw[circuitedge] (size1obs) to   (8.mid);
+				\draw[circuitedge] (4) to  (8.three south |- 8.mid);	
+				\draw[circuitedge] (8) to  (9.three south |- 9.mid);	
+				\draw[circuitedge] (8) to   (12.mid);
+				\draw[circuitedge] (size0obs) to  (13.mid);
+				
+			\end{tikzpicture}
+		}
+        \captionof{figure}{Circuit representation of the SIALW algorithm for the probability $P(\mathprobloginline{size}\doteq 4/10 )$.}
+        \label{fig:circuit:sialw}
+
+	\end{figure}
+	
+Evaluating the marginalized circuit now returns immediately the unnormalized algebraic model count for the evidence without the need to draw samples and consequently without the need to sum over the samples. 
+
+\begin{minipage}{0.49\linewidth}
+    \begin{align*}
+        &\mathtt{Eval}(\footcircled{$1$})\\
+        &=
+        e^\otimes \ominus \alpha_{SIALW}\big(size_0\doteq 0.4\big) \\
+        &=
+        (1,0) \ominus (1.728,1) \\
+        &= (1,0)
+        \\
+        \hfill
+        \\
+        % 
+        &\mathtt{Eval}(\footcircled{$2$})\\
+        &=
+        \alpha_{SIALW}\big( size_1\doteq 0.4) \otimes \alpha_{SIALW}\big(  m=1 \big) \\
+        &=
+        (0.768,1) \otimes (0.3,0) \\
+        &=
+        (0.2304,1)\\
+        \hfill
+        \\
+        % 
+        &\mathtt{Eval}(\footcircled{$3$})\\
+        &=
+        \mathtt{Eval}(\footcircled{$1$}) \otimes \mathtt{Eval}(\footcircled{$2$}) \\
+        &=
+        (1,0) \otimes (0.2304,1) \\
+        &=
+        (0.2304,1)\\
+    \end{align*}
+\end{minipage}
+\vline
+\begin{minipage}{0.49\linewidth}
+    \begin{align*}
+        &\mathtt{Eval}(\footcircled{$4$})\\
+        &=
+        \mathtt{Eval}(\footcircled{$2$}) \oplus \alpha_{SIALW}\big(  m=0 \big) \\
+        &=
+        (0.2304,1) \oplus (0.7,0) \\
+        &=
+        (0.7,0)\\
+        \hfill
+        \\
+        % 
+        &\mathtt{Eval}(\footcircled{$5$})\\
+        &=
+        \alpha_{SIALW}\big(  size_0\doteq 0.4 \big) \otimes \mathtt{Eval}(\footcircled{$2$})  \\
+        &=
+        (1.728,1) \otimes (0.7,0) \\
+        &=
+        (1.2096,1)\\
+        \hfill
+        \\
+        % 
+        &\mathtt{Eval}(\footcircled{$6$})\\
+        &=
+        \mathtt{Eval}(\footcircled{$3$}) \oplus \mathtt{Eval}(\footcircled{$5$})  \\
+        &=
+        (0.2304,1 \oplus (1.2096,1) \\
+        &=
+        (1.440,1)\\
+    \end{align*}
+\end{minipage}
+	
+	
+	
+	
+	
+\end{example}
+
+
+
+
+
+
+
+\subsection{Experimental Evaluation}
+\label{sec:experimental}
+
+\new{
+
+In order to demonstrate the benefits of adapting the technique of knowledge compilation to the discrete-continuous domain with zero-probability conditioning events, we model a machine that runs either in operating \probloginline{mode1} or \probloginline{mode2}; (with probability $0.2$ and $0.8$ respectively). Furthermore, the machine can be faulty with a small probability of $10^{-5}$. In this case we would like to switch the machine of and repair it.
+
+If the machine is not faulty the temperature measurements we perform on the machine are distributed according to two Gaussian (Lines~\ref{line:ex:faulty:temp1} and \ref{line:ex:faulty:temp2}).
+If the machine is faulty, however, we get a deterministic temperature reading of $2.0$ (Line \ref{line:ex:faulty:temp3}).
+
+}
+
+\begin{problog*}{linenos}
+0.00001::faulty.
+0.2::mode1;0.7::mode2.
+
+temperature ~ normal(0.5,1.0) :- \+faulty, mode1. @\label{line:ex:faulty:temp1}@
+temperature ~ normal(2.0,2.0) :- \+faulty, mode2. @\label{line:ex:faulty:temp2}@
+temperature ~ delta(2.0) :- faulty. @\label{line:ex:faulty:temp3}@
+\end{problog*}
+
+\new{
+We are now interested in computing $p( \mathprobloginline{faulty}{=}\top {\mid} \mathprobloginline{temperature}{\doteq} 2.0 )$. That is, what is the probability that the machine is faulty given that the temperature measurement is $2.0$.
+
+In our experiment we compared the performance of SIALW (\cf Definition~\ref{def:sample_probability_labeling_function}) to the inference algorithm of \dcsty~\citep{nitti2016probabilistic}. The latter is equivalent to the algorithms presented by \Citet{wu2018discrete} and \Citet{jacobs2021paradoxes} as all three perform, in essence, likelihood weighting with infinitesimal numbers.   
+Specifically, we study the sensitivity of the algorithms with regard to the probability of the machine being faulty.
+
+In Figure~\ref{fig:experiment:faultVScorrectness} we see that using SIALW computes the correct probability regardless of the fault probability $\{10^{-5}, 10^{-4}, 10^{-3}, 10^{-2}, 10^{-1} \}$. We also see that the naivc likelihood weighting algorithm (without the exact symbolic inference of SIALW) needs a substantial amount of samples to infer the correct probability. Most notably, for a fault probability of $10^{-5}$ not even a sample size of $10^5$ is sufficient.
+
+The large discrepancy between SIALW and the competing approach by \Citet{nitti2016probabilistic} is explained as follows: in order to correctly infer the queried probability one of the samples drawn from the Bernoulli distribution \probloginline{faulty ~ flip(0.00001)} needs to be true. This would then trigger the rule for \probloginline{temperature ~ delta(2.0) :- faulty}. As this is, however, extremely unlikely the crucial rule needed to perform correct likelihood weighting with infinitesimal numbers is never triggered and the returned probability is incorrect.
+SIALW, in constrast, does not sample \probloginline{faulty ~ flip(0.00001)} but performs exact inference using knowledge compilation. As a result SIALW always computes the correct posterior probability.  
+
+
+
+
+
+\begin{figure}
+    \begin{center}
+        \includegraphics[width=\linewidth]{experiment_dc/faultVScorrectness.pdf}
+    \end{center}
+    \caption{
+        \new{
+        We queried SIALW and (non-symbolci) likelihood weighting each $100$ times for the probability $p( \mathprobloginline{faulty}{=}\top {\mid} \mathprobloginline{temperature}{\doteq} 2.0 )$. On the $y$-axis we give the ratio $\nicefrac{\text{\#correct runs}}{\text{\#runs}}$.
+        Die to the use of knowledge compilation, SIALW is insensitive to the probability of fault (on the x-axis).
+        This is in contrast to the log-likelihood weighting (LLW) algorithm presented by~\Citet{nitti2016probabilistic}, which necessitates a considerable number of samples to compute the queried probability reliably. The different dotted lines indicate settings with varying sample sizes ($\{10^1, 10^2, 10^3, 10^4, 10^5 \}$).  
+        }
+    }
+    \label{fig:experiment:faultVScorrectness}
+\end{figure}
+}
+
+% \begin{figure}
+%     \begin{center}
+%         \includegraphics[width=\linewidth]{experiment_dc/samplesVScorrectness.pdf}
+%     \end{center}
+%     \caption{test}
+%     \label{fig:experiment:samplesVScorrectness}
+% \end{figure}

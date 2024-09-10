@@ -1,0 +1,61 @@
+\section{Logic Programming}
+\label{app:lp_new}
+
+
+
+We briefly summarize key concepts of the syntax and semantics of logic programming; for a full introduction, we refer to \citep{lloyd2012foundations}.
+
+\subsection{Building Blocks}
+The basic building blocks of logic programs are \emph{variables} (denoted by strings starting with upper case letters), \emph{constants}, \emph{functors} and
+\emph{predicates} (all denoted by strings starting with lower case letters).  A \emph{term} is a variable, a constant, or a functor
+$f$ of \emph{arity} $n$ followed by $n$ terms $t_i$, \ie,
+$f(t_1,\dots,t_n)$. 
+An \emph{atom} is a predicate $p$ of arity $n$ followed by $n$ terms $t_i$, \ie,
+$p(t_1,\dots,t_n)$. A predicate $p$ of arity $n$ is also written as \mathpredicate{p}{n}. A \emph{literal} is an
+atom or a negated atom $ not(p(t_1,\dots,t_n))$.
+
+\subsection{Logic Programs}
+
+A \emph{definite clause} is a universally quantified expression of the form $h
+\lpif b_1, \dots, b_n$ where $h$ and the $b_i$ are atoms.
+$h$ is called the \emph{head} of the clause, and $b_1, \dots, b_n$ its
+\emph{body}. Informally, the meaning of such a clause is that if all
+the $b_i$ are true, $h$ has to be true as well. 
+ A \emph{normal clause}  is a universally quantified expression of the form $h
+\lpif l_1, \dots, l_n$ where $h$ is an atom and the $l_i$ are
+literals.
+If $n=0$, a clause is called \emph{fact} and simply written
+as $h$.
+A \emph{definite clause program} or \emph{logic program} for
+short is a finite set of definite clauses. A \emph{normal logic
+  program} is a finite set of normal clauses. 
+
+\subsection{Substitutions}
+
+A \emph{substitution} $\theta$ is an expression of the form
+$\{V_1/t_1,\dots,V_m/t_m\}$ where the $V_i$ are different variables and
+the $t_i$ are terms. Applying a substitution $\theta$ to an expression
+$e$ (term or clause) yields the \emph{instantiated} expression $e\theta$
+where all variables $V_i$ in $e$ have been simultaneously replaced by
+their corresponding terms $t_i$ in $\theta$. If an expression does not
+contain variables it is \emph{ground}. Two expressions $e_1$ and $e_2$ can be \emph{unified} if and only if there are substitutions $\theta_1$ and $\theta_2$ such that $e_1\theta_1 = e_2\theta_2$.
+
+\subsection{Herbrand Universe}
+
+The \emph{Herbrand universe} of a logic program is the set of ground terms that can be constructed using the functors and constants occurring in the program.
+% \footnote{If the program does not contain constants, one arbitrary constant is added.} 
+The \emph{Herbrand base} of a logic program is the set of ground atoms that can be constructed from the predicates in the program and the terms in its Herbrand universe. 
+A truth value assignment to all atoms in the 
+Herbrand base is called \emph{Herbrand interpretation}, and is also represented as the set of atoms that are true according to the assignment. 
+A Herbrand interpretation is a \emph{model} of a clause $h \lpif b_1,\ldots ,b_n\ldotp$ if for every substitution $\theta$ such that all $b_i\theta$ are in the interpretation, $h\theta$ is in the interpretation as well. It is a model of a logic program if it is a model of all clauses in the program. The model-theoretic semantics of a definite clause program is given by its smallest Herbrand model with respect to set inclusion, the so-called \emph{least Herbrand model} (which is unique). We say that a logic program $\dcpprogram$ \emph{entails} an atom $a$, denoted $\dcpprogram\models a$, if and only if $a$ is true in the least Herbrand model of $\dcpprogram$.   
+
+
+
+
+% Normal logic programs use the notion of \emph{negation as failure}, that is, for a ground atom $a$, $not(a)$ is true exactly if $a$ cannot be proven in the program. They are not guaranteed to have a unique minimal Herbrand model. Various ways to define the canonical model of such programs have been studied; see, \eg, \citep[Chapter 3]{lloyd2012foundations} for an overview. We use the well-founded semantics here~\citep{van1991well}.
+
+% The main inference task of a logic programming system is to determine
+% whether a given atom, also called \emph{query} (or \emph{goal}), is true in the canonical
+%  model of a  program. If the answer is yes (or no), we also say that the query \emph{succeeds} (or \emph{fails}). If such a query is not ground, inference asks for the existence of  \emph{answer substitutions}, that is,  substitutions that ground the query into atoms that are part of the canonical model. 
+
+

@@ -1,0 +1,211 @@
+\section{\dcproblogsty Semantics}\label{sec:dcproblog}
+While DC-PLP is an expressive probabilistic programming language for which we have defined fully declarative semantics, using DC-PLP in practice might turn out to be challenging. The syntax is simply too cumbersome. Therefore, we will now introduce semantics for the higher-level \dcproblogsty language whose syntax we already introduced in Section~\ref{sec:syntax}.
+
+
+
+
+A \dcproblogsty program consists of a countable set of ground distributional facts, a countable set of ground probabilistic facts, and a logic program (i.e. a finite set of facts and normal clauses), where bodies of normal clauses can use comparison predicates.   
+
+
+\begin{definition} A \dcproblogsty program \dcpprogram is {\bf valid} if and only if it encodes a unique probability distribution.
+\end{definition} 
+
+This raises the question: what are the conditions we have to impose on \dcproblogsty programs such that they are valid, or in other words such that they encode unique probability distributions? We will answer this question in Theorem~\ref{theo:valid_dcproblog}. But first we are going to define a program transformation that maps a \dcproblogsty program to a DC-PLP program.  
+
+
+
+
+
+\begin{definition} \label{def:dcproblog2dcplp}
+
+
+\todo{ make transformations formal with substitutions}
+
+\pedro{@Angelika, I believe you mentioned you had this transformation ready already?}
+\ak{see copy from old below for probabilistic facts; LP stays the same (modulo dropping the test-wrapping?); distributional facts should be just rv(v,d) to v\probloginline{~}d (the complicated part would be directly mapping full DC)}
+
+\end{definition}
+
+\ak{begin copy}
+\subsubsection{ProbLog with probabilistic facts only}
+ProbLog with probabilistic facts (no ADs) restricts $P$ to discrete distributions over Boolean truth values, and $Q$ to equality comparisons between a random variable and the constant \verb|true|. The translation is modular, mapping each normal logic clause to itself, and each ground probabilistic fact \verb|p::f| to a program fragment
+\begin{verbatim}
+rv(f,flip(p)).
+f :- holds(f=true).
+\end{verbatim}
+where \verb|flip(p)| denotes the distribution that returns \verb|true| with probability \verb|p| and \verb|false| otherwise.\footnote{This assumes that all probabilistic facts are syntactically different and associated to a single probability; for the multi-set view of the current system, the name of the random variable has to be made unique through different means, which is straightforward.} The correspondence in semantics is straightforward. 
+
+\subsubsection{ProbLog with ADs}
+Adding ADs to ProbLog adds discrete distributions over finite sets $\{1,...,n\}$ to $P$, and equality comparisons between random variables and the elements of these sets to $Q$.
+A ground AD \verb|p1::h1;...;pn::hn :- body| maps to a program fragment
+\begin{verbatim}
+rv(id,[p1:1,...pn:n]).
+h1 :- body, holds(id=1).
+...
+hn :- body, holds(id=n).
+\end{verbatim}
+where \verb|id| is a fresh term not used anywhere else. The correspondence in semantics is again straightforward. 
+\ak{end copy}
+
+
+
+
+\begin{theorem} \label{theo:valid_dcproblog}
+A \dcproblogsty program is valid if the following two validity conditions hold.
+	\begin{itemize}
+	    \item[V1] No two distributional facts can introduce the same random variable, \ie use the same term on the left hand side.
+		\item[V2] The program \dcpprogram is distribution stratified, that is, there exists a function $rank(\cdot)$ that maps ground terms to $\mathbb{N}$ and that satisfies the following properties:
+		\begin{enumerate}			
+			\item for each ground instance of a distributional fact of the form \linebreak \probloginline{rand~dist(d@$_1$@,...,d@$_n$@)} it holds that   $rank(\text{\probloginline{rand}})>rank(\text{\probloginline{d@$_i$@}})$ for every $i$ ($1\leq i \leq n$).
+			\item for each ground instance of another program clause \probloginline{h:- b@$_1$@,...,b@$_n$@} it holds that $rank(\text{\probloginline{h}})\geq rank(\text{\probloginline{b@$_i$@}})$, for all $i$.
+			\item for each ground term \probloginline{b} that contains a random variable \probloginline{rand}, $rank(\text{\probloginline{b}})\geq rank(\text{\probloginline{rand~dist}})$ (with \probloginline{rand~dist} the head of the distributional clause defining \probloginline{rand}).
+		\end{enumerate}
+	    \item[V3] \todo{Lebesgue measurabiltiy of comparisons}
+	\end{itemize}
+\end{theorem}
+
+
+\proof{\todo{}
+
+\begin{itemize}
+    \item use transformation from \dcproblogsty to DC-PLP and show uniqueness under conditions
+    \item we need to show that the transformation is unique (order does not matter) and results in a valid DC-PLP program
+\end{itemize}
+}
+
+
+\todo{Discuss complexity/decidability of determining whether program is valid, cf. \citep[Chapter 4.5]{milch2006probabilistic}. discuss sufficiency not necessity of validity conditions. maybe disucss in dc-plp section }
+
+
+
+
+
+
+
+
+\section{\dcproblogsty with Distributional Clauses}
+
+
+
+\begin{example}[\dcproblogsty Program] \label{ex:dcproblog_distributional_clause}
+	This example program models the correct working of a machine. The probability distribution of the \probloginline{temperature} of the machine depends on whether it is a \probloginline{hot} day or not.
+	\begin{problog*}{linenos}
+machine(1).
+
+0.2::hot.
+0.99::cooling(1).
+
+temperature ~ normal(27,5):- hot.
+temperature ~ normal(20,5):- \+hot. 
+
+works(N):- machine(N), cooling(N).
+works(N):- machine(N), temperature<25.0. 
+
+query(works(1)).
+	\end{problog*}
+	Note that we introduced {\em distributional clauses} in this example, which let us write down conditional probability distributions. 
+\end{example}
+
+
+
+
+
+
+\begin{definition}
+	Distributional clauses are syntactic sugar to concisely write down conditional probability distributions of random variables. \todo{more elaborate}
+
+	
+\end{definition}
+
+
+
+
+\begin{definition}
+
+
+
+
+\todo{formal transformation: \dcproblogsty with distributional clauses to \dcproblogsty without}
+	A \dcproblogsty program containing a random variable \probloginline{rand} involved in $N$ distributional clauses
+    \begin{problog}
+rand ~ dist@$_i$@ :- b@$_i$@
+    \end{problog}
+	with mutually logically inconsistent bodies $\text{\probloginline{b@$_i$@}}$ ($1{\leq} i {\leq} N$)
+	is equivalent to a \dcproblogsty program with $N$ fresh random variables \probloginline{rand@$_i$@} ($1{\leq} i {\leq} N$) involved in $N$ distinct distributional facts
+    \begin{problog}
+rand@$_i$@ ~ dist@$_i$@.
+    \end{problog}
+    Each clause initially containing \probloginline{rand} is replaced in the equivalent program that does not contain distributional clauses for \probloginline{rand} by $N$ clauses, where \probloginline{rand} is substituted by $\text{\probloginline{rand@$_i$@}}$ and its body is conjoined with \probloginline{b@$_i$@} for every i with $1{\leq} i {\leq} N$.
+
+\end{definition}
+
+
+
+Mapping distributional clauses to distributional facts is akin to mapping intentional probabilistic facts (e.g \probloginline{0.2::a:- b.}) to probabilistic facts (and deterministic rules). Note that \dcproblogsty allows, just as \problogsty, the usage of intentional probabilistic facts, with the same semantics as in \problogsty. In absence of any distributional facts and clauses, a \dcproblogsty program reduces to a \problogsty program.
+
+
+\begin{theorem}\label{theo:valid_dcproblog_w_clauses} A {\bf \dcproblogsty program} \dcpprogram{} {\bf with distributional clauses} is {\bf valid} if it can be mapped to an equivalent valid \dcproblogsty program. Such a mapping exists if the following three validity conditions hold.
+	\begin{itemize}
+		\item[V1] The bodies of ground distributional clauses with the same random variable in their heads are pairwise logically inconsistent.
+		\item[V2] The program \dcpprogram is distribution stratified, that is, there exists a function $rank(\cdot)$ that maps ground terms to $\mathbb{N}$ and that satisfies the following properties:
+		\begin{enumerate}			
+			\item for each ground instance of a distributional clause of the form \linebreak \probloginline{rand~dist(d@$_1$@,...,d@$_n$@):-b} it holds that   $rank(\text{\probloginline{rand}})>rank(\text{\probloginline{d@$_i$@}})$ for every $i$ ($1\leq i \leq n$).
+			\item for each ground instance of a distributional clause \probloginline{rand~dist:-b@$_1$@,...,b@$_n$@} it holds that $rank(\text{\probloginline{rand ~ dist}})>rank(\text{\probloginline{b@$_i$@}})$, for all $i$.
+			\item for each ground instance of another program clause \probloginline{h:- b@$_1$@,...,b@$_n$@} it holds that $rank(\text{\probloginline{h}})\geq rank(\text{\probloginline{b@$_i$@}})$, for all $i$.
+			\item for each ground term \probloginline{b} that contains a random variable \probloginline{rand}, $rank(\text{\probloginline{b}})\geq rank(\text{\probloginline{rand~dist}})$ (with \probloginline{rand~dist} the head of the distributional clause defining \probloginline{rand}).
+		\end{enumerate}
+	    \item[V3] \todo{Lebesgue measurabiltiy of comparisons}
+	\end{itemize}
+
+\proof{transform distributional clauses to distributional facts.
+
+}
+\end{theorem}
+
+The criterion V1 in Theorem~\ref{theo:valid_dcproblog_w_clauses} is equivalent to the validity criterion V1 given in~\citep[Definition 3]{gutmann2011magic}, which requires that there is a unique ground distribution for each ground random variable \probloginline{rand}. V2 is a carbon copy of the second validity criterion of~\citep[Definition 3]{gutmann2011magic}, with the exception of the first point of V2. We added it, as distributional clauses with cyclic functional dependencies were not {\em explicitly} disallowed in ~\citep{gutmann2011magic}.
+
+\subsection*{Difference to Distributional Clauses}
+
+\ak{discussion on differences to DC: in how far is this semantics vs implementation? I believe we silently assumed (but never stated) that only defined RVs would be used, but I don't remember how Davide handled this when introducing negation to the semantics...}
+
+This is also a good point to illustrate a major difference between the semantics of random variables in Distributional Clauses and \dcproblogsty. Take the code snippet below:
+\begin{problog*}{linenos}
+x ~ normal(20,2).
+
+q(1):- x>20.
+q(2):- y>20.
+
+query(q(1)).
+query(q(2)).
+\end{problog*}
+The first query succeeds and returns as an answer $p(\text{\probloginline{query(q(1)))}}) = 0.5$. The second query, however, throws an error as there is no term of type \type{RandomVariable} declared that is named \probloginline{y}. The second query would also fail if there were an \type{Atom} term named \probloginline{y}. In this case the lefthand side of \probloginline{y>20} would be ill-typed.
+
+Let us now write the same program as a Distributional Clauses program:
+\begin{adjustwidth}{1em}{0em}
+	{
+		\normalfont
+		\begin{lstlisting}[breaklines,mathescape]
+x ~ normal(20,3).
+
+q(1)$\leftarrow$ $ {\simeq}(x)$<20.
+q(2)$\leftarrow$  $ {\simeq}(y)$<20.
+
+query(q(1)).
+query(q(2)).
+		\end{lstlisting}
+	}
+\end{adjustwidth}
+The first query will again return $ p(\text{\lstinline|query(q(1))|}) =0.5$ (or an approximation thereof) but the second query will not throw an error but return a probability of zero. How does this work? The term \lstinline[mathescape]|$ {\simeq} (y)$| tries to unify with the value of the random variable \lstinline|y|. As there is no such random variable, this silently fails and the body of the clause whose head is \lstinline|q(2)| is simply not satisfied.
+
+If we were to negate the comparison predicate in the body of the \lstinline|q(2)| clause, \ie write:
+\begin{adjustwidth}{1em}{0em}
+	{
+		\normalfont
+		\begin{lstlisting}[breaklines,mathescape]
+q(2) $\leftarrow$  \+(${\simeq}(y)$<20).
+		\end{lstlisting}
+	}
+\end{adjustwidth}
+we would obtain for the second query: $ p(\text{\lstinline|query(q(1))|}) =1$. Negating the corresponding comparison predicate in \dcproblogsty would still result in an ill-typed term, \ie an error would be thrown.
+
+The comparison we just performed does not only illustrate a semantic difference between \dcproblogsty and Distributional Clauses but also a conceptual one. In \dcproblogsty the values of of random variables never enter the realm of the logic program: values of random variables only live in the external arithmetic engine of \dcproblogsty. In contrast,  random variables in Distributional Clauses are part of the logic program: the values of random variables are stored in a logic data base and can be accessed through logical unification. Distributional Clauses currently does this via SLD resolution.

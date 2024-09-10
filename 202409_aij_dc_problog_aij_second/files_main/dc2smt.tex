@@ -1,0 +1,366 @@
+\section{Inference via Computing Expectations of Labeled Logic Formulas} \label{sec:dc2smt}
+
+In the previous sections we have delineated the semantics of \dcproblogsty programs and described the PROB task that defines conditional probability queries on \dcproblogsty programs. The obvious next step is to actually perform the inference. We will follow an approach often found in implementations of PLP languages in the discrete domain: reducing inference in probabilistic programs to 
+performing inference on labeled Boolean formulas that encode relevant parts of the logic program.
+Contrary to languages in the discrete domain that follow this approach~\citep{fierens2015inference,riguzzi2011pita}, we will face the additional complication of handling random variables with infinite sample spaces. We refer the reader to~\citep[Section 5]{riguzzi2018foundations} for a broader overview of this approach.
+
+Specifically, we are going to define a reduction from \dcproblogsty inference to the task of computing the expected label of a propositional formula. The formula is a propositional encoding of the  relevant part of the logic program (relevant with respect to a query), where atoms become propositional variables, and the labels of the basic facts in the distribution database are derived from the probabilistic part of the program.
+At a high level, we extend \problogsty's inference algorithm such that Boolean comparison atoms over (potentially correlated) random variables are correctly being kept track of. The major complication, with regard to \problogsty and other systems such as PITA~\citep{riguzzi2011pita}, is the presence of context-dependent random variables, which are denoted by the same ground random term. For instance, the random term \probloginline{size} in the program in Example~\ref{example:dcproblog:observation} denotes two different random variables but is being referred to by one and the same term in the program.
+
+Inference algorithms for PLP languages often consider only a fragment of the language for which the semantics have been defined. A common restriction for inference algorithms is to only consider range-restricted programs\footnote{We call a \dcproblogsty program range-restricted if it holds that for every statement all logic variables occurring in the head also occur as positive literals in the body. This guarantees that all terms will become ground during backward chaining. Note that range-restrictedness implies that all facts (including probabilistic and distributional ones) are ground.}. 
+% , the finite support assumption is usually presumed. That is, the queries and evidence depend only on a finite subset of Boolean comparison atoms (and thus a finite set of random variables),
+Furthermore, we consider, without loss of generality only AD-free programs, cf.~Definition~\ref{def:ad_free_program}, as annotated disjunctions or probabilistic facts can be eliminated up front by means of {\em local} transformations that  solely affect the annotated disjunctions (or probabilistic facts).\footnote{For non-ground ADs, we adapt Definition~\ref{def:elim-ad} to include all logical variables as arguments of the new random variable. As this introduces non-ground distributional facts, which are not range-restricted, we also move the comparison atom to the end of the rule bodies of the AD encoding to ensure those local random variables are ground when reached in backward chaining.}
+
+% \begin{example}[Eliminating Probabilistic Facts]
+% \label{ex:eliminating_pf}
+% Consider the non-ground \dcproblogsty program below, which is range-restricted but not AD-free.
+% %containing ground probabilistic fact, ground distributional clauses, and a non-ground logic program. 
+% 	\begin{problog*}{linenos}
+% 0.2::hot.
+% 0.99::cool(1).
+
+% temp(1) ~ normal(27,5):- hot.
+% temp(1) ~ normal(20,5):- not hot.
+
+% works(N):- cool(N).
+% works(N):- temp(N)<25.0.
+% 	\end{problog*}
+% We can eliminate the probabilistic facts independently form the rest of the program as this is a local transformation, which does not affect any part of the program but a probabilistic fact itself:
+% 	\begin{problog*}{linenos}
+% rv_hot ~ flip(0.2).
+% hot:- rv_hot=:=1.
+% rv_cool(1) ~ flip(0.99).
+% cool(1):- rv_cool(1)=:=1.
+
+% temp(1) ~ normal(27,5):- hot.
+% temp(1) ~ normal(20,5):- not hot.
+
+% works(N):- cool(N).
+% works(N):- temp(N)<25.0.
+% 	\end{problog*}
+% \end{example}
+
+
+
+
+The high level steps for converting a \dcproblogsty program to a labeled propositional formula closely follow the corresponding conversion for \problogsty programs provided by \citet[Section 5]{fierens2015inference}, \ie, given a \dcproblogsty program \dcpprogram,
+		evidence $\evidenceset =e$ and a set of query atoms $\queryset$, the conversion algorithm performs the following steps:
+\begin{enumerate}
+    \item Determine the { relevant ground program} $\dcpprogram_g$ with respect to the atoms in  $\queryset\cup\evidenceset$ and obtain the corresponing \dfplpsty program. 
+    \item Convert $\dcpprogram_g$  to an { equivalent propositional formula} $\phi_g$ and $\evidenceset =e$ to a propositional conjunction $\phi_e$.
+%    \item {\bf Assert the evidence} $\evidenceset=e$.
+    \item Define the { labeling function} for all atoms in $\phi_g$.
+\end{enumerate}
+Step 1 exploits the fact that ground clauses that have no influence on the truth values of  query or evidence atoms are irrelevant for inference and can thus be omitted from the ground program. Step 2 performs the conversion from logic program semantics to propositional logic, generating a formula that encodes \emph{all} models of the relevant ground program as well as a formula that serves to assert the evidence by conjoining both formulas. 
+Step 3 completes the conversion by defining the labeling function. 
+In the following, we discuss the three steps in more detail and prove correctness of our approach (cf. Theorem~\ref{thm:inference-by-expectation}).  
+
+%Below we give the outline of the conversion algorithm to map a \dcproblogsty program to a weighted propositional logic formula, this is heavily inspired by~\citet[Section 5]{fierens2015inference},
+
+
+%	\begin{algo}[\dcproblogsty to Weighted Propositional Formula] \label{algo:inference_dc_problog}
+%		The algorithm takes as input a \dcproblogsty program \dcpprogram,
+%		evidence $\evidenceset =e$ and a set of \emph{query atoms} $\queryset$.
+%		The algorithm maps the queries to $\dcpprogram$ through the following steps to a labeled propositional  formula.
+%		\begin{enumerate}
+%			\item Ground out $\dcpprogram$ with respect to every query $Q\in \queryset$ and obtain the ground program $\dcpprogram_g$.
+ %           Note that it is unnecessary to consider the full grounding of the program, as we only need the part that is relevant to the queries  (given the evidence). That is, the part that captures the probability $P(Q=1 \mid \evidenceset=e)$ for every $Q\in \queryset$. We refer to the resulting program $\dcpprogram_g$ as the {\bf relevant ground program} with respect to $\queryset$ and $\evidenceset=e$. 
+		
+  %          \item Convert the ground rules in $\dcpprogram_g$ to an {\bf equivalent propositional formula} $\phi_g$.
+
+   %         \item {\bf Assert the evidence} by defining the formula $\phi$ as the conjunction of the formula $\phi_g$ for the rules and for the evidence $\phi_e$. The formula $\phi_e$ is obtained by setting the conjunction of the evidence atoms as the query of interests and perform steps 1. and 2., ie. ground the program \dcpprogram with respect to the conjunction of evidence atoms and obtain a propositional formula $\phi_e$ from that ground program.
+            
+    %        \item Define a {\bf labeling function} for all atoms in $\phi$.
+	%	\end{enumerate}
+	%\end{algo}
+
+%We will now describe the four steps of Algorithm~\ref{algo:inference_dc_problog}  in more detail and prove its correctness by proving that each of the four steps does not alter the probability of the queried atoms. We will limit ourselves to a single query atom for the sake of exposition. Note, however, that the discussion below also holds for multiple queries by realizing that $\dcpprogram_g= \bigcup_{Q\in \queryset} \dcpprogram_g^Q$, where $\dcpprogram_g^Q$ is the ground program with respect to a single query atom $Q$.
+
+\subsection{The Relevant Ground Program}
+
+The first step in the conversion of a non-ground \dcproblogsty program to a labeled  Boolean formula consists of grounding the program with respect to a query set $\queryset$ and the evidence $\evidenceset=e$.
+For each ground atom in $\queryset$ and $\evidenceset$ we construct its dependency set. That is, we collect the set of ground atoms and ground rules that occur in any of the proofs of an atom in $\queryset\cup \evidenceset$. The union of all dependency sets for all the ground atoms in $\queryset\cup\evidenceset$ is the dependency set of the \dcproblogsty with respect to the sets $\queryset$ and $\evidenceset$. This dependency set, consisting of ground rules and ground atoms, is called the relevant ground program (with respect to a set of queries and evidence).
+
+\begin{example}
+	\label{ex:grounded_nicely}
+	Consider the non-ground (AD-free) \dcproblogsty program below.     
+	\begin{problog*}{linenos}
+rv_hot ~ flip(0.2).
+hot:- rv_hot=:=1.
+rv_cool(1) ~ flip(0.99).
+cool(1):- rv_cool(1)=:=1.
+
+temp(1) ~ normal(27,5):- hot.
+temp(1) ~ normal(20,5):- not hot.
+
+works(N):- cool(N).
+works(N):- temp(N)<25.0.
+	\end{problog*}
+If we ground it with respect to the query \probloginline{works(1)} and subsequently apply the rewrite rules from Section~\ref{sec:eliminate_dc} we obtain:
+	\begin{problog*}{linenos}
+rv_hot ~ flip(0.2). 
+hot:- rv_hot=:=1.
+rv_cool(1) ~ flip(0.99).
+cool(1):- rv_cool(1)=:=1.
+
+temp(hot) ~ normal(27,5).
+temp(not_hot) ~ normal(20,5).
+
+works(1):- cool(1).
+works(1):- hot, temp(hot)<25.0,
+works(1):- not hot, temp(not_hot)<25.0.
+	\end{problog*}
+\end{example}
+
+A possible way, as hinted at in Example~\ref{ex:grounded_nicely}, of obtaining a ground \dfplpsty program from a non-ground \dcproblogsty program is to first ground out all the logical variables. Subsequently, one can apply Definition~\ref{def:elim-ad} to eliminate annotated disjunctions and probabilistic facts, and Definition~\ref{def:adfree-to-core} in order to obtain a \dfplpsty program with no distributional clauses.
+A possible drawback of such a two-step approach (grounding logical variables followed by obtaining a \dcproblogsty program) is that it might introduce spurious atoms to the relevant ground program. A more elegant but also more challenging approach is to interleave the grounding of logical variables and distributional clause elimination. We leave this for future research.
+
+
+\begin{restatable}[Label Equivalence]{theorem}{theorgp}
+	\label{theo:rgp}
+	Let $\dcpprogram$ be a \dcproblogsty program and let $\dcpprogram_g$ be the relevant ground program for $\dcpprogram$ with respect to a query $\mu$ and the evidence $\evidenceset=e$ obtained by first grounding out logical variables and subsequently applying transformation rules from Section~\ref{sec:dcproblog}. The programs $\dcpprogram$ and $\dcpprogram_g$ specify the same probability:
+	\begin{align}
+		P_{\dcpprogram}(\mu=\top \mid \evidenceset=e)
+		=
+		P_{\dcpprogram_g}(\mu=\top \mid \evidenceset=e)
+	\end{align}
+    \end{restatable}
+
+    \begin{proof}
+        See Appendix~\ref{app:proof:rgp}.
+        \end{proof}
+
+\subsection{The Boolean Formula for the Relevant Ground Program}
+\label{sec:relprog2boolfrom}
+
+Converting a ground logic program, \ie a set of ground rules, into an equivalent Boolean formula is a purely logical problem and well-studied in the non-probabilistic logic programming literature. We refer the reader to \citet{janhunen2004representing} for an account of the transformation to Boolean formula in the non-probabilistic setting and to \citet{mantadelis2010dedicated} and \citet{fierens2015inference} in the probabilistic setting,
+including correctness proofs. We will only illustrate the most basic case with an example here.
+
+
+\begin{example}[Mapping \dcproblogsty to Boolean Formula] \label{example:dc2bool}
+Consider the ground program in Example~\ref{ex:grounded_nicely}. 
+To highlight the move from logic programming to propositional logic,	
+	%We map  the logic program to a Boolean logic formula $\support_g$, where 
+	we introduce for every atom \probloginline{a} in the program a %fresh and equivalent
+	corresponding propositional variable  $\phi_\text{\probloginline{a}}$.
+	As the program does not contain cycles, we can use Clark's completion for the transformation, \ie, a derived atom is true if and only if the disjunction of the bodies of its defining rules is true. The propositional formula $\phi_g$ corresponding to the program is then the conjunction of the following three formulas:
+	\begin{align*}
+	    \phi_\mathprobloginline{works(1)} &\leftrightarrow
+		\Big( \phi_{\text{\probloginline{cool(1)}}} 
+		\lor \phi_\text{\probloginline{hot}} \land  \phi_\text{\probloginline{temp(hot)<25.0}}  
+		\lor\neg \phi_\text{\probloginline{hot}}  \land \phi_\text{\probloginline{temp(not_hot)<25.0}}   \Big) \\
+		  \phi_{\text{\probloginline{cool(1)}}} &\leftrightarrow  \phi_{\text{\probloginline{rv_cool(1)=:=1}}}\\
+		\phi_\text{\probloginline{hot}} &\leftrightarrow \phi_{\text{\probloginline{rv_hot=:=1}}}
+	\end{align*}
+% AK: 	I'm not quite sure what was going on in the rest of the complicated formula, so I couldn't fix it to fit the fix above, but it didn't seem relevant to the story, so I dropped it (and adapted subsequent examples)
+% 	\begin{align}
+% 		\support_q
+% 		&\leftrightarrow \phi_{\text{\probloginline{cool(1)}}} \land \phi_{\text{\probloginline{rv_cool(1)=:=1}}}  \lor \nonumber \\
+% 		&\phantom{{}\leftrightarrow{}}   \phi_\text{\probloginline{hot}} \land  \phi_\text{\probloginline{temp(hot)<25.0}} \land \phi_{\text{\probloginline{hot}=:=1}} \lor \nonumber \\
+% 		&\phantom{{}\leftrightarrow{}} \phi_\text{\probloginline{machine(1)}} \land \phi_\text{\probloginline{temp(not_hot)<25.0}} \land  \neg \phi_\text{\probloginline{hot=:=1}} 
+% % 		&\leftrightarrow (\text{\dcplpinline{cool(1)}}=1) \lor \nonumber \\
+% % 		&\phantom{{}\leftrightarrow{}} (\text{\dcplpinline{temp(hot)}}<25.0) \land (\text{\dcplpinline{hot}}=1) \lor \nonumber \\
+% % 		&\phantom{{}\leftrightarrow{}} (\text{\dcplpinline{temp(not_hot)}}<25.0) \land  (\text{\dcplpinline{hot}}=0)  
+% 	\end{align}
+%	\begin{align}
+%		&\phantom{{}\leftrightarrow{}} \support_g  \nonumber \\
+%		&\leftrightarrow
+%		\Big( \phi_{\text{\probloginline{cool(1)}}} 
+%		\lor \phi_\text{\probloginline{hot}} \land  \phi_\text{\probloginline{temp(hot)<25.0}}  
+%		\lor\neg \phi_\text{\probloginline{hot}}  \land \phi_\text{\probloginline{temp(not_hot)<25.0}}   \Big) \land  \nonumber \\
+%		&\phantom{{}\leftrightarrow{}} 
+%		  \phi_{\text{\probloginline{cool(1)}}} \leftrightarrow  \phi_{\text{\probloginline{rv_cool(1)=:=1}}} \land \nonumber \\
+%		&\phantom{{}\leftrightarrow{}}
+%		  \phi_\text{\probloginline{hot}} \leftrightarrow \phi_{\text{\probloginline{rv_hot=:=1}}} \\
+		%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    	&\leftrightarrow
+%    	 \left( \phi_{\text{\probloginline{cool(1)}}}  \land \phi_{\text{\probloginline{rv_cool(1)=:=1}}} \land  \phi_\text{\probloginline{hot}} \land \phi_{\text{\probloginline{rv_hot=:=1}}} \right) \lor \nonumber \\
+%		&\phantom{{}\leftrightarrow{}}
+ %   	\left( \phi_{\text{\probloginline{cool(1)}}}  \land \phi_{\text{\probloginline{rv_cool(1)=:=1}}} \land  \neg \phi_\text{\probloginline{hot}} \land \neg \phi_{\text{\probloginline{rv_hot=:=1}}} \right) \lor \nonumber \\
+  %      &\phantom{{}\leftrightarrow{}} 
+%		\left( \phi_\text{\probloginline{hot}} \land  \phi_{\text{\probloginline{rv_hot=:=1}}} \land  \phi_\text{\probloginline{temp(hot)<25.0}} \land \phi_{\text{\probloginline{cool(1)}}}  \land \phi_{\text{\probloginline{rv_cool(1)=:=1}}}  \right) \lor \nonumber \\
+ %       &\phantom{{}\leftrightarrow{}} 
+%		\left( \phi_\text{\probloginline{hot}} \land  \phi_{\text{\probloginline{rv_hot=:=1}}} \land  \phi_\text{\probloginline{temp(hot)<25.0}} \land \neg \phi_{\text{\probloginline{cool(1)}}}  \land \neg \phi_{\text{\probloginline{rv_cool(1)=:=1}}}  \right) \lor \nonumber \\
+ %       &\phantom{{}\leftrightarrow{}} 
+%		\left( \neg \phi_\text{\probloginline{hot}} \land \neg \phi_{\text{\probloginline{rv_hot=:=1}}} \land  \phi_\text{\probloginline{temp(not_hot)<25.0}} \land \phi_{\text{\probloginline{cool(1)}}}  \land
+%		\phi_{\text{\probloginline{rv_cool(1)=:=1}}}  \right) \lor \nonumber \\
+ %       &\phantom{{}\leftrightarrow{}} 
+%		\left( \neg \phi_\text{\probloginline{hot}} \land \neg \phi_{\text{\probloginline{rv_hot=:=1}}} \land  \phi_\text{\probloginline{temp(not_hot)<25.0}} \land \neg \phi_{\text{\probloginline{cool(1)}}}  \land
+%		\neg \phi_{\text{\probloginline{rv_cool(1)=:=1}}}  \right) \label{eq:example_dc2bool_last}
+    % 	
+%	\end{align}
+
+\end{example}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Note that the formula obtained by converting the relevant ground program still admits \emph{any} model of that program, including ones that are inconsistent with the evidence. In order to use that formula to compute conditional probabilities, we still need to assert  the evidence into the formula by conjoining the corresponding propositional literals. 
+The following theorem then directly applies to our case as well.
+\begin{theorem}[Model Equivalence~\citep{fierens2015inference} (Theorem 2, part 1)]
+\label{theo:model_equivalence}
+Let $\dcpprogram_g$ be the relevant ground program for a \dcproblogsty program $\dcpprogram$ with respect to  query set \queryset\ and  evidence $\evidenceset=e$. Let $MOD_{\evidenceset=e}(\dcpprogram_g)$ be those models in $MOD(\dcpprogram_g)$ that are consistent with the evidence.
+Let $\phi_g$ denote the  propositional formula derived from $\dcpprogram_g$, and set $\phi \leftrightarrow \phi_g \land \phi_e$, where  $\phi_e$ is the conjunction of literals that corresponds to the observed truth values of the atoms in $\evidenceset$. We then have {\bf model equivalence}, \ie, 
+\begin{align}
+    MOD_{\evidenceset=e}(\dcpprogram_g)
+    =
+    ENUM(\phi)
+\end{align}
+where $ENUM(\phi)$ denotes the set of models of $\phi$.
+\end{theorem}
+
+
+\subsection{Obtaining a Labeled Boolean Formula}
+
+In contrast to a \problogsty program, a \dcproblogsty program does not explicitly provide independent probability labels for the basic facts in the distribution semantics, and we thus need to suitably adapt the last step of the conversion. 
+We will first define the labeling function on propositional atoms and will then show that the probability of the label of a propositional formula is the same as the probability of the relevant ground program under the measure semantics from Section~\ref{sec:semantics}. We call this {\em label equivalence} and prove it in Theorem~\ref{theo:label_equivalence}. 
+
+
+\begin{definition}[Label of Literal] \label{def:labeling_function}
+The label $\alpha(\phi_{\rho})$ of a propositional atom $\phi_{\rho}$ (or its negation) is given by:
+\begin{align}
+    \alpha( \phi_{\rho })=
+    \begin{cases} 
+    \ive{c(vars(\rho)},  &  \text{if $\rho$ is a  comparison atom} \\
+    1, & \text{otherwise}
+% 
+    \end{cases}
+\end{align}
+and for the negated atom:
+\begin{align}
+    \alpha(\neg \phi_{\rho})=
+    \begin{cases} 
+    \ive{\neg c(vars(\rho))},  &  \text{if $\rho$ is a  comparison atom} \\
+    1, & \text{otherwise}
+% 
+    \end{cases}
+\end{align}
+We use Iverson brackets $\ive{\cdot}$~\citep{iverson1962programming} to denote an indicator function. Furthermore, $vars(\rho)$ denotes the random variables that are present in the arguments of the atom $\rho$ and $c(\cdot)$ encodes the constraint given by $\rho$.
+\end{definition}
+
+\begin{example}[Labeling function]
+Continuing Example~\ref{example:dc2bool}, we obtain, inter alia, the following labels:
+\begin{align*}
+    & \alpha(\phi_\text{\probloginline{rv_hot=:=1}} ) = \ive{rv\_hot=1}  \\
+    & \alpha(\neg \phi_\text{\probloginline{rv_hot=:=1}} ) = \ive{\neg(rv\_hot=1)} = \ive{rv\_hot=0} \\
+    & \alpha(\phi_\text{\probloginline{hot}} ) = 1\\  
+    & \alpha(\neg \phi_\text{\probloginline{hot}} ) = 1 
+\end{align*}
+\end{example}
+
+\begin{definition}[Label of Boolean Formula]
+\label{def:label_bool_formula}
+Let $\phi$ be a Boolean formula and $\alpha(\cdot)$ the labeling function for the variables in $\phi$ as given by Definition~\ref{def:labeling_function}. We define the label of $\phi$ as
+\begin{align*}
+    \alpha(\phi) &= \sum_{\varphi\in ENUM(\phi)}\prod_{\ell\in\varphi}\alpha(\ell) 
+\end{align*}
+i.e. as the sum of the labels of all its models, which are in turn defined as the product of the labels of their literals.
+\end{definition}
+
+\begin{example}[Labeled Boolean Formula]
+The label of the conjunction 
+$$\neg \phi_\text{\probloginline{hot}} \land \neg \phi_{\text{\probloginline{rv_hot=:=1}}} \land  \phi_\text{\probloginline{temp(not_hot)<25.0}} \land \neg \phi_{\text{\probloginline{cool(1)}}}  \land
+		\neg \phi_{\text{\probloginline{rv_cool(1)=:=1}}} \land \phi_{\text{\probloginline{works(1)}}}$$
+which describes one model of the example formula, is computed as follows:
+\begin{align*}
+% 
+    &\phantom{{}={}}
+    \alpha( \neg \phi_\text{\probloginline{hot}}
+    \land
+    \neg \phi_{\text{\probloginline{rv_hot=:=1}}}
+    \land
+    \phi_\text{\probloginline{temp(not_hot)<25.0}}\\
+    &\phantom{{}={}}\land
+    \neg \phi_{\text{\probloginline{cool(1)}}}
+    \land
+	\neg \phi_{\text{\probloginline{rv_cool(1)=:=1}}}
+	\land \phi_{\text{\probloginline{works(1)}}} )  \nonumber \\
+	&=
+    \alpha( \neg \phi_\text{\probloginline{hot}})
+    \times \alpha( \neg \phi_{\text{\probloginline{rv_hot=:=1}}})
+    \times  \alpha(\phi_\text{\probloginline{temp(not_hot)<25.0}}) \nonumber \\
+    &\phantom{{}={}}
+    \times \alpha(\neg \phi_{\text{\probloginline{cool(1)}}})
+    \times \alpha(\neg \phi_{\text{\probloginline{rv_cool(1)=:=1}}} \times \alpha(\phi_{\text{\probloginline{works(1)}}}) )  \nonumber \\
+    &= 1 \times \ive{rv\_hot=0} \times \ive{temp(not\_hot)<25} \times 1 \times \ive{rv\_cool(1)=0}\times 1\nonumber \\
+    &= \ive{rv\_hot=0} \times \ive{temp(not\_hot)<25} \times \ive{rv\_cool(1)=0} 
+\end{align*}
+
+\end{example}
+
+	
+
+
+\begin{restatable}[Label Equivalence]{theorem}{Labelequivalence}
+\label{theo:label_equivalence}
+
+Let $\dcpprogram_g$ be the relevant ground program for a \dcproblogsty program $\dcpprogram$ with respect to a query $\mu$ and the evidence $\evidenceset=e$. Let $\phi_g$ denote the  propositional formula derived from $\dcpprogram_g$ and let $\alpha$ be the labeling function as defined in Definition~\ref{def:labeling_function}. We then have {\bf label equivalence}, \ie
+\begin{align}
+    \forall \varphi \in ENUM(\phi_g):  \E_{\randomvariableset \sim  \dcpprogram_g} [\alpha( \varphi )] = P_{\dcpprogram_g}(\varphi)
+\end{align}
+In other words, for all models $\varphi$ of $\phi_g$, the expected value ($\E_\cdot [\cdot]$) of the label of $\varphi$ is equal to the probability of $\varphi$ according to the probability measure of relevant ground program $\dcpprogram_g$.
+\end{restatable}
+
+\begin{proof}
+See Appendix~\ref{app:proof:label_equivalence}.
+\end{proof}
+
+Theorem~\ref{theo:label_equivalence} states that we can reduce inference in hybrid probabilistic logic programs to computing the expected value of  labeled Boolean formulas, as summarized in the following theorem.
+\begin{theorem}
+\label{thm:inference-by-expectation}
+Given a \dcproblogsty program \dcpprogram, a set \queryset\ of queries, and evidence $\evidenceset = e$, for every $\mu\in\queryset$, we obtain the conditional probability of $\mu = q$ ($q\in \{\bot,\top \}$) given $\evidenceset = e$ as
+\begin{align*}
+    P(\mu=q\mid\evidenceset = e) = \frac{\E_{vars(\phi) \sim  \dcpprogram_g} [\alpha( \phi \wedge \phi_q)] }{\E_{vars(\phi) \sim  \dcpprogram_g} [\alpha( \phi )] }
+\end{align*}
+where $\phi$ is the formula encoding the relevant ground program $\dcpprogram_g$ with  the evidence asserted  (cf.~Theorem~\ref{theo:model_equivalence}), and $\phi_q$ the propositional atom for $\mu$.
+\end{theorem}
+\begin{proof}
+This directly follows from model and label equivalence together with the definition of conditional probabilities. 
+\end{proof}
+
+We have shown that the probability of a query to a \dcproblogsty program can be expressed as the expected label of a propositional logic formula.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

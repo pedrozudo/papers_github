@@ -1,0 +1,161 @@
+
+\section{DC-PLP}\label{sec:semantics}
+
+In this section we will briefly sketch the main ideas for defining the semantics of \dcproblogsty.
+The semantics of \dcproblogsty are defined through the semantics of DC-PLP, a probabilistic logic programming language with both discrete and continuous random variables following \citeauthor{sato1995statistical}'s distribution semantics~\citep{sato1995statistical}. DC-PLP is an assembly language with minimal syntax, whose main purpose is to define the declarative semantics of the language independently of existing syntax, inference algorithms or systems. 
+
+\citet{poole2010probabilistic} has characterised probabilistic programming as independent choices plus deterministic systems, with (discrete) probabilistic logic programming being the case where the deterministic system is given by a logic program~\citep{poole2010probabilistic}. DC-PLP builds upon this idea, but relaxes the independence assumption by explicitly distinguishing two types of dependencies: 1) those expressed by the logic program (i.e.  deterministic system), and 2) those expressed by using random variables as parameters of distributions for other random variables. 
+
+DC-PLP serves as a stepping stone towards \dcproblogsty: the semantics of \dcproblogsty are defined through the semantics of DC-PLP and an additional unique deterministic program transformation that takes \dcproblogsty programs and maps them to DC-PLP programs.
+
+%which will combine the semantics defined here with a higher level modeling language and a system combining that modeling language with inference algorithms developed in the context of related languages from the \problogsty family.
+
+
+The key idea behind DC-PLP is to build the semantics of a program in three steps:
+\begin{enumerate}
+	\item Define a {\bf countable set of random variables}
+	%	(denoted by terms in the logic program)
+	and associate a unique parametric distribution
+	%	(denoted by a term from a language $P$ in the logic program)
+	to each random variable through a logic program that defines terms of the form \probloginline{rv(name,dist)}. We do not use the \probloginline{is}\lstinline[columns=fixed]|/2| infix notation for distributional clauses to make explicit that this is restricted to fully deterministic bodies. We do not introduce syntax for probabilistic facts, as these can be modeled through Boolean random variables and rules.
+	For valid programs, this will give us a 
+	unique joint probability measure over these random variables that factors into the individual distributions.
+	\item Define a {\bf countable set of measurable Boolean queries}
+	%	(denoted by terms from a language $Q$)
+	over the random variables. These correspond to the type of tests that are written with comparison predicates (\probloginline{<}, \probloginline{=<}, \probloginline{>}, \probloginline{>=}, \probloginline{=:=}, \probloginline{=\=}). However, we here define these on the term level and wrap them into a single predicate \probloginline{test}\lstinline[columns=fixed]|/1| for ease of uniform notation.
+	\item Define a {\bf logic program} that computes consequences of the Boolean queries. To include a  Boolean query \probloginline{q} in the body of a clause, it gets wrapped into a term of the form \probloginline{test(q)}. 
+\end{enumerate}
+
+The first step defines all random choices, while the second and third step form the deterministic system. 
+As the second and third step are deterministic functions of the random variables, the measure defined in the first step extends to the Boolean queries and from there to the terms in the logic program.
+
+%Note that DC-PLP is parameterized by two sets: the  language $P$ of parameterized distribution terms  and the language $Q$ of basic Boolean queries.
+%We sometimes use DC-PLP(P,Q) to highlight this. 
+
+%Note further that while we implicitly assume  ``atomic'' random variables here, the principles also apply to ``compound'' random variables (such as multivariate Gaussians), provided usual laws of probability are respected and suitable syntax for such variables is introduced.
+
+In contrast to the Distributional Clauses probabilistic programming language~\citep{gutmann2011magic}, where several conditional distributional clauses can jointly define the distribution of a single random variable through a complex logical factorization, DC-PLP uses a single fact to define a random variable unconditionally and associates a single parameterized distribution to it. As we still have the full power of normal logic programs to model the deterministic system, this does not restrict expressivity, but simplifies the formal definition of the semantics. When modeling conditional distributions, users have a range of choices, from encoding the entire conditional probability distribution into a single term within the defining \probloginline{rv}\lstinline[columns=fixed]|/2| fact, all the way to a set of individually named choice random variables with minimal use of random variables as parameters tied together by a deterministic system, or any intermediate factorisation.
+As already discussed by~\citet{poole2010probabilistic}, not all choices work equally well with all inference algorithms.
+DC-PLP provides these choices within the same semantical framework, leaving it to system developers to focus the syntax towards a subset of choices and/or to exploit the different choices when integrating different inference approaches into their system.
+
+\ak{example 6.7: I'm surprised that the test/1 atoms explicitly appear as facts in the DC-PLP program, as I've always imagined them as a component defined implicitly (like the Herbrand universe in LP semantics). Is there a reason to make them explicit?}
+
+\begin{example}[DC-PLP Program] \label{ex:dcproblog_program_without_dc_plpdc}
+	This example program models the correct working of a machine.
+	
+\begin{problog*}{linenos}
+rv(hot, flip(0.2)). 
+rv(cooling(1), flip(0.99)). 
+rv(temperature(hot), normal(27,5)).
+rv(temperature(not_hot),normal(20,5)).
+
+
+test(cooling(N)=:=1)
+test(hot=:=1).
+test(hot=:=0).
+test(temperature(hot)<25.0).
+test(temperature(not_hot)<25.0).
+
+
+machine(1).
+works(N):- machine(N), test(cooling(N)=:=1).
+works(N):-
+	machine(N),
+	test(temperature(hot)<25.0),
+	test(hot=:=1). 
+works(N):-
+	machine(N),
+	test(temperature(not_hot)<25.0),
+	test(hot=:=0). 
+
+query(works(1)).
+\end{problog*}
+	We are now able to clearly identify the three components of a DC-PLP program. In the first part we see the random variables (representing independent choices). Here we also also included the probabilistic facts from the intial \dcproblogsty program. DC-PLP encodes probabilistic facts using the \probloginline{flip}\lstinline[columns=fixed]|/2| random function symbol, which returns either $1$ or $0$ with the probability given as the argument. In the second block of code we see the countable set of measurable Boolean queries, and the last part contains the logic program.
+\end{example}
+
+\subsubsection*{Multiple Dispatch and Comparison Predicates}
+
+As mentioned earlier, multiple dispatching is of outstanding usefulness when applying comparison predicates to different type signatures that result in semantically different terms. We will illustrate this by example.
+
+\begin{example} Consider the following \dcproblogsty code snippet with no random variables.
+	\begin{problog*}{linenos}
+people(N):- N is 8.
+large_group:- people(N), N>6.
+	\end{problog*}
+	During grounding, the comparison operator in the second line will dispatch to a deterministic comparison, as both sides of the comparison are of type \type{Number}. The arithmetic engine replaces the grounded comparison term with atom \probloginline{true}.
+\end{example}
+
+\begin{example} Consider now  a \dcproblogsty code snippet where a comparison predicate is present that receives as one of its arguments a term of type \type{RandomVariable}.
+	\begin{problog*}{linenos}
+people ~ poisson(6).
+large_group:- people>6.
+	\end{problog*}
+	During grounding the comparison predicate dispatches to a probabilistic comparison. Instead of replacing the comparison by either \probloginline{true} or \probloginline{false}, the arithmetic engine defers the evaluation and ultimately adds a \probloginline{test(people>6)} term to the set of measurable Boolean queries.
+\end{example}
+
+\subsection{Valid DC-PLP Programs}
+
+\pedro{\url{https://youtu.be/rdsPMCYMcZA?t=1510} stuart russell makes an interesting point about restricting the language.}
+
+\begin{definition}
+	A DC-PLP program \dcpprogram consists of:
+	\begin{enumerate}
+		\item A countable set $P$ of random variables.
+		\item A countable set $Q$ of measureable Boolean queries over the random variables.
+		\item A logic program $L$, which has access to the set of Boolean queries.
+	\end{enumerate}
+\end{definition}
+
+\ak{\begin{itemize}
+		\item says two conditions for a list of 3 (also check use of "second" in the text afterwards; not sure total models link to finite support)
+		\item point 1: doesn't seem fully defined, as it only assigns ranks to RVs, but not all $d_i$ are necessarily RVs
+		\item point 2: "every model of L" -- what is a model of a program with access to Boolean queries? needs to be defined
+		\item point 3: what does it mean for a model to be "derivable" from a set of queries?
+	\end{itemize}
+}
+
+\begin{definition} \label{def:valid_dcplp}
+	A DC-PLP \dcpprogram program is called valid  if the following two conditions hold.
+	\begin{enumerate}
+		\item The program \dcpprogram is distribution stratisfied, that is, there exists a function $rank(\cdot)$ that maps ground random variables, of the form \probloginline{rv(rand,dist(d@$_1$@,...,d@$_n$@))}, to $\mathbb{N}$ and that satisfies $rank(\text{\probloginline{rand}})>rank(\text{\probloginline{d@$_i$@}})$ for every $i$ ($1\leq i \leq n$). 
+		\item The logic program $L$ is {\em sound}~\citep{riguzzi2013well}, \ie every model of $L$ is a two-valued well-founded model~\citep{van1991well,riguzzi2013well}.
+		\item Each model of $L$ is derivable from a finite set of Boolean queries in $Q$.
+	\end{enumerate}
+\end{definition}
+The first condition ensures that programs do not exhibit cyclic functional dependencies, disallowing programs of the form:
+\begin{problog*}{linenos}
+x ~ normal(y,1).
+y ~ normal(x,1).
+q:- y>3.
+query(q).
+\end{problog*}
+The second condition is necessary to satisfy the finite support condition of the distribution semantics~\citep{sato1995statistical}. Definition~\ref{def:valid_dcplp} follows closely the semantics of \problogsty~\citep{fierens2015inference}, which guarantees that a \dcproblogsty program without distributional facts is in fact a \problogsty program.
+
+
+\subsubsection{Negation}
+
+In order to add negation to the hybrid probabilistic logic programming language Distributional Clauses, \citet{nitti2016probabilistic} resorted to {\em negation as failure} within a {\em Selective Linear Definite (SLD) resolution}~\citep{sterling1994art} inference scheme to patch the initial (negation-free) semantics given in~\citep{gutmann2011magic}. The semantics then follow~\citep{przymusinski1988perfect}'s perfect model semantics.
+
+The well-founded semantics already account for negation in logic programs and we do not have to add any extra machinery to add negation. On a side note: in the absence of negation the well-founded model of a logic program is identical to the {\em least Herbrand model}. 
+
+
+
+
+\subsubsection{Probability of a DC-PLP Program}
+
+\begin{definition}
+	Let $MOD(L)$ be the set of all two-valued well-founded models of $L$, which is the logic program of a valid DC-PLP program \dcpprogram, and $Q(l)$ the set of Boolean queries used to derive $l \in MOD(L)$. Furthermore, let $var(Q(l))$ be the set of random variables on which $Q(l)$ depends.
+	The probability of the model $l$ is then given by:
+	\begin{align}
+		p(l) = \int \left( \prod_{q \in Q(l)} \ive{q} \right) \underbrace{\left( \prod_{x_l \in var(Q(l))} D_l(x_l)  \right)}_{\eqqcolon D_l(\xvars_l)} \underbrace{\left( \prod_{x_l \in var(Q(l))} d x_l  \right)}_{\eqqcolon d\xvars_l}
+	\end{align}
+	$D_l(x_l)$ is the probability distribution according to which the variable $x_l$ is distributed and which is given by the countable set $P$.
+	
+	The probability of the DC-PLP program \dcpprogram is given by:
+	\begin{align}
+		p(\dcpprogram) = \sum_{l \in MOD(L)} p(l) = \sum_{l \in MOD(L)} \int \prod_{q \in Q(l)} \ive{q} D_l(\xvars_l) d\xvars_l \label{eq:definition_probability_dcplp}
+	\end{align}
+\end{definition}
+
+
+

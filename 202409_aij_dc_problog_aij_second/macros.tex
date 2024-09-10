@@ -1,0 +1,342 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%commenting macros
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \newcommand{\pedro}[1]{{\color{orange}(pedro) #1}}
+% \newcommand{\pedroskip}[1]{{\color{orange}(skipped text)}}
+\newcommand{\pedro}[1]{{\color{black}(pedro) #1}}
+\newcommand{\pedroskip}[1]{{\color{black}(skipped text)}}
+
+% \newcommand{\luc}[1]{{\color{violet}(luc) #1}}
+% \newcommand{\lucskip}[1]{{\color{violet}(skipped text)}}
+\newcommand{\luc}[1]{{\color{black}(luc) #1}}
+\newcommand{\lucskip}[1]{{\color{black}(skipped text)}}
+
+% \newcommand{\ak}[1]{{\color{blue}(angelika) #1}}
+% \newcommand{\angelikaskip}[1]{{\color{blue}(skipped text)}}
+\newcommand{\ak}[1]{{\color{black}(angelika) #1}}
+\newcommand{\angelikaskip}[1]{{\color{black}(skipped text)}}
+
+% \newcommand{\responsibility}[1]{{\color{red} (responsibility: #1)}}
+% \newcommand{\todo}[1]{{\color{red} (TODO: #1)}}
+\newcommand{\responsibility}[1]{{\color{black} (responsibility: #1)}}
+\newcommand{\todo}[1]{{\color{black} (TODO: #1)}}
+
+% \newcommand{\new}[1]{{\color{purple}{#1}}}
+% \newcommand{\comment}[1]{{\color{teal}{#1}}}
+% \newcommand{\fixed}[1]{{\color{OliveGreen}{#1}}}
+\newcommand{\new}[1]{{\color{black}{#1}}}
+\newcommand{\comment}[1]{{\color{black}{#1}}}
+\newcommand{\fixed}[1]{{\color{black}{#1}}}
+
+
+
+% \newcommand{\commentrebuttal}[1]{{\color{teal}{(COMMENT) #1}}}
+% \newcommand{\fixedrebuttal}[1]{{\color{OliveGreen}{(FIX) #1}}}
+\newcommand{\commentrebuttal}[1]{{\color{black}{(COMMENT) #1}}}
+\newcommand{\fixedrebuttal}[1]{{\color{black}{(FIX) #1}}}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%definitions, examples, theorems, ....
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newtheorem{definition}[algocf]{Definition}
+\newtheorem{example}[algocf]{Example}
+\newtheorem{lemma}[algocf]{Lemma}
+\newtheorem{theorem}[algocf]{Theorem}
+\newtheorem{proposition}[algocf]{Proposition}
+\newtheorem{algo}[algocf]{Algorithm}
+
+
+\DeclareCoupledCountersGroup{allcounter}
+% \DeclareCoupledCounters[name=allcounter]{theorem,figure,example,definition,proposition,lemma,algo,algorithm}
+\DeclareCoupledCounters[name=allcounter]{algocf,figure}
+
+\counterwithin{figure}{section}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%macros for minted
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usemintedstyle{default}
+% \usemintedstyle{lovelace}
+% \usemintedstyle{algol}
+\setminted[problog.py:ProbLogLexer -x]{
+        fontshape=n,
+        xleftmargin=20pt,
+        linenos=false,
+        escapeinside=@@,
+        mathescape=true,
+        breaklines=true,
+}
+
+\newcounter{lstlabelcounter}
+\renewcommand\thelstlabelcounter{L\arabic{lstlabelcounter}}
+\newcommand{\lstlinelabel}[1]{\refstepcounter{lstlabelcounter}\hfill (\textrm{\thelstlabelcounter}) \label{#1}}
+
+\newminted[problog]{problog.py:ProbLogLexer -x}{}
+\newcommand{\probloginline}[1]{\mintinline{problog.py:ProbLogLexer -x}{#1}}
+\newcommand{\mathprobloginline}[1]{\text{\mintinline{problog.py:ProbLogLexer -x}{#1}}}
+
+
+
+
+
+\newenvironment{code}{\captionsetup{type=listing}}{}
+\SetupFloatingEnvironment{listing}{name=Listing}
+
+\setminted[text]{
+        fontshape=n,
+        xleftmargin=20pt,
+        linenos=false,
+        mathescape=true,
+        escapeinside=@@,
+        breaklines=true,
+}
+\newminted[dcplp]{text}{}
+\newcommand{\dcplpinline}[1]{\mintinline[breaklines, breakafter=,]{text}{#1}}
+
+
+\AtBeginEnvironment{minted}{\let\itshape\relax}
+\AtBeginEnvironment{problog}{\let\itshape\relax}
+\AtBeginEnvironment{problog*}{\let\itshape\relax}
+
+
+\newcommand{\noarrityfunctor}[1]{\probloginline{#1}\xspace}
+\newcommand{\functor}[2]{\probloginline{#1}$/{#2}$\xspace}
+\newcommand{\mathfunctor}[2]{${#1}/{#2}$\xspace}
+\newcommand{\predicate}[2]{\probloginline{#1}$/{#2}$\xspace}
+\newcommand{\mathpredicate}[2]{${#1}/{#2}$\xspace}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%prolog in math
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \DeclareMathOperator*{\lpnot}{\mathtt{\backslash +}}
+\DeclareMathOperator*{\lpif}{\mathtt{{:}{\---}}}
+% \DeclareMathOperator*{\lpquery}{\mathtt{{?}{\---}}}
+\DeclareMathOperator*{\prob}{\mathtt{{:}{:}}}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%alogic programming
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\herbrandbase}{\ensuremath{\mathcal{A}}}
+\newcommand{\evidenceset}{\ensuremath{\mathcal{E}}}
+\newcommand{\queryset}{\ensuremath{\mathcal{Q}}}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%algebraic/weighted model counting/integration
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\semiring}{\ensuremath{\mathcal{S}}}
+\newcommand{\srelements}{\ensuremath{\mathcal{A}}}
+\newcommand{\srplus}{\ensuremath{\oplus}}
+\newcommand{\srtimes}{\ensuremath{\otimes}}
+\newcommand{\srnplus}{\ensuremath{e^\oplus}}
+\newcommand{\srntimes}{\ensuremath{e^\otimes}}
+\newcommand{\labelfunc}{\ensuremath{\alpha}}
+
+
+\newcommand{\wmc}{\ensuremath{\mathrm{WMC}}}
+\newcommand{\amc}{\ensuremath{\mathrm{AMC}}}
+\newcommand{\wmi}{\ensuremath{\mathrm{WMI}}}
+\newcommand{\lwmi}{\ensuremath{\mathrm{L{-}WMI}}\xspace}
+\newcommand{\AMC}{\ensuremath{\mathrm{AMC}}\xspace}
+
+\newcommand{\ite}{\ensuremath{\mathrm{ite}}}
+
+\newcommand{\support}{\ensuremath{\phi}\xspace}
+\newcommand{\wsupport}{\ensuremath{\phi}\xspace}
+\newcommand{\weight}{\ensuremath{w}\xspace}
+\newcommand{\pweight}{\ensuremath{p}\xspace}
+
+\newcommand{\wweight}{\ensuremath{\omega}\xspace}
+\newcommand{\pwweight}{\ensuremath{\rho}\xspace}
+
+\newcommand{\fso}{\ensuremath{\wvol}}
+\newcommand{\ive}[1]{\llbracket#1\rrbracket}
+
+\newcommand{\varset}[1]{\ensuremath{\mathbf{#1}}}
+\newcommand{\assset}[1]{\ensuremath{\mathbf{#1_{ass}}}}
+\newcommand{\inter}{\mathcal{I}}
+\newcommand{\interset}[1]{\ensuremath{\mathbf{#1_{\inter}}}}
+\newcommand{\xvars}{\varset{x}}
+\newcommand{\bvars}{\varset{b}}
+\newcommand{\xass}{\assset{x}}
+\newcommand{\bass}{\assset{b}}
+\newcommand{\xinter}{\interset{x}}
+\newcommand{\binter}{\interset{b}}
+
+\newcommand{\wtuples}{\ensuremath{\mathcal{W}}\xspace}
+\newcommand{\wvol}{\ensuremath{\mathrm{vol}}\xspace}
+
+\newcommand{\lra}{\ensuremath{\mathcal{LRA}}\xspace}
+\newcommand{\lsmt}{\textlambda-SMT\xspace}
+\newcommand{\latte}{Latte\xspace}
+\newcommand{\world}{world}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%DC-ProbLog
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\dcpprogram}{\ensuremath{\mathcal{P}}\xspace}
+
+
+
+
+
+\newcommand{\boolval}{\ensuremath{b}\xspace}
+
+
+
+
+
+
+
+\newcommand{\probabilitymeasure}{\ensuremath{P}\xspace}
+
+\newcommand{\distributionfunctors}{\ensuremath{{\Delta}}\xspace}
+\newcommand{\arithmeticfunctors}{\ensuremath{{\Phi}}\xspace}
+\newcommand{\comparisonpredicates}{\ensuremath{{\Pi}}\xspace}
+
+\newcommand{\samplespace}{\ensuremath{\Omega}\xspace}
+\newcommand{\samplefunction}{\ensuremath{\omega}\xspace}
+
+\newcommand{\measurerandomvariableset}{\ensuremath{\probabilitymeasure_\randomvariableset}\xspace}
+
+\newcommand{\distdb}{\ensuremath{\mathcal{D}}\xspace}
+\newcommand{\comparisonfacts}{\ensuremath{\mathcal{F}}\xspace}
+\newcommand{\measurecomparisonfacts}{\ensuremath{\probabilitymeasure_\comparisonfacts}\xspace}
+
+
+\newcommand{\sigmaalgebra}{\ensuremath{ \Sigma}\xspace}
+
+\newcommand{\probabilityspace}{\ensuremath{ \mathbb{P}}\xspace}
+
+
+
+\newcommand{\program}{\ensuremath{{\mathcal{P}}}\xspace}
+\newcommand{\adfreeprogram}{\ensuremath{{\program^{*}}}\xspace}
+\newcommand{\dfprogram}{\ensuremath{{\program^{DF}}}\xspace}
+\newcommand{\dfadfreeprogram}{\ensuremath{{\program^{DF,*}}}\xspace}
+\newcommand{\logicprogram}{\ensuremath{{\mathcal{R}}}\xspace}
+
+
+
+\newcommand{\dclauses}{\ensuremath{\mathcal{C}}\xspace}
+\newcommand{\headsdc}{\ensuremath{\mathcal{H}}\xspace}
+
+\newcommand{\randomtermset}{\ensuremath{\mathcal{T}}\xspace}
+\newcommand{\randomvariableset}{\ensuremath{\mathcal{V}}\xspace}
+
+
+
+
+
+\newcommand{\contextfunc}{\ensuremath{K}\xspace}
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%inference
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\ialw}{IALW\xspace}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%proper name stylized
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\numpysty}{NumPy\xspace}
+\newcommand{\prologsty}{Prolog\xspace}
+\newcommand{\dcplpsty}{DC-PLP\xspace}
+\newcommand{\problogsty}{ProbLog\xspace}
+\newcommand{\dcsty}{Distributional Clauses\xspace}
+\newcommand{\dfplpsty}{DF-PLP\xspace}
+\newcommand{\dcproblogsty}{DC-ProbLog\xspace}
+\newcommand{\blogsty}{BLOG\xspace}
+\newcommand{\kproblogsty}{kProbLog\xspace}
+\newcommand{\pyrosty}{Pyro\xspace}
+\newcommand{\anglicansty}{Anglican\xspace}
+\newcommand{\juliasty}{Julia\xspace}
+\newcommand{\extendedprismsty}{Extended PRISM\xspace}
+\newcommand{\dcproblogsys}{DC-ProbLog-Sys\xspace}
+\newcommand{\problogsys}{ProbLog2\xspace}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%math stuff
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\DeclareMathOperator*{\E}{\mathbb{E}}
+
+\newcommand{\differential}{\mathop{}\!{d}}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%circled number
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand*\circled[1]{\tikz[baseline=(char.base)]{
+                \node[shape=circle,draw,inner sep=1pt,thick] (char) {{ #1}};}}
+
+\newcommand*\scriptcircled[1]{\tikz[baseline=(char.base)]{
+                \node[shape=circle,draw,inner sep=1pt,thick] (char) {\scriptsize {#1}};}}
+
+\newcommand*\footcircled[1]{\tikz[baseline=(char.base)]{
+                \node[shape=circle,draw,inner sep=1pt] (char) {\footnotesize {#1}};}}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% short sld rules
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\cposlit}{{\bf C1}\xspace}
+\newcommand{\cneglit}{{\bf C2}\xspace}
+\newcommand{\ccompone}{{\bf C3}\xspace}
+\newcommand{\ccomptwo}{{\bf C4}\xspace}
+\newcommand{\crvone}{{\bf C6}\xspace}
+\newcommand{\crvtwo}{{\bf C5}\xspace}
+
+\newcommand{\rposlit}{{\bf R1}\xspace}
+\newcommand{\rneglit}{{\bf R2}\xspace}
+\newcommand{\rcompone}{{\bf R3}\xspace}
+\newcommand{\rcomptwo}{{\bf R4}\xspace}
+\newcommand{\rrvone}{{\bf R6}\xspace}
+\newcommand{\rrvonea}{{\bf R6a}\xspace}
+\newcommand{\rrvoneb}{{\bf R6b}\xspace}
+\newcommand{\rrvtwo}{{\bf R5}\xspace}
+
+
+\newcommand{\tposlit}{{\bf T1}\xspace}
+\newcommand{\tneglit}{{\bf T2}\xspace}
+\newcommand{\tcompone}{{\bf T3}\xspace}
+\newcommand{\tcomptwo}{{\bf T4}\xspace}
+\newcommand{\trvone}{{\bf T6}\xspace}
+\newcommand{\trvtwo}{{\bf T5}\xspace}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% text abbreviations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\ie}{i.e.\xspace}
+\newcommand{\eg}{e.g.\xspace}
+\newcommand{\cf}{cf.\xspace}
+\newcommand{\etc}{etc.\xspace}

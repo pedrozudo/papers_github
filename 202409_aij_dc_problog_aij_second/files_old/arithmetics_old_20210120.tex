@@ -1,0 +1,310 @@
+%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+
+\section{Arithmetic Expressions}\label{sec:arithmetic}
+\ak{I think this should be a part of implementation section, and should be about comparison predicates rather than about arithmetic expressions}
+
+Implementations of (probabilistic) logic programming languages, such as \prologsty and \problogsty, reserve a set of predicate names for system-related procedures. These system predicates (or built-in predicates) are usually deployed when the goal is to perform efficient arithmetic operations on numbers. Either by using specialized algorithms or specialized hardware. In \dcproblogsty we are going to use an external arithmetic engine to evaluate expressions within comparison predicates.
+
+\begin{example}\label{ex:eval_comp} A \dcproblogsty code snippet demonstrating arithmetic evaluations within a comparison predicate.\ak{how is this example relevant here?}
+	\begin{problog*}{linenos}
+0.5::a.
+x ~ normal(0,3):- a.
+x ~ normal(1,2):- \+a.
+
+q:- x+3>3.
+query(q).
+	\end{problog*}
+Using the \probloginline{map}\lstinline[columns=fixed]|/2| predicate this program gets transformed into the program below.
+	\begin{problog*}{linenos}
+0.5::a.
+x1 ~ normal(0,3).
+map(x1,x):- a.
+
+x2 ~ normal(1,2).
+map(x2,x):- \+a.
+
+q:- map(X,x), X+3>3.
+query(q).
+	\end{problog*}
+
+\end{example}
+
+
+
+
+
+\luc{technical problem with DC; do we need this?}
+
+\subsection{Type System} \label{sec:type_system}
+
+While we have stated that arithmetic expressions can appear on both sides of comparison predicates, we have not yet mentioned what they evaluate to.
+To this end we will regard expressions to be evaluated as unnamed functions, instead of arithmetic predicates\ak{we do not have arithmetic predicates, only arithmetic functors}. Let us consider, for instance, the expression \probloginline{3+5}. This can can be viewed as a term whose predicate is \probloginline{+}\lstinline[columns=fixed]|/2| in infix notation. However, we can also regard the expression as a function with two inputs and an output. Furthermore, we can equip the function with a type signature. The input values are of type \type{Integer} and the output value is of \type{Integer} as well. We will now introduce a type system for the evaluation of arithmetic expressions in \dcproblogsty.
+
+The base type for (arithmetic evaluations in) \dcproblogsty is the \type{Term} type. We subtype terms with a \type{Distribution} type and a \type{Symbol} type. 
+Dividing \dcproblogsty terms into \justify\type{Distribution} terms and \type{Symbol} terms reflects the characterization of~\citet{poole2010probabilistic} of probabilistic programs as being constituted of independent choices (\type{Distribution}) and a deterministic system (\type{Symbol}).
+
+\begin{definition}\label{def:type_system}
+	The \dcproblogsty type system is a hierarchical type system with each type being a disjoint union of its subtypes. A diagrammatic overview of the \dcproblogsty type system is given in Figure~\ref{fig:type_system}.
+	\begin{enumerate}
+		\item[] \type{Term} 
+		\begin{enumerate}
+			\item[1.] \type{Distribution}
+			\begin{itemize}
+				\item \type{NumericD}
+				\item \type{CategorialD}
+			\end{itemize}
+			\item[2.] \type{Symbol}
+			\begin{itemize}		
+				\item \type{RandomSymbol}
+				\begin{itemize}
+				    \item \type{NumericRV}
+				    \item \type{CategoricalRV}
+				\end{itemize}
+				\item \type{DeterministicSymbol}
+				\begin{itemize}
+				    \item \type{Number}
+				    \item \type{Atom}
+				\end{itemize}	
+			\end{itemize}
+		\end{enumerate}
+	\end{enumerate}
+\end{definition}
+
+
+
+\begin{figure}[t]
+	\begin{center}
+		\includegraphics[width=\linewidth]{../figures/type_hierarchy.pdf}
+	\end{center}
+	\caption[Diagrammatic representation of the hierarchical \dcproblogsty type system.]{Diagrammatic representation of the hierarchical \dcproblogsty type system. Compared to Definition~\ref{def:type_system},  the \type{Number} type is further subtyped into \type{Integer} and \type{Real} types and the \type{RandomVariable} type is subtyped into \type{DiscreteRV}, \type{ContinuousRV}, and \type{MixtureRV}. These subtypes of \type{RandomVariable} mimic the subtypes of the \type{Distribution} type.\luc{do we want mixtureRV?}}
+	\label{fig:type_system}
+\end{figure}
+
+
+
+
+\begin{definition}[\type{Distribution}]
+	Terms of type \type{Distribution} are constructed by using a reserved random function symbol and applying it to a (possible empty) tuple of input arguments, which maps the input tuple to a distribution term.
+	Distribution terms are only allowed to be invoked as a second argument to the reserved distribution predicate \probloginline{~}\lstinline[columns=fixed]|/2|.
+	This also means that random function symbols are only used there as well. \dcproblogsty subtypes the \type{Distribution} type into \type{NumericD} and \type{CategoricalD}.
+% 	\type{DiscreteD}, \type{ContinuousD}, and \type{MixtureD} types.
+\end{definition}
+
+\type{Distribution} terms determine the probability distribution according to which a random variable is distributed.
+\probloginline{poisson(6)} and \probloginline{normal(20,5)} are for instance of types \type{DiscreteD} and  \type{ContinuousD}, respectively.
+Note that distributions of type \type{ContinuousD} denote {\em absolutely continuous} probability distributions\footnote{\dcproblogsty does not support {\em singular continuous} probability distributions such as the Cantor distribution.}. \ak{would be nice to have a hint on why this restriction is there} We give an example of a distribution of type \type{MixtureD} in Example~\ref{ex:indian_gpa_function}.
+%\begin{example} \probloginline{mixed} is a random variables that is a mixture of a continuous part (the truncated normal between $0$ and $4$ with mean $3$ and standard deviation $1$) and a discrete part. 
+%\begin{problog}
+%mixted~Mix((0.998,TruncNormal(3,1,0,4)),(0.001,4),(0.001,4))
+%\end{problog}
+%\end{example}
+
+%For and example, see Example~\ref{example:dcproblog_poisson_population}: we have the random function symbol \probloginline{poisson}\lstinline[columns=fixed]{/1}, apply it to the input tuple \probloginline{(6)}, and obtain a term of type \type{Distribution}.
+
+
+\type{Symbol} terms are the building blocks of the discrete structure that makes up a logic program and as such determine also the deterministic system of a probabilistic logic program. Beyond the reserved syntax, which is used to define the distribution terms, the user is free to use any identifier (following \prologsty conventions) to declare \type{Symbol} terms -- this includes standard \prologsty terms such as lists.
+%The subtyping of the \type{Symbol} type (shown in Figure~\ref{fig:type_system}) follows the convention given in~\citep[Chapter 9]{sterling1994art}.
+
+% \begin{definition}[\type{Arithmetic}]
+% 	Terms of type \type{Symbol} for which arithmetic operations are defined are of type \type{Arithmetic}. \type{Arithmetic} terms can be used as second argument to the builtin \probloginline{is}\lstinline[columns=fixed]|/2| functor. \type{Arithmetic} terms are subtyped with \type{RandomVariable} terms and \type{Number} terms.
+%	\ak{Def 6.3 Arithmetic terms: if (as stated in def 6.1) each type is the disjoint union of its subtypes, that means that "arithmetic" is made up exclusively of numbers and RVs, \ie, terms like 3-2 or min(x,5) for a RV x are not allowed, whereas the first two sentences of def 6.3 suggests they might be allowed (only having numbers and RVs directly on the rhs of is/2 seems quite boring...). Which is it?
+%		Related to this, defs 6.8 and 6.10 talk about RVs and Numbers, why not simply "arithmetic"?}
+% \end{definition}
+
+
+\begin{definition}[\type{RandomSymbol}] \label{def:random_variable}
+	\type{RandomSymbol} terms are named by the programmer using distributional facts with the binary infix predicate \probloginline{~}\lstinline[columns=fixed]|/2| and inherit their subtype from the distribution term. All random variables present in a \dcproblogsty program are named.
+\end{definition}
+
+Examples of terms of type \type{RandomSymbol} would be \probloginline{temperature} and \probloginline{n_people} in Examples~\ref{example:dcproblog_machine} and~\ref{example:dcproblog_poisson_population}, where we declared the random variables through distributional facts: 
+\begin{problog}
+temperature ~ normal(20,5).
+n_people ~ poisson(6).
+\end{problog}
+As mentioned in Defintion~\ref{def:random_variable}, \type{RandomSymbol} terms inherit their type from the associated \type{Distribution} term, \eg a \type{ContinuousD} term induces a random variable term of type \type{ContinuousRV}.
+
+Note that not all probabilistic programming languages enforce the naming of random variables. In the functional probabilistic programming language \anglicansty~\citep{wood2014approach}, for instance, the user can declare anonymous random variables, much like anonymous functions, \ie \textlambda-functions.
+\ak{Discussion of named/unnamed between Defs 6.4 and 6.5: would be nice to have a brief hint on why you made that choice}
+
+\begin{definition}[\type{Number}] Terms of type \type{Number} are used to express numerical data types such as integers and real numbers.	
+\end{definition}
+
+
+\ak{terminology mix-up; predicates never form terms} \pedro{not sure what this comment refers to.}
+
+\begin{definition}[\type{Atom}]
+	An atom is of the form \probloginline{p(t@$_1$@,@\dots @, t@$_n$@ )} where \probloginline{p} is a predicate of arity $n$ and the \probloginline{t@$_i$@} are \type{Symbol} terms~\citep{fierens2015inference}. Predicates used to construct \type{Atom} terms must not clash with the builtin predicates and reserved random function symbols used to declare \type{Distribution} terms.
+% 	Terms of type \type{Atom} constitute the building blocks of the discrete structure of a probabilistic logic program.
+\end{definition}
+
+Examples of atoms terms would be \probloginline{foo} or \probloginline{bar(foo,42)}. The latter is constructed using the predicate \lstinline{bar/2} and the tuple of \type{Symbol} terms \probloginline{(foo,42)}. \probloginline{foo} is of type \type{Atom} and \probloginline{42} is a \type{Number} term.
+
+
+
+
+
+
+% \dcproblogsty's type system refines the one of DC-PLP to instantiate a conrete version of the abstract language.  Specifically, we have the following refinements:
+% \begin{enumerate}
+%     \item distribution functors are further partitioned into \emph{discrete distribution functors}. \emph{continuous distribution functors} and \emph{mixture distribution functors}
+%     \item arithmetic functors are further partitioned into \emph{operation functors} and \emph{number functors}, with the latter in turn partitioned into \emph{integers} and \emph{floats} \todo{do we have / want a complete list of operations? should we at least give some examples?}
+%     \item we use Boolean query functors 	$\bowtie=\{ \text{\probloginline{=:=}}, \text{\probloginline{=\=}}, \text{\probloginline{<}}, \text{\probloginline{>}},  \text{\probloginline{=<}}, \text{\probloginline{>=}} \}$
+% 	in infix notation (and lift them to predicate level as discussed before)
+% \end{enumerate}
+
+% \ak{I don't think we need to sub-type random variable functors here, as rv terms inherit the \emph{output} type of the distribution only, which should be integer, float etc, not "discrete distribution"}
+
+
+
+
+\subsection{Multiple Dispatch} \label{ref:multiple_dispatch}
+\ak{I think there's a lot in here that misses context to be understandable; and I'm not sure all of it is really needed for the paper}
+The attentive reader might have noticed that, for example in Example~\ref{ex:dc-vs-dcproblog}, we used the same comparison predicates, for \type{RandomSymbol} terms as well as \type{Number} terms. In \dcproblogsty we resolve this clash through {\em multiple dispatching}~\citep{castagna1995calculus}.
+Multiple dispatching is the process of dynamically selecting at run time\footnote{In the context of logic programming we understand as run time the grounding of the logic program part of a \dcproblogsty program.} a specific implementation of a function based on the types of the arguments that are fed as input to the corresponding function symbol.
+Such functions are referred to as {\em multimethods}. 
+An early example of multiple dispatch is the {\em Common Lisp Object System}~\citep{keene1989object}. Multiple dispatch is also the programming paradigm on which the \juliasty programming language is built~\citep{bezanson2017julia}.
+
+We also find multimethods in logic programming languages such as \prologsty. While, for groundings of relations \prologsty simply checks whether the grounding is present in the database (agnostic towards the types of the arguments), this is not the case for built-in predicates such as comparison predicates, which make a call to an external arithmetic engine in order to evaluate an expression. For instance, (\probloginline{1<3+5}) calls an integer addition procedure, whereas (\probloginline{1<3.0+5}) might call a floating point procedure. Calling the external arithmetic engine with an ill-typed expression might even cause a run time error. Something that is not possible in {\em pure} \prologsty without an external arithmetic engine.
+
+\luc{implementatin details}
+Compared to \problogsty and \problogsty, \dcproblogsty does not only have type signatures for the built-in comparison predicates but also for random function symbols, \eg \probloginline{normal/2}.
+Consider, for instance, the declaration of the normal distribution in Example~\ref{example:dcproblog_machine}.
+The definition of the function is the following:
+$$ \text{\probloginline{normal}}: \type{Number} \times \type{Number} \rightarrow \type{ContinuousD}$$
+However, the arguments of a normal distribution (its mean and standard deviation) might as well be random variables themselves.
+Multiple dispatching then allows us to {\em overload} the \probloginline{normal} function symbol by using arguments of a different type\footnote{For simplicity we omit that the standard deviation has to be a strictly positive (real) number, which can be enforced by extending the type system.}:
+\begin{align*}
+	\text{\probloginline{normal}}&: \type{NumericRV} \times \type{Number} \rightarrow \type{ContinuousD} \\
+	\text{\probloginline{normal}}&: \type{Number} \times \type{NumericRV} \rightarrow \type{ContinuousD} \\
+	\text{\probloginline{normal}}&: \type{NumericRV} \times \type{NumericRV} \rightarrow \type{ContinuousD}
+\end{align*}
+
+Reusing the idea of multimethods in the context of probabilistic logic programming with random function symbols results in a simple and neat syntax.
+The exact implementation of these random function symbols is left to the designer of an implementation of the language by providing an external engine that performs arithmetic evaluations.
+
+%In the next Subsection~\ref{sec:arithmetic} we will encounter further usages of multiple dispatching in \dcproblogsty.
+
+
+% We can say that interpreted predicates and functors, that is predicates and functors that have a system internal meaning, possess a type signature. This results in a type dependent calculus.
+
+\paragraph{Strongly Typed \prologsty}
+
+While \prologsty is traditionally not strongly/statically typed, there have been efforts to extend \prologsty with such a type system. Arguably, the most interesting effort is presented in~\citep{Schrijvers2008TowardsTP}, where the authors develop the idea of partially typing a \prologsty program, \ie typing is optional and untyped code is interpreted instead of compiled. Introducing predicates with strongly typed signatures can be regarded as adding interpreted predicates to the \prologsty implementation but the {\em `evaluation'} of these predicates still takes place within \prologsty.
+Our efforts to utilize multiple dispatch for arithmetic expressions with an external engine are orthogonal and complimentary to the efforts of~\citet{Schrijvers2008TowardsTP}.
+
+\ak{move to related work?}
+
+
+
+
+
+
+
+\subsection{External Engine}
+
+The key difference between the external arithmetic engine of \prologsty (or \problogsty) and the external arithmetic engine of \dcproblogsty is that the external engine of the latter is capable of performing arithmetic operations (perform evaluations) with random variables. Combining this innovation with multiple dispatch allows us to retain the same syntax (same functor) to perform arithmetic operations on \type{SymbolicRV} terms and/or \type{Number} terms.
+
+In Subsection~\ref{sec:type_system} we introduced an abstract type system.
+Abstract types describe the structure/hierarchy of a type system and cannot be instantiated. Concrete types, which are subtypes of abstract types are used for instantiations. This means that abstract types relate collections of concrete types, \ie implementations, to each other. For example, the \type{Integer} \probloginline{3} could be instantiated as an \type{Int32} or also an \type{Int64}, which are both concrete types. The choice taken depends on the external engine used to evaluate arithmetic expressions. 
+
+The only condition that we necessitate for an implementation of \dcproblogsty is that the external arithmetic back-end provides concrete types for the abstract types that should be used in arithmetic expression. Additionally, a practical arithmetic engine should implement arithmetic operations on these types. For example, an engine should be able to multiply a floating point value and an integer value: (\probloginline{3.12*2}). The type for floating points could be dubbed \type{Float32} and would be a concrete type subtyped from the abstract type \type{Real}. The type of the integer value could be \type{Int32} subtyped from \type{Integer}. The return type could then again be \type{Float32}.
+
+
+
+\begin{example}
+We show two functions that perform addition of numbers but with different types. These different number could be invoked on either side of a comparison predicate, \eg (\probloginline{1<3+5} ) or (\probloginline{1<3+5.0} ). We write these functions using Julia like syntax, as Julia follows the multiple dispatch paradigm.
+\luc{too much}
+\begin{samepage}
+
+\begin{minted}[
+    breaklines,
+    escapeinside=||,
+    mathescape=true, 
+    linenos,
+    xleftmargin=20pt, 
+    % numbersep=3pt, 
+    % gobble=2, 
+    % framesep=2mm
+]{julia}
+function +(a::Int32, b::Int32)::Int32
+    return int32_addition(a,b)
+end;
+\end{minted}
+
+\end{samepage}
+
+
+\begin{samepage}
+\begin{minted}[
+    breaklines,
+    escapeinside=||,
+    mathescape=true, 
+    linenos,
+    xleftmargin=20pt, 
+    % numbersep=3pt, 
+    % gobble=2, 
+    % framesep=2mm
+]{julia}
+function +(a::Int32, b::Float32)::Float32
+    float_a = convert(Float32, a)
+    return float32_addition(float_a,b)
+end;
+\end{minted}
+
+\end{samepage}
+
+
+\end{example}
+
+
+
+
+
+
+
+
+
+
+
+
+\subsubsection*{Eager Evaluation}
+
+Let us revisit the comparison predicates, \eg (\probloginline{1<2}), (\probloginline{x>20}). According to Definition~\ref{def:semantics_dcproblog} these get wrapped into a \dcplpinline{holds/3} predicate when \dcproblogsty is transformed into \dcplpsty. For the deterministic case we can eagerly evaluate these \dcplpinline{holds/3} predicates. That is, we can replace the atom with its corresponding Boolean value. For the comparison (\probloginline{1<2}) we would get \probloginline{true}. 
+
+Eager evaluation of arithmetic expressions makes most sense when this leads to program simplifications. More concretely, when a comparison predicate is not satisfied this results in a \probloginline{false} atom and proving a goal during grounding can be stopped pre-maturely.\ak{we haven't talked about grounding before...}
+Eager evaluation of the \dcplpinline{holds/3} predicate allows \dcproblogsty to retain the usual behavior of proving in \problogsty where a proof fails if a (deterministic) comparison is not satisfied.
+
+
+
+
+
+
+
+
+
+% \subsubsection{Arithemtics of Random Variables}
+
+% Evaluating arithmetic expressions that contain random variables should not to be confused with performing arithmetic operations on random variables. Writing \probloginline{x+y} in a comparison predicate, where \probloginline{x} and \probloginline{y} are random variables has the semantics of evaluating both random variables (for instance by drawing a sample) and adding up both evaluations.
+
+% In order to perform arithmetic operations on random variables directly, we would need to introduce syntax and an arithmetic engine for random variables. This could, for example, be achieved in the following fashion:
+% \begin{problog*}{linenos}
+%  x ~ normal(20,5).
+%  y ~ normal(25,6).
+%  z ~ x+y.
+% \end{problog*}
+% In this case z would be a normal distribution with mean ($20{+}25$) and standard deviation ($5{+}6$). We leave arithmetic operations on random variables for future research.\pedro{maybe add citation of somebody who has done something like this already?}
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%

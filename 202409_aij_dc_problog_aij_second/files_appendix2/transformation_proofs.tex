@@ -1,0 +1,307 @@
+\section{Proofs of Theorems and Propositions in Section~\ref{sec:dc2smt} and Section~\ref{sec:alw}}
+\label{app:transformation_proofs}
+
+\subsection{Proof of Theorem~\ref{theo:rgp}} \label{app:proof:rgp}
+
+
+\theorgp*
+
+\begin{proof}
+    %The proof is analogous  to the one for Theorem~1 in~\citep[Appendix A]{fierens2015inference}, as it only concerns the logic part of the program.
+    The semantics of $\dcpprogram$ is given by the ground program that is obtained by first grounding $\dcpprogram$ with respect to its Herbrand base and reducing it to a \dfplpsty program as specified in Section~\ref{sec:dcproblog}. The resulting program consists of distributional facts and ground normal clauses only, and includes clauses defining \probloginline{rv}-atoms as well as calls to those atoms in clause bodies. However, as the definitions of these atoms are acyclic, and each ground instance is defined by a single rule (with the body of the DC that introduced the new random variable), we can eliminate all references to such atoms by recursively applying the well-known \emph{unfolding} transformation, which replaces atoms in clause bodies by their definition. The result is an equivalent ground program using only predicates from \dcpprogram, but where rule bodies have been expanded with the contexts of the random variables they interpret. We know from Theorem~1 in \citep{fierens2015inference} that for given query and evidence, it is sufficient to use the part of this logic program that is encountered during backward chaining from those atoms. We note that in our case, this also includes the distributional facts providing the distributions for relevant random variables, \ie, random variables in relevant comparison atoms as well as their ancestors.
+\end{proof}
+
+
+
+
+\subsection{Proof of Theorem~\ref{theo:label_equivalence}}
+\label{app:proof:label_equivalence}
+
+\Labelequivalence*
+
+
+
+
+
+
+
+
+\begin{proof} The probability of a model $\varphi$ of the relevant ground program $\dcpprogram_g$ is, according to the distribution semantics (cf. Appendix~\ref{app:proof:pf}), given by:
+    \begin{align}
+        P_{\dcpprogram_g}(\varphi) = \int \mathbf{1}_{[\mu_1=\boolval_1\wedge\ldots\wedge \mu_n=\boolval_n]}(\samplefunction(\randomvariableset)) \differential{\probabilitymeasure_{\randomvariableset}}
+    \end{align}
+    where the $\mu_i$ are the comparison atoms that appear (positively or negatively) in $\dcpprogram_g$ and the $b_i$ the truth values these atoms take in $\varphi$.
+    We can manipulate the probability into:
+    \begin{align}
+        P_{\dcpprogram_g}
+         & =
+        \int \left( \prod_{i =1}^n \mathbf{1}_{[\mu_i=b_i]}(\samplefunction(\randomvariableset)) \right) \differential{\probabilitymeasure_{\randomvariableset}}                                                                                                         \\
+         & =
+        \int \left( \prod_{i: b_i=\bot} \mathbf{1}_{[\mu_i=b_i]}(\samplefunction(\randomvariableset)) \right)  \left( \prod_{i: b_i=\top} \mathbf{1}_{[\mu_i=b_i]}(\samplefunction(\randomvariableset)) \right)  \differential{\probabilitymeasure_{\randomvariableset}} \\
+         & =
+        \int \left( \prod_{i: b_i=\bot} \ive{\neg c_i(vars(\mu_i))} \right)  \left( \prod_{i: b_i=\top}  \ive{ c_i(vars(\mu_i))}  \right)  \differential{\probabilitymeasure_{\randomvariableset}}
+        \label{eq:program_prob_label_equi}
+    \end{align}
+    Turning our attention now to the expected value of $\alpha(\varphi)$ we have:
+    \begin{align}
+        \E_{\randomvariableset \sim  \dcpprogram_g} [\alpha( \varphi )]
+        =
+        \int \alpha \left( \bigwedge_{\ell_i \in \varphi} \ell_i \right) \differential{P_\randomvariableset}
+        =
+        \int  \left( \prod_{\ell_i \in \varphi} \alpha \left(  \ell_i \right) \right)  \differential{P_\randomvariableset}
+    \end{align}
+    The literals $\ell_i \in \varphi$ fall into four groups: atoms whose predicate is a comparison and that are true in $\varphi$ (denoted by $CA^+(\varphi)$), non-comparison atoms that are true in $\varphi$ (denoted $NA^+(\varphi)$), and similarly the atoms that are false in $\varphi$ (denoted by $CA^-(\varphi)$ and $NA^-(\varphi)$). This yields:
+    \begin{align}
+         & \E_{\randomvariableset \sim  \dcpprogram_g} [\alpha( \varphi )] \\
+         & =
+        \int
+        \left( \prod_{\ell_i \in CA^+(\varphi)} \alpha (  \ell_i ) \right)
+        \left( \prod_{\ell_i \in CA^-(\varphi)} \alpha (  \neg \ell_i ) \right)
+        \left( \prod_{\ell_i \in NA^+(\varphi)} \alpha (  \ell_i ) \right)
+        \left( \prod_{\ell_i \in NA^-(\varphi)} \alpha (  \neg \ell_i ) \right)
+        \nonumber
+        \differential{P_\randomvariableset}
+    \end{align}
+    Plugging in the definition of the labeling function the last two products reduce to $1$ and we obtain for the remaining expression:
+    \begin{align}
+        \E_{\randomvariableset \sim  \dcpprogram_g} [\alpha( \varphi )]
+        =
+        \int
+        \left( \prod_{i: \ell_i \in CA^+(\varphi)} \ive{  c_i(vars(\ell_i)) } \right)
+        \left( \prod_{i: \ell_i \in CA^-(\varphi)} \ive{  \neg c_i(vars(\ell_i)) } \right)
+        \differential{P_\randomvariableset}
+        \label{eq:formula_prob_lable_equi}
+    \end{align}
+    Identifying now the set $\{ i: \ell_i \in CA^+(\varphi) \}$ with the set $\{i : \mu_i=\top   \} $ and the set  $\{ i: \ell_i \in CA^-(\varphi) \}$ with the set $\{i : \mu_i=\bot   \} $ proves the theorem, as this equates Equation~\ref{eq:program_prob_label_equi} and Equation~\ref{eq:formula_prob_lable_equi}
+\end{proof}
+
+
+\subsection{Proof of Proposition~\ref{prop:mcapproxconditional}}
+\label{app:proof:mcapproxconditional}
+
+
+\mcapproxconditional*
+
+\begin{proof}
+    First we write the conditional probability as a ratio of expected values invoking Theorem~\ref{thm:inference-by-expectation}, on which we then use Defintion~\ref{def:label_bool_formula}:
+    \begin{align}
+        P_\dcpprogram(\mu=q\mid\evidenceset = e)
+         & = \frac{\E_{\randomvariableset \sim  \dcpprogram_g} [\alpha( \phi \wedge \phi_q)] }{\E_{\randomvariableset \sim  \dcpprogram_g} [\alpha( \phi )] }
+        \\
+         & =
+        \frac{
+            \E_{\randomvariableset \sim  \dcpprogram_g} \left[ \sum_{\varphi\in ENUM(\phi \land \phi_{q}) } \prod_{\ell \in \varphi} \alpha(\ell) \right]
+        }
+        {
+            \E_{\randomvariableset \sim  \dcpprogram_g} \left[ \sum_{\varphi\in ENUM(\phi) } \prod_{\ell \in \varphi} \alpha(\ell)  \right]
+        }
+        \\
+         & =
+        \frac{
+            \E_{\randomvariableset \sim  \dcpprogram_g} \left[ \sum_{\varphi\in ENUM(\phi \land \phi_{q}) } \alpha(\varphi) \right]
+        }
+        {
+            \E_{\randomvariableset \sim  \dcpprogram_g} \left[ \sum_{\varphi\in ENUM(\phi) } \alpha(\varphi)  \right]
+        }
+    \end{align}
+
+
+
+    We can now express the conditional probability in terms of the sampled values $\mathcal{S}$:
+    \begin{align}
+        P_\dcpprogram(\mu=q\mid\evidenceset=e)
+           & =
+        \frac{
+        \lim_{ \lvert \mathcal{S} \rvert \rightarrow \infty} \nicefrac{1}{\lvert \mathcal{S} \rvert} \sum_{i=1}^{\lvert \mathcal{S} \rvert}  \sum_{\varphi\in ENUM(\phi \land \phi{q}) } \alpha^{(i)}(\varphi)
+        }
+        {
+        \lim_{\lvert \mathcal{S} \rvert \rightarrow \infty} \nicefrac{1}{\lvert \mathcal{S} \rvert} \sum_{i=1}^{\lvert \mathcal{S} \rvert} \sum_{\varphi\in ENUM(\phi) } \alpha^{(i)}(\varphi)
+        }                                                                   \\
+           & \approx
+        \frac{
+        \sum_{i=1}^{\lvert \mathcal{S} \rvert}  \sum_{\varphi\in ENUM(\phi \land \phi_{q}) } \alpha^{(i)}(\varphi)
+        }
+        {
+        \sum_{i=1}^{\lvert \mathcal{S} \rvert} \sum_{\varphi\in ENUM(\phi) } \alpha^{(i)}(\varphi)
+        }, & \quad \lvert \mathcal{S} \rvert<\infty \label{eq:mc_prob_cond}
+    \end{align}
+\end{proof}
+
+
+\subsection{Proof of Proposition~\ref{prop:alw_consistency}}
+\label{app:proof:alw_consistency}
+
+
+\alwconsistency*
+\begin{proof}
+    First we manipulate the expected value on the left hand side of Equation~\ref{eq:ALW}:
+    \begin{align}
+         & \E \left[ \sum_{\varphi \in ENUM(\phi)} \prod_{\ell \in \varphi}  \alpha \left(\ell \right) \bigg| \mathcal{S} \right]                                                           \\
+         & =
+        \lim_{ \lvert \mathcal{S} \rvert\rightarrow\infty} \sum_{i=1}^{ \lvert \mathcal{S} \rvert}  \sum_{\varphi \in ENUM(\phi)} \prod_{\ell \in \varphi}  \alpha^{(i)} \left(\ell \right) \\
+         & =
+        \lim_{ \lvert \mathcal{S} \rvert \rightarrow\infty} \sum_{i=1}^{ \lvert \mathcal{S} \rvert}  \sum_{\varphi \in ENUM(\phi)}
+        \left(\prod_{\ell \in \varphi \setminus DI(\varphi)}  \alpha^{(i)} \left(\ell \right) \prod_{\ell \in DI(\varphi)}  \alpha^{(i)} \left(\ell \right)   \right)
+    \end{align}
+    As the samples are ancestral samples, they satisfy by construction the delta invervals appearing in the second product. This means that $\prod_{\ell \in DI(\varphi)}  \alpha^{(i)} \left(\ell \right) =1$ and that we can write the expected value in function of non delta interval atoms only:
+    \begin{align}
+        \E \left[ \sum_{\varphi\in ENUM(\phi)} \prod_{\ell \in \varphi}  \alpha \left(\ell \right) \bigg| \mathcal{S} \right]
+        =
+        \E \left[ \underbrace{\sum_{\varphi\in ENUM(\phi)} \prod_{\ell \in \varphi \setminus DI(\varphi)}  \alpha \left(\ell \right)}_{\coloneqq f(\phi)} \bigg| \mathcal{S} \right]  \label{eq:ALW_exp_simplified}
+    \end{align}
+    Let us now manipulate the expression in the numerator on the right hand side of Equation~\ref{eq:ALW}:
+    \begin{align}
+         & \bigoplus_{i=1}^{ \lvert \mathcal{S} \rvert}  \bigoplus_{\varphi \in ENUM(\phi)} \bigotimes_{\ell \in \varphi}  \alpha_{IALW}^{(i)} \left(\ell \right) \\
+         & =
+        \bigoplus_{i=1}^{ \lvert \mathcal{S} \rvert}  \bigoplus_{\varphi \in ENUM(\phi)}
+        \underbrace{\left(  \bigotimes_{\ell \in \varphi \setminus DI(\varphi)}  \alpha_{IALW}^{(i)} \left(\ell \right) \right) }_{\left( r_\varphi^{(i)} , 0  \right)}  \otimes
+        \underbrace{\left( \bigotimes_{\ell \in DI(\varphi)}  \alpha_{IALW}^{(i)} \left(\ell \right) \right) }_{\left( t_\varphi^{(i)} , m_\varphi^{(i)}  \right)} \label{eq:alw_proof_intermediate_1}
+    \end{align}
+    The expressions $\left( r_\varphi^{(i)} , 0  \right)$ and $\left( t_\varphi^{(i)} , m_\varphi^{(i)}  \right)$ denote infinitesimal numbers. Note how only the latter of the two picks up a non-zero second part.
+
+    From the definition of the addition of two infinitesimal numbers we can see that only those infinitesimal numbers with the smallest integer in the second part {\em survive} the addition. This also means that in Equation~\ref{eq:alw_proof_intermediate_1} only those terms that have the smallest integer in their second part among all terms will contribute. We denote this smallest integer by:
+    \begin{align}
+        m^* =  \min_{ \substack{i\in \{ 1, \dots,  \lvert \mathcal{S} \rvert \} \\ \varphi\in ENUM(\phi) }} m^{(i)}_\varphi
+    \end{align}
+    We rewrite Equation~\ref{eq:alw_proof_intermediate_1} in function of $m^*$:
+    \begin{align}
+         & \bigoplus_{i=1}^{ \lvert \mathcal{S} \rvert}  \bigoplus_{\varphi \in ENUM(\phi)}
+        \left(  \ive{m_{\varphi}^{(i)}{=} m^* } , 0  \right) \otimes
+        \left( r_\varphi^{(i)} , 0  \right) \otimes
+        \left( t_\varphi^{(i)} , m^*  \right)                                                                              \\
+         & =
+        \bigoplus_{i=1}^{ \lvert \mathcal{S} \rvert}  \bigoplus_{\varphi \in ENUM(\phi)}
+        \left( \ive{m_{\varphi}^{(i)}{=} m^* } r_\varphi^{(i)}  t_\varphi^{(i)} , 0  \right) \otimes \left( 1, m^* \right) \\
+         & =
+        \left( \sum_{i=1}^{ \lvert \mathcal{S} \rvert}  \sum_{\varphi \in ENUM(\phi)}  \ive{m_{\varphi}^{(i)}{=} m^* } r_\varphi^{(i)}  t_\varphi^{(i)} , 0   \right)  \otimes \left( 1, m^* \right) \label{eq:ALW_num_simplified}
+    \end{align}
+    Similarly we get for the denominator in Equation~\ref{eq:ALW}:
+    \begin{align}
+         & \bigoplus_{i=1}^{ \lvert \mathcal{S} \rvert}  \bigoplus_{\varphi \in ENUM(\phi)} \bigotimes_{\ell \in  DI(\varphi)}  \alpha_{IALW}^{(i)} \left(\ell \right) \\
+         & =
+        \left( \sum_{i=1}^{ \lvert \mathcal{S} \rvert}  \sum_{\varphi\in ENUM(\phi)}  \ive{m_{\varphi}^{(i)}{=} m^* }  t_\varphi^{(i)} , 0   \right)  \otimes \left( 1, m^* \right)  \label{eq:ALW_den_simplified}
+    \end{align}
+    We can now plug Equation~\ref{eq:ALW_exp_simplified}, Equation~\ref{eq:ALW_num_simplified} and Equation~\ref{eq:ALW_den_simplified} back into Equation~\ref{eq:ALW} and obtain:
+
+    \begin{align}
+         & \phantom{{}\Leftrightarrow{}}  \left( \E \left[  f(\phi) | \mathcal{S} \right],  0 \right)
+        =
+        \left(
+        \frac
+        { \sum_{i=1}^{ \lvert \mathcal{S} \rvert} \sum_{\varphi \in ENUM(\phi)}  \ive{m_{\varphi}^{(i)}{=} m^* } r_\varphi^{(i)}  t_\varphi^{(i)} }
+        { \sum_{i=1}^{ \lvert \mathcal{S} \rvert}  \sum_{\varphi\in ENUM(\phi)}  \ive{m_{\varphi}^{(i)}{=} m^* }  t_\varphi^{(i)}   }
+        , 0
+        \right) \quad ( \lvert \mathcal{S} \rvert\rightarrow \infty)                                  \\
+         & \Leftrightarrow \E \left[  f(\phi) | \mathcal{S} \right]
+        =
+        \frac
+        { \sum_{i=1}^{ \lvert \mathcal{S} \rvert}  \sum_{\varphi \in ENUM(\phi)}  \ive{m_{\varphi}^{(i)}{=} m^* } r_\varphi^{(i)}  t_\varphi^{(i)} }
+        { \sum_{i=1}^{ \lvert \mathcal{S} \rvert}  \sum_{\varphi\in ENUM(\phi)}  \ive{m_{\varphi}^{(i)}{=} m^* }  t_\varphi^{(i)}   } \label{eq:llw}
+    \end{align}
+    We realize that $r_\varphi^{(i)}$ is actually $f(\phi)$ evaluated at the $i$-th sample at the instantiation $\varphi$ and evoke~\citep[Theorem 4.1]{wu2018discrete} to prove Equation~\ref{eq:llw}, which also finishes this proof.
+\end{proof}
+
+\subsection{Proof of Proposition~\ref{prop:alwapproximation}}
+\label{app:proof:alwapproximation}
+
+
+\alwapproximation*
+
+
+\begin{proof}
+    We start the proof by invoking Theorem~\ref{thm:inference-by-expectation}, which expresses the conditional probability as a ratio of expectations. In the numerator and the denominator we then write the label of the propositional logic formulas as the sum of the labels of the respective possible worlds.
+    \begin{align}
+        P_\dcpprogram(\mu=q|\evidenceset=e)  \label{eq:cond_amc_1}
+         & =\frac{\E_{\randomvariableset \sim  \dcpprogram_g} [\alpha( \phi \wedge \phi_q)] }{\E_{\randomvariableset \sim  \dcpprogram_g} [\alpha( \phi )] } \\
+         & =
+        \frac
+        {
+            \E_{\randomvariableset \sim  \dcpprogram_g} \left[ \sum_{\varphi\in ENUM(\phi \land \phi_{q e}) } \alpha(\varphi) \right]
+        }
+        {
+            \E_{\randomvariableset\sim  \dcpprogram_g} \left[ \sum_{\varphi\in ENUM(\phi) } \alpha(\varphi)  \right]
+        }  \label{eq:cond_amc_2}
+    \end{align}
+    Next, we approximate the expectation using a set of ancestral samples $\mathcal{S}$, followed by pulling out the query from the summation index in the numerator:
+    \begin{align}
+         & \frac
+        {
+            \E_{\randomvariableset \sim  \dcpprogram_g} \left[ \sum_{\varphi\in ENUM(\phi \land \phi_{q}) } \alpha(\varphi) \right]
+        }
+        {
+            \E_{\randomvariableset \sim  \dcpprogram_g} \left[ \sum_{\varphi\in ENUM(\phi) } \alpha(\varphi)  \right]
+        }
+        \\
+         & \approx
+        \frac
+        {
+            \E \left[ \sum_{\varphi\in ENUM(\phi \land \phi_{q})   } \alpha(\varphi) |  \mathcal{S}  \right]
+        }
+        {
+            \E \left[ \sum_{\varphi\in ENUM(\phi) } \alpha(\varphi) |  \mathcal{S}   \right]
+        }  \label{eq:cond_amc_approx}
+        \\
+         & \approx
+        \frac{
+            \E \left[ \sum_{\varphi\in ENUM(\phi)   } \ive{\varphi \models \phi_q} \alpha(\varphi) |  \mathcal{S}  \right]
+        }
+        {
+            \E \left[ \sum_{\varphi\in ENUM(\phi) } \alpha(\varphi) |  \mathcal{S}   \right]
+        }
+        \label{eq:cond_amc_expanded}
+    \end{align}
+    We now rewrite the fraction of two real numbers in Equation~\ref{eq:cond_amc_expanded} as the fraction of two infinitesimal numbers and plug in the definition of the infinitesimal algebraic likelihood weight (cf. Definition~\ref{def:alw}):
+    \begin{align}
+         & \frac{
+            \E \left[ \sum_{\varphi\in ENUM(\phi)   } \ive{\varphi \models \phi_q} \alpha(\varphi) |  \mathcal{S}  \right]
+        }
+        {
+            \E \left[ \sum_{\varphi\in ENUM(\phi) } \alpha(\varphi) |  \mathcal{S}   \right]
+        }
+        \\
+         & =
+        \frac{
+            \left(\E \left[ \sum_{\varphi\in ENUM(\phi)   } \ive{\varphi \models \phi_q} \alpha(\varphi) |  \mathcal{S}  \right], 0 \right)
+        }
+        {
+            \left( \E \left[ \sum_{\varphi\in ENUM(\phi) } \alpha(\varphi) |  \mathcal{S}   \right],0 \right)
+        }          \\
+         & \approx
+        \frac
+        {
+        \displaystyle \bigoplus_{i=1}^{\lvert \mathcal{S} \rvert}  \bigoplus_{\varphi\in ENUM(\phi)} \ive{\varphi \models \phi_q} \bigotimes_{\ell \in \varphi}   \alpha_{IALW}^{(i)} \left(\ell \right)}
+        {
+        \displaystyle  \cancel{ \bigoplus_{i=1}^{\lvert \mathcal{S} \rvert}  \bigoplus_{\varphi\in ENUM(\phi)} \bigotimes_{\ell \in  DI(\varphi)}  \alpha_{IALW}^{(i)} \left(\ell \right) }}
+        \otimes
+        \frac
+        {
+        \displaystyle \cancel{\bigoplus_{i=1}^{\lvert \mathcal{S} \rvert}  \bigoplus_{\varphi\in ENUM(\phi)} \bigotimes_{\ell \in  DI(\varphi)}  \alpha_{IALW}^{(i)} \left(\ell \right) } }
+        {
+        \displaystyle \bigoplus_{i=1}^{\lvert \mathcal{S} \rvert}  \bigoplus_{\varphi\in ENUM(\phi)} \bigotimes_{\ell \in \varphi}  \alpha_{IALW}^{(i)} \left(\ell \right)
+        } \label{eq:cond_amc_canel}
+    \end{align}
+
+    In the last line the first factor corresponds to the numerator of the previous equation and the second factor corresponds to the reciprocal of the denominator.
+    Note that the consistency of the infinitesimal algebraic likelihood weight of the numerator (first factor) is guaranteed by defining a new labeling function $\alpha^q(\varphi)\coloneqq \ive{\varphi \models \phi_q} \alpha(\varphi)$ and evoking Proposition~\ref{prop:alw_consistency} with $\alpha^q$.
+
+    Finally, we push the expression $\ive{\varphi \models \phi_q}$ in the numerator back into the index of the summation ($\oplus$), which yields the following expression:
+    \begin{align}
+        \frac
+        { \bigoplus_{i=1}^{\lvert \mathcal{S} \rvert}  \bigoplus_{\varphi\in ENUM(\phi \land \phi_{q})} \bigotimes_{\ell \in \varphi}  \alpha_{ALWI}^{(i)} \left(\ell \right)}
+        { \bigoplus_{i=1}^{\lvert \mathcal{S} \rvert}  \bigoplus_{\varphi\in ENUM(\phi)} \bigotimes_{\ell \in \varphi}  \alpha_{IALW}^{(i)} \left(\ell \right)}
+        \label{eq:cond_alw_last}
+    \end{align}
+    which proves the proposition. \end{proof}
+
+
+
+
+
+\subsection{Proof of Proposition~\ref{prop:alwonddnnf}}
+\label{app:proof:alwonddnnf}
+
+\alwonddnnf*
+\begin{proof}
+    Algorithm~\ref{alg:prob_via_alw_kc} first compiles both propositional formulas into equivalent d-DNNF representations, cf. Lines~\ref{alg:prob_via_alw_kc:kc_qe} and~\ref{alg:prob_via_alw_kc:kc_e}.
+    In Lines~\ref{alg:prob_via_alw_kc:alw_qe} and~\ref{alg:prob_via_alw_kc:alw_e} it then computes the (unnormalized) infinitesimal algebraic likelihood weight for both formulas by calling Algorithm~\ref{alg:unormalize_alw}. In other words, we compute the numerator and denominator in Equation~\ref{eq:cond_alw_last}. We observe that Algorithm~\ref{alg:unormalize_alw} evaluates a given d-DNNF formula for each conditioned topological sample using the \texttt{Eval} function, which evaluates a d-DDNF formula given a labeling function, cf. Algorithm~\ref{alg:eval}~\citep{kimmig2017algebraic}. The correctness of Algorithm~\ref{alg:prob_via_alw_kc} now hinges on the correctness of the \texttt{Eval} function, which was proven by~\citet{kimmig2017algebraic} for the evaluation of a d-DNNF formula using a semiring and labeling function pair that adheres to the properties described in Lemmas~\ref{lem:non_idem} to~\ref{lem:non_cons}. Effectively, Algorithm~\ref{alg:unormalize_alw} correctly computes the algebraic model count for each ancestral sample, adds up the results, and returns the unnormalized algebraic model count to Algorithm~\ref{alg:prob_via_alw_kc}. Line~\ref{alg:prob_via_alw_kc:conditional} finally return the ratio of the two unnormalized algebraic likelihood weights, which corresponds to the conditional probability $P_\dcpprogram(\mu=q|\evidenceset=e)$, as proven in Equations~\ref{eq:cond_amc_1} to~\ref{eq:cond_alw_last}.
+\end{proof}

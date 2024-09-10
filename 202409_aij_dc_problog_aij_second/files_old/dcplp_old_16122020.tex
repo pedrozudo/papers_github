@@ -1,0 +1,151 @@
+\section{DC-PLP}\label{sec:semantics}
+We introduce DC-PLP, a probabilistic logic programming language with both discrete and continuous random variables following Sato's distribution semantics \citep{sato1995statistical}. DC-PLP is an assembler language with minimal syntax whose  purpose is to define the declarative semantics of the language independently of existing syntax, inference algorithms or systems. 
+
+Poole has characterised probabilistic programming as independent choices plus deterministic systems, with (discrete) probabilistic logic programming being the case where the deterministic system is given by a logic program \cite{poole2010probabilistic}. DC-PLP builds upon this idea, but relaxes the independence assumption by explicitly distinguishing two types of dependencies, namely those expressed by the logic program /  deterministic system, and those expressed by using random variables as parameters of distributions for other random variables. It further allows for both discrete and continuous random variables.
+
+In the context of of probabilistic logic programming, \cite{gutmann2011magic} have introduced Distributional Clauses (DC), which also combines continuous random variables with (definite) logic programs. We deviate from their proposal in the following ways:
+\begin{itemize}
+    \item we provide a simpler framework that clearly exposes all dependencies at no loss in expressivity
+    \item we refine their validity criteria to address two known issues (logical cycles and parameter cycles)
+    \item we support negation from the start
+    \item we provide explicit connections to a range of existing PLP languages
+\end{itemize}
+
+DC-PLP serves as a stepping stone towards DC-ProbLog, which will combine the semantics defined here with a higher level modeling language, and a system combining that modeling language with inference algorithms that have been or will be developed in the context of related languages from the ProbLog family.  
+
+The key idea behind DC-PLP is to build the semantics of a program in three steps:
+\begin{enumerate}
+\item Define a countable set of random variables (denoted by terms in the logic program) and associate a unique parametric distribution (denoted by a term from a language $P$ in the logic program) to each random variable through a set of ground atoms of the form \verb|rv(name,dist)|. For valid programs, this will give us a 
+unique joint probability measure over these random variables that factors into the individual distributions.
+\item Define a countable set of measurable Boolean queries (denoted by terms from a language $Q$) over the random variables.
+\item Define a logic program that computes consequences of the Boolean queries. To include a  Boolean query in the body of a clause, it gets wrapped into an atom of the form \verb|holds(query)|, whose purpose is to explicitly transfer the externally determined truth value of the query into the truth value of an atom within the logic program.\footnote{This is for simplicity of exposition; higher level modeling languages such as DC-ProbLog would usually provide comparison predicates on terms directly.}
+\end{enumerate}
+The first step defines all random choices, the second and third step form the deterministic system. 
+As the second and third step are deterministic functions of the random variables, the measure defined in the first step extends to the Boolean queries and from there to the atoms in the logic program.
+
+We restrict the definition of \verb|rv/2| to be a database of facts here purely for simplicity; this can be relaxed to a logic program that does not refer to any \verb|holds| atoms or any predicates defined in the third component (which can be mapped back to a fact database corresponding to its well-founded model).
+
+
+Note  that while we implicitly assume  ``atomic'' random variables here, the principles also apply to ``compound'' random variables (such as multivariate Gaussians), provided usual laws of probability are respected and suitable syntax for such variables is introduced.
+
+In contrast to DC, where several conditional distributional clauses can jointly define the distribution of a single RV through a complex logical factorisation, DC-PLP uses a single fact to define a random variable unconditionally and to associate a single parameterised distribution to it. As we still have the full power of normal logic programs to model the deterministic system, this does not restrict expressivity (as we will see in Section~\ref{sec:dc}), but simplifies the formal definition of the semantics. When modeling conditional distributions, users have a range of choices depending on the syntax provided, from encoding the entire CPD into a single term within the defining \verb|rv/2| fact all the way to a set of individually named choice RVs with minimal use of RVs as parameters tied together by a deterministic system, or any intermediate factorisation. As already discussed by Poole \cite{poole2010probabilistic}, not all choices work equally well with all inference algorithms. We provide these choices within the same semantical framework, leaving it to system developers to focus the syntax towards a subset of choices and/or to exploit the different choices when integrating different inference approaches into their system.
+
+\subsection{Syntax}
+A key element of DC-PLP are reserved functors\footnote{We consider constants to be functors of arity 0.} with a specific external interpretation, which are used to define distributions and evaluable expressions over random variables. While the exact choice of these functors is up to the designers of a specific DC-PLP instance, they have to obey certain rules which we specify next.
+
+The set of functors used in a DC-PLP program can be partitioned into the following types:
+\begin{enumerate}
+\item \emph{reserved functors} with typed arguments and an output type, further partitioned into 
+\begin{enumerate}
+    \item \emph{distribution functors}, \eg \verb|poisson/1| with input and output type \emph{natural number}
+    \item \emph{arithmetic functors}, \eg, the (zero-arity) functor \verb|17| is of return type number, \verb|max/2| takes two numbers and returns a number
+    \item \emph{Boolean query functors} with output type Boolean, \eg, \verb|</2| with two arguments of type number
+\end{enumerate}
+\item \emph{user-defined functors}, whose arguments do not need to be typed, further partitioned into
+\begin{enumerate}
+\item \emph{random variable functors} with type declared  in the program through association with a distribution term as detailed below
+    \item \emph{regular functors} do not need to be typed
+\end{enumerate}
+\end{enumerate}
+We refer to a term with top level functor of type X as a term of type X, \eg, \verb|poisson(6)| is a distribution term, and \verb|x<5| with random variable \verb|x| a Boolean query term. 
+In the following, we assume a fixed set of reserved functors.
+
+DC-PLP further uses two reserved, typed predicates:
+\begin{enumerate}
+    \item \verb|rv/2|, where the  first argument has to be a random variable term and the second argument has to be a distribution term, and a fact \verb|rv(x,d)| associates the random variable \verb|x| with the distribution term \verb|d|, thus also setting the type of \verb|x| to the output type of \verb|d|
+    \item \verb|holds/1|, where the argument has to be a Boolean query term, and the truth value of a ground atom \verb|holds(q)| is the result of evaluating query \verb|q|
+\end{enumerate}
+As in the non-probabilistic case of logic programming versus Prolog, we leave the introduction of the external arithmetic evaluation predicate \verb|is/2| to DC-ProbLog, but note that the \verb|holds/1| predicate has a similar role as external evaluation interface (which includes evaluating any arithmetic functors that are part of its argument). 
+
+
+A DC-PLP program $P=(D,R)$ consists of
+\begin{itemize}
+    \item a countable set $D=\{\mathtt{rv}(x_1,d_1),\mathtt{rv}(x_2,d_2),\ldots\}$ of ground well-typed \verb|rv/2| facts,  where the $x_i$ are all different 
+    \item a normal logic program $R$ where the heads of clauses cannot use reserved predicates, and any occurrence of reserved predicates in clause bodies is well-typed
+\end{itemize}
+
+Consider the following example DC-PLP program:
+\begin{example}[DC-PLP Program] \label{ex:dcproblog_program_without_dc_plpdc}
+	This example program models the correct working of a machine.
+	
+\begin{problog*}{linenos}
+rv(hot, flip(0.2)). 
+rv(cooling(1), flip(0.99)). 
+rv(temperature(hot), normal(27,5)).
+rv(temperature(not_hot),normal(20,5)).
+
+machine(1).
+works(N):- machine(N), test(cooling(N)=:=1).
+works(N):-
+	machine(N),
+	test(temperature(hot)<25.0),
+	test(hot=:=1). 
+works(N):-
+	machine(N),
+	test(temperature(not_hot)<25.0),
+	test(hot=:=0). 
+
+query(works(1)).
+\end{problog*}
+	We are now able to clearly identify the two components of a DC-PLP program. In the first part we see the random variables (representing independent choices). Here we also also included the probabilistic facts from the initial \dcproblogsty program. DC-PLP encodes probabilistic facts using the \probloginline{flip}\lstinline[columns=fixed]|/2| random function symbol, which returns either $1$ or $0$ with the probability given as the argument. The second block of code  contains the logic program.
+\end{example}
+\todo{be consistent on test vs holds}\ak{from a declarative / LP perspective, I prefer holds over test}
+
+Here, \verb|flip/1| and \verb|normal/2| are distribution functors, \verb|=:=/2| and \verb|</2| are Boolean query functors written in infix notation, \verb|hot/0|, \verb|cooling/1|, and \verb|temperature/1| are random variable functors, and we do not have  arithmetic and regular functors. \todo{change / expand example?} 
+
+\subsection{Validity}\label{sec:dcplpvalidity}
+For a DC-PLP program $P=(D,R)$, let $V=\{v_1,v_2,\ldots\}$  be the set of  random variable terms appearing as first arguments in the facts in $D$, 
+let $Q=\{q_1,q_2,\ldots\}$ be the set of all well-typed ground Boolean query terms  that can be built from the reserved vocabulary and $V$, and let $F=\{\mathtt{holds}(q_i)~|~q_i\in Q\}$ be the set of possible holds-atoms for these queries.
+
+Given a program $P$ with facts \verb|rv|$(v_p,d_p)$ and \verb|rv|$(v_c,d_c)$ in $D$, the random variable $v_p$  is a \emph{parent} of the random variable $v_c$ if and only if  $v_p$ appears in $d_c$. We define \emph{ancestor} to be the transitive closure of \emph{parent}.\todo{example}
+
+\begin{definition}\label{def:well-defd-facts}
+The set $D$ is \emph{well-defined} if and only if it satisfies the following criteria:
+\begin{enumerate}
+\item For each atom \verb|rv|$(v_i,d_i)$ in $D$, $d_i$ is a well-defined distribution term for all possible values of the parents. \todo{is well-typed sufficient for this? if so, drop this point}
+\item The ancestor relation is acyclic.
+\item Each $v_i\in V$ has a finite set of ancestors.
+\end{enumerate}  
+\end{definition}
+
+Let $\omega$ be an assignment that maps each random variable $v_i \in V$ to a possible value $\omega(v_i)$ from the associated distribution $d_i$. 
+Such an $\omega$ induces a unique truth value assignment $b_{\omega}$ for the Boolean queries in $Q$, \ie, $b_{\omega}(q_i)=1$ if $q_i$ is true after setting all random variables to their values under $\omega$, and $b_{\omega}(q_i)=0$ otherwise. 
+It further induces a unique truth value assignment $I_{\omega}$ to facts in $F$, \ie, $I_{\omega}(\mathtt{holds}(q_i))=b_{\omega}(q_i)$. We also write $F_{\omega}=\{\mathtt{holds}(q_i)~|~b_{\omega}(q_i)=1\}$, and refer to such a $F_{\omega}$ as a \emph{consistent fact database}. 
+
+
+
+A program is \emph{valid} if and only if it satisfies the following criteria:
+\begin{description}
+\item[(C1)] $D$ is well-defined. 
+\item[(C2)] All Boolean queries in $Q$ are Lebesgue-measurable.
+\item[(C3)] For each consistent fact database $F_{\omega}$, the logic program $F_{\omega}\cup R$ has a two-valued well-founded model.  
+\end{description}
+
+\subsection{Semantics}
+We follow the common practice of defining the semantics with respect to ground programs; the semantics of a program with non-ground $R$ is defined as the semantics of its grounding with respect to the  Herbrand universe.
+
+Let $P$ be a valid DC-PLP program as defined above.
+
+If $D$ is empty, \ie, $P$ does not define any random variables,  the semantics of $P$ is the well-founded model of $R$. Thus, normal logic programs are a special case of DC-PLP.\footnote{Note that in the absence of random variables, all well-typed Boolean queries, and thus all holds-atoms, have deterministic truth values.} In the following, we assume that $D$ is not empty. 
+
+Our definition of the semantics closely follows Sato's distribution semantics, \ie, we also establish a probability measure over interpretations of a countable set of facts $F$ (the \verb|holds/1|-atoms), and extend this to one over Herbrand interpretations. The key differences are that (1) our measure over facts is in itself induced by a measure over value assignments to the random random variables and (2) we use normal logic programs with the well-founded model as canonical model instead of definite clause programs.
+
+
+\subsubsection{Probability measure over random variables}
+The (non-empty) set of facts $D$ introduces a  countable set of random variables $V=\{v_1,v_2,\ldots\}$, each associated with a distribution $d_i$.  Condition C1 ensures that these distributions are well-defined for every combination of parent values. It further ensures finite numbers of ancestors per random variable and an acyclic ancestor relation. As shown by  \citeauthor{kersting2000bayesian} \cite[Theorem 4.9]{kersting2000bayesian}, under these conditions, there exists a unique probability measure $P_V$ over the space of possible assignments to $V$ that for every finite set of random variables $V'\subseteq V$ closed under the ancestor relation factors into the distributions of the random variables in $V'$.
+
+\subsubsection{Probability measure over (consistent) fact databases}
+We now show that the probability measure $P_V$ over assignments to the random variables uniquely induces a probability measure $P_F$ over truth value assignments to the facts $F$; this is the \emph{basic distribution} in the distribution semantics.
+
+We fix an arbitrary enumeration  $A_1=\mathtt{holds}(q_1),A_2=\mathtt{holds}(q_2),...$ of the atoms in $F$. 
+Each $A_i$ \emph{depends} on a finite set $V_i$ of random variables, namely  those mentioned in $q_i$ as well as all their ancestors. We write $V_{\leq n}=\bigcup_{1\leq j\leq n}V_j $ for the union of random variables the first $n$ atoms in the enumeration depend on, and $P_{V_{\leq n}}$ for $P_V$ restricted to this set.  
+
+By condition C2, all queries $q_i$ are  Lebesgue-measurable, and we thus get a family of distributions 
+$$P_F^{(n)}(A_1=x_1,\ldots,A_n=x_n) = \int_{\Omega(V_{\leq n})} \mathbf{1}_{[q_1=x_1\wedge\ldots\wedge q_n=x_n]}(\omega)dP_{V_{\leq n}}(\omega) $$ where the $x_i$ are $0$ or $1$, $P_{V_{\leq n}}$ factorizes over the random variables in $V_{\leq n}$ as discussed above, $\Omega(V_{\leq n})$ denotes the space of possible assignments for variables in $V_{\leq n}$, and $\mathbf{1}_{[\varphi]}$ is the indicator function, \ie, equals $1$ if $\varphi$ is true and $0$ otherwise. The definition in terms of an indicator function and the measurability of the underlying Boolean queries ensures that this family of distributions is of the form required for the distribution semantics, \ie, they are well-defined probability distributions satisfying the compatibility condition. There thus exists a completely additive probability measure $P_F$ over the space of truth value assignments to $F$ such that for any $n$, we have
+$$P_F(A_1=x_1,\ldots,A_n=x_n) =P_F^{(n)}(A_1=x_1,\ldots,A_n=x_n)$$
+We note that by construction, this measure assigns mass to consistent fact databases only. 
+
+\subsubsection{Probability measure over Herbrand interpretations}
+In the last step, we follow Sato's construction to obtain a probability measure $P_P$ over Herbrand interpretations from $P_F$. To do so, we fix an enumeration $A_1,A_2,\ldots$ of all atoms in the Herbrand base, which includes those in $F$. 
+Condition C3 ensures that for every consistent fact database $F_{\omega}$, the logic program $F_{\omega}\cup R$ has a total well-founded model $M_{\omega}$, and we can thus define   
+$$P_P^{(n)}(A_1=x_1,\ldots,A_n=x_n) = P_F(\{F_{\omega}~|~ M_{\omega}\models A_1^{x_1}\wedge\ldots\wedge A_n^{x_n}\})$$ where $A^1=A$ and $A^0=\neg A$, and it again follows that there is a completely additive probability measure $P_P$ over Herbrand interpretations, which completes the definition of the semantics. 

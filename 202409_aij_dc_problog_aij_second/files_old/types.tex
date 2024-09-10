@@ -1,0 +1,106 @@
+\section{System Predicates and Arithmetic Evaluations}
+
+
+
+Every Prolog implementation reserves some predicate names for
+system-related procedures. Queries to these predicates, called system
+predicates, are handled by special code in the implementation in contrast
+to calls to predicates denned by pure Prolog programs. 
+
+
+builtin predicates
+
+
+
+The role of the system predicates for arithmetic introduced in Prolog is
+to provide an interface to the underlying arithmetic capabilities of the
+computer in a straightforward way. The price paid for this efficiency is
+that some of the machine-oriented arithmetic operations are not as gen-
+general as their logical counterparts. The interface provided is an arithmetic
+evaluator, which uses the underlying arithmetic facilities of the com-
+computer. 
+
+
+\subsubsection{Arithmetic Evaluation}
+\todo{write a paragraph introducing the use of is/2 and define its semantics}
+
+\ak{for the cases where the lhs of is/2 ends up in a comparison atom (such as Example \ref{ex:is}), it should be enough to replace is/2 by unification and thereby delay evaluation until the comparison is externally evaluated, but if we also have "regular" uses of is/2, where the (deterministic?) result is \eg returned as an answer, then things get a bit more complex; as I don't know what uses are intended (and valid), this is for someone else to draft... (or it might be that this is really an engine rather than a language thing, in which case it should only be discussed later with the general multiple dispatch stuff)}
+
+
+
+\ak{this sec is for Pedro to fix / integrate -- I think a lot of the Prolog type system discussion is not needed for the purpose of this paper; note that the old tex file is still there if needed again}
+
+\dcproblogsty's type system refines the one of DC-PLP to instantiate a conrete version of the abstract language.  Specifically, we have the following refinements:
+\begin{enumerate}
+    \item distribution functors are further partitioned into \emph{discrete distribution functors}. \emph{continuous distribution functors} and \emph{mixture distribution functors}
+    \item arithmetic functors are further partitioned into \emph{operation functors} and \emph{number functors}, with the latter in turn partitioned into \emph{integers} and \emph{floats} \todo{do we have / want a complete list of operations? should we at least give some examples?}
+    \item we use Boolean query functors 	$\bowtie=\{ \text{\probloginline{=:=}}, \text{\probloginline{=\=}}, \text{\probloginline{<}}, \text{\probloginline{>}},  \text{\probloginline{=<}}, \text{\probloginline{>=}} \}$
+	in infix notation (and lift them to predicate level as discussed before)
+\end{enumerate}
+
+\ak{I don't think we need to sub-type random variable functors here, as rv terms inherit the \emph{output} type of the distribution only, which should be integer, float etc, not "discrete distribution"}
+
+\probloginline{poisson(6)} and \probloginline{normal(20,5)} are for instance of types \type{DiscreteD} and  \type{ContinuousD}, respectively.
+Note that distributions of type \type{ContinuousD} denote {\em absolutely continuous} probability distributions\footnote{\dcproblogsty does not support {\em singular continuous} probability distributions such as the Cantor distribution.}. \ak{would be nice to have a hint on why this restriction is there} We give an example of a distribution of type \type{MixtureD} in Example~\ref{ex:indian_gpa_function}.
+
+\subsection{Multiple Dispatch} \label{ref:multiple_dispatch}
+The attentive reader might have noticed that in Definition~\ref{def:comparison} we used the same comparison predicates, for \type{RandomVariable} terms as well as \type{Number} terms. In \dcproblogsty we resolve this clash through {\em multiple dispatching}\citep{castagna1995calculus}.
+{ Multiple dispatching} is the process of dynamically selecting at run time\footnote{In the context of logic programming we understand as run time the time it takes to ground the logic program part of a \dcproblogsty program.} a specific implementation of a function based on the types of the arguments that are fed as input to the corresponding function symbol.
+Such functions are referred to as {\em multimethods}. 
+An early example of multiple dispatch is the {\em Common Lisp Object System}~\citep{keene1989object}. Multiple dispatch is also the programming paradigm on which the \juliasty programming language is built~\citep{bezanson2017julia}. We reuse this idea in the context of probabilistic logic programming with random function symbols to retain a simple and neat syntax.
+Consider, for instance, the declaration of the normal distribution in Example~\ref{example:dcproblog_machine}.
+The definition of the function is the following:
+$$ \text{\probloginline{normal}}: \type{Number} \times \type{Number} \rightarrow \type{ContinuousD}$$
+However, the arguments of a normal distribution (its mean and standard deviation) might as well be random variables themselves.
+Multiple dispatching then allows us to {\em overload} the \probloginline{normal} function symbol by using arguments of a different type\footnote{For simplicity we omit that the standard deviation has to be a strictly positive (real) number, which can be enforced by extending the type system.}:
+\begin{align*}
+	\text{\probloginline{normal}}&: \type{RandomVariable} \times \type{Number} \rightarrow \type{ContinuousD} \\
+	\text{\probloginline{normal}}&: \type{Number} \times \type{RandomVariable} \rightarrow \type{ContinuousD} \\
+	\text{\probloginline{normal}}&: \type{RandomVariable} \times \type{RandomVariable} \rightarrow \type{ContinuousD}
+\end{align*}
+The exact implementation of these random function symbols is left to the designer of the implementation of the language.
+%In the next Subsection~\ref{sec:arithmetic} we will encounter further usages of multiple dispatching in \dcproblogsty.
+
+
+
+
+\subsection{Arithmetic Evaluation}\label{sec:arithmetic}
+
+\ak{Sec 6.1.4: you say the correct functor is determined during grounding, but doesn't grounding (at least to some extend) depend on the type of inference? \eg, if we ground during sampling, I'd expect the second line of ex 6.4 to ground the X to different numbers in different samples / runs, whereas exact inference techniques (including techniques to find the relevant ground program of a query) would probably ground to something symbolic? Theoretically speaking, grounding usually refers to grounding wrt the Herbrand universe, \ie, all the symbols in the program (plus in the case of arithmetic the countably many outcomes of arithmetic evaluations), but continuous distributions are extending that potential universe into the uncountable, so we need to be careful (and I need to think about this again for the journal version...)}
+
+\prologsty implementations reserve a set of predicate names for system-related procedures. These system predicates are usually deployed when the goal is to perform efficient arithmetic operations on numbers, either by using specialized algortihms or specialized hardware. For example, when a user wants to add up the integers \probloginline{3} and \probloginline{5} they simply write \probloginline{Sum is 3+5}. The predicate \probloginline{is}\lstinline[columns=fixed]|/2| takes the second argument, passes it to an external evaluation engine, which performs integer addition, and unifies the result with the logical variable \probloginline{Sum}. It is rather obvious that the concept of multiple dispatch comes in handy here: the same functors can be used to perform the same operations on terms of different types. The correct functor is only dertermined during the grounding of the logic program, \ie during runtime.
+
+The key difference between the external arithmetic engine of \prologsty (or \problogsty) and the external arithmetic engine of \dcproblogsty is that the external engine of the latter is capable of performing arithmetic operations (perform evaluations) with random variables. Combining this innovation with multiple dispatch allows us to retain the same syntax (same functor) to perform arithmetic operations on \type{RandomVariable} terms and/or \type{Number} terms.
+
+
+\begin{example}\label{ex:is} A \dcproblogsty code snippet showing how random variable terms can be used in an arithmetic expression. 
+	\begin{problog*}{linenos}
+x ~ normal(0,3).
+q:- X is x+3, X>3.
+query(q).
+	\end{problog*}
+\end{example}
+
+Multiple dispatch allows \dcproblogsty to call specific implementations of the comparison predicates in the external arithmetic engine.
+In other words, multiple dispatch allows for using the same predicate for semantically different terms.
+Comparing two terms of type \type{Number}, for example, materializes as a deterministic fact, whereas a comparison between terms of types \type{Number} and \type{RandomVariable} materializes as a probabilistic query. We will see how this extremely useful mechanism works in the next Section~\ref{sec:semantics}, where we also introduce the semantics of \dcproblogsty.
+
+
+
+
+\subsection{Relationship of Multiple Dispatch to Typing in \prologsty}
+
+Traditionally \prologsty is {\em weakly typed}. This means that only at run time (grounding time) it is checked whether a relation with certain arguments is present in the logic database, which is a set of ground relations. If the relation is not present, \prologsty implementations do usually not throw an error but the proof of the goal that is currently proven fails. For builtin predicates such as \probloginline{is}\lstinline[columns=fixed]|/2| or any comparison predicates, the run time type system is more strict and the \prologsty implementation might actually throw an error. For instance, the presence of the relation \probloginline{three=:=3} in a proof would throw an error.
+Such typed arithmetic relations can be thought of as {\em multirelations}, which have a different interpretations based on their type at run time. In other words, they are the logic programming equivalent to multimethods: their interpretation depends on their predicate and the types of their arguments. 
+
+In \dcproblogsty we extend this idea of multirelations using the framework of multiple dispatch. The major difference being that the typed relations in \dcproblogsty are not only used to select the right computation in the external arithmetic engine (\eg floating point addition vs. integer addition) but the multirelations in \dcproblogsty can also affect the structure of the probabilistic program. We will encounter examples thereof in Section~\ref{sec:dcproblog}, where we rewrite a \dcproblogsty program as a DC-PLP program and where we have rewrite rules that do not only depend on the predicate of a relation but also on the types of the relation's arguments.
+
+Note that in \dcproblogsty not only the builtin comparison predicates and the \probloginline{is}\lstinline[columns=fixed]|/2| have a typed signature but also the random function symbols, \eg \probloginline{normal/2}. We can say that interpreted predicated and functors, that is predicates and functors that have a system internal meaning, possess a type signature. This results in a type dependent calculus.
+
+
+
+
+\subsubsection*{Strongly Typed \prologsty}
+\ak{move to related work?}
+
+While \prologsty is traditionally not strongly/statically typed, there have been efforts to extend \prologsty with such a type system. The most interesting effort is probably the one presented in~\citet{Schrijvers2008TowardsTP}, where the authors develop the idea of partially typing a \prologsty program, \ie typing is optional and untyped code is interpreted instead of compiled.  Our efforts to utilize multiple dispatch within a (probabilistic) logic programming language can be understood as an effort orthogonal to the efforts towards statically typed \prologsty. Introducing predicates with strongly typed signatures can also be regarded as adding interpreted predicates to the internal \prologsty engine. 

@@ -1,0 +1,43 @@
+\section{Motivating examples}
+\dcproblogsty is a probabilistic logic programming language derived from two related but separate probabilistic logic programming languages,  \problogsty and Distributional Clauses (DC).
+It inherits its Prolog syntax and the concept of probabilistic facts from \problogsty, and combines this with the ideas to define and query continuous random variables in DC, using DC's infix 
+\probloginline{~}\lstinline[columns=fixed]|/2| predicate to define  {\em distributional facts}. Distributional facts allow a user to express random variables that are distributed according to a certain probability distribution specified by a random function symbol.
+
+In the following example, the distributional fact in line 3 introduces the random variable \verb|temperature| and associates it with the distribution term \verb|normal(20,5)|. This random variable is then queried in the clause in line 8 using comparison predicate \verb|</2|, again written in infix notation. 
+\begin{example}\label{example:dcproblog_machine}
+	In this example we model the temperature as a continuous random variable distributed according to a normal distribution with mean $20$ and standard deviation $5$ (Line \ref{program:dcproblog_machines_temp}).
+	\begin{problog*}{linenos}
+machine(1). machine(2).
+
+temperature ~ normal(20,5). @\label{program:dcproblog_machines_temp}@
+0.99::cooling(1).
+0.95::cooling(2).
+
+works(N):- machine(N), cooling(N).
+works(N):- machine(N), temperature<25.0. @\label{program:dcproblog_machines_work_temp}@
+
+evidence(works(2)).  @\label{program:dcproblog_machines_evidence}@
+query(works(1)).
+	\end{problog*}
+\end{example}
+
+
+Distributional facts are not limited to describe continuous random variables but can, for example, also model discrete probability distributions, of which an example would be the Poisson distribution.
+\begin{example}\label{example:dcproblog_poisson_population}
+	In this example we show how to model the size of a group of people as a Poisson distribution and answer queries about the size of the group using the comparison predicates  \probloginline{>}\lstinline[columns=fixed]{/2} and \probloginline{=:=}\lstinline[{columns=fixed}]{/2}.
+	\begin{problog*}{linenos}
+n_people ~ poisson(6).
+
+more_than_five:- n_people>5@.@
+exactly_five:- n_people=:=5@.@
+
+query(more_than_five).
+query(exactly_five).
+	\end{problog*}
+	
+\end{example}
+
+We will formally introduce \dcproblogsty in Section~\ref{}. To introduce the semantics, in the next Section, we start by introducing DC-PLP, an abstract version of the language that omits syntactic sugar. 
+
+
+

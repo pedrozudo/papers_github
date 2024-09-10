@@ -1,0 +1,206 @@
+
+\section{Computing Probabilities}\label{sec:inference}
+
+
+In the previous section we saw how to implement \dcproblogsty using components of the existing \problogsys system. More specifically, we delineated how the first two program transformations in the \dcproblogsys implementation (grounding and cycle breaking) relate to analogous steps in \problogsys.
+In order to calculate probabilities, we will now show how the compilation and evaluation steps from \problogsys can be adapted in such a way that they can accommodate continuous random variables as well.
+
+
+
+\subsection{Conditional Queries}
+
+\ak{this section is semantics; at least the conceptual parts discussing different types of observations etc should probably move to sec \ref{sec:inference-tasks}}
+
+
+
+For \dcproblogsty programs that include evidence on logic atoms the probability is simply obtained by computing two weighted model integrals, one for the evidence $\support_e$ and one for the conjunction of the evidence with the query $\support_e \land \support_q$:
+\begin{equation}
+	p(\support_q|\support_e)=\frac{p(\support_q,\support_e)}{p(\support_e)}=\frac{\wmi(\support_q \land \support_e,w_{qe})}{\wmi(\support_e,w_e)}
+\end{equation}
+
+
+As the probability of a random variable with uncountably many outcomes taking a specific value is zero, conditioning with \probloginline{observation/2} is slightly more complicated. Consider the program in Example~\ref{example:dcproblog:observation}. The probability of the the conditioning set is zero:
+\begin{equation}
+	p(\text{\probloginline{observation(size,4/10))}}=p(\text{\probloginline{size}=4/10})=0
+\end{equation}
+Were we to apply the same approach as for conditional queries with \probloginline{evidence}, we would obtain a division by zero and consequently an undefined conditional probability. 
+This problem is related to the Borel-Kolomogorov paradox~\citep{kolmogorov1950foundations,gyenis2017conditioning}, which is again caused by a zero-division.
+
+We will, analogously to \citet{nitti2016probabilistic},   follow~\citet{kadane2011principles} to resolve the division by zero issue.
+We make the explicit distinction between the probability $P$ and the probability density function $p:\frac{d}{dx}P(X \leq x)=p(x)$. The conditional probability is defined as:
+\begin{align}
+	P(\support_q| \support_e)
+	&=P(\support_q|rv=v) & (\support_e \leftrightarrow rv=v )\\
+	&=\lim_{\Delta v\rightarrow 0} \frac{P(\support_q,rv \in [v-\nicefrac{\Delta v}{2},v+\nicefrac{\Delta v}{2}])}{ P(rv \in [v-\nicefrac{\Delta v}{2},v+\nicefrac{\Delta v}{2}])} \label{equ:borel_limit} \\
+	&=\lim_{\Delta v\rightarrow 0} \frac{\int \ive{ \support_q(x,rv=v)} p(x,rv=v)dx \cancel{\Delta v}}{p(rv=v)\cancel{\Delta v}} \\
+	&=\frac{\int \ive{ \support_q(x, rv=v)} p(x,rv=v)dx}{p(rv=v)}
+\end{align}
+This means that we do not divide anymore by zero but by the number obtained when evaluating the probability distribution at the observed point. For example, when evaluating \probloginline{beta(2,3)} (cf. Example~\ref{example:dcproblog:observation}, Line~\ref{example:dcproblog:observation:beta23}) at $4/10$  we get $1.7280$ instead of zero.
+% Note that this is not a probability between zero and one.
+
+In order to guarantee that the limit in Equation~\ref{equ:borel_limit} exists, we need to restrict the type signature of the \probloginline{observation} predicate. The  first argument is a {\em named} random variable and the second argument a number, cf. Example~\ref{example:dcproblog:observation}.
+Relaxing this restriction might lead to the non-existence of the limit. Exactly this situation gives rise to the Borel-Kolmogorov paradox emerges. 
+
+Nevertheless, some languages lift this restriction, which results in possibly semantically ill-defined programs, such as in Distributional Clauses~\citep[Section 3.2]{nitti2016probabilistic}. A more sophisticated method to tackle the non-uniqueness of the conditional probability is {\em disintegration}~\citep{shan2017exact}, where, instead of returning a conditional probability, a family of conditional probabilities is returned (representing an uncountable number of limits). Other languages, such as BLOG, simply assume the existence of the limit~\citep{wu2018discrete}.
+
+The type signature we impose on the \probloginline{observation/2} predicate might seem too restrictive for the purpose of probabilistic programming. Take for example the following conditional probability~\citep{nitti2016probabilistic}:
+\begin{align}
+	P(nationality| height {=} 160 \lor height {=} 180) \label{eqn:disj_conditioning}
+\end{align}
+This probability cannot be expressed using the \probloginline{observation/2} predicate. However, if we think about what a conditioning set represents in the context of probabilistic programming and machine learning, the example above appears quite odd. The conditioning set tells us which observations we have made about the world, \ie data that we collected using a physical device (\eg tape measure for the height of a person). The example in Equation~\ref{eqn:disj_conditioning} now tells us that our measuring device returned two numbers for a single measurement, which means that the measuring protocol is underspecified.
+
+We just stated that a measurement consists of retrieving a number from a measuring device. This is not entirely correct. In the natural sciences a measurement consists always of a number and an upper and lower error bound, which effectively eliminates the problem of zero probability events. However, given the ubiquity of single point measurement, we feel that a probabilistic programming language that is not able to handle single point measurements is greatly hurt in its expressivity.
+
+To conclude, in \dcproblogsty,  the \probloginline{observation/2} predicate allows a user to condition on zero probability events, while at the same time the imposed restrictions ensure that the encoded probability distribution is well defined.
+
+
+\ak{conditional probabilities: just wondering: is it possible to condition on tests, \eg, observing that someone's height is at most 180? related to that, in (17), what if someone with bad handwriting measured the height and recorded it on a piece of paper, and I can't tell whether it is 160 or 180? :) }
+\pedro{in this case the measuremnt is the pixels and you would have yes/no for each pixel}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%
+
+
+\subsection{Compiling SMT formulas}
+
+State-of-the art methods that perform probabilistic inference with discrete random variables, divide inference into a computationally expensive step, which is followed by a computationally cheap one. The first step, which is also called knowledge compilation~\citep{darwiche2002knowledge}, takes a propositional logic formula and compiles it into a decision diagram (DD). The most prominent representatives of DDs are arguably {\em binary decisions diagrams}~\citep{bryant1986graph}. The advantage of compiling Boolean structures to decision diagrams is that probabilistic inference (the second step), \ie computing the weighted model count, becomes computationally tractable~\citep{chavira2008probabilistic}.
+
+This idea of compiling logic formulas, in order to perform probabilistic inference, has also been mapped to (quantifier free) SMT formulas~\citep{kolb2018efficient,zuidbergdosmartires2019exact} and
+has led to state-of-the art algorithms to perform inference in hybrid domains~\citep{derkinderen2020ordering}.
+
+There are, however, two important differences between probabilistic inference via knowledge compilation using propositional logic formulas and SMT formulas. First, the possible target languages for the compilation step differ. We can use BDDs, d-DNNFs~\citep{darwiche2004ddnnf}, or SDD~\citep{darwiche2011sdd} for propositional logic but we need to resort to {\em  extended decision diagrams} (XDD) for SMT formulas~\citep{sanner2011symbolic,zuidbergdosmartires2019exact,kolb2019exploit}.
+
+A second and more fundamental difference is the computational hardness of performing probabilistic inference in DDs vs. XDDs: computing the weighted model count on a DD can be done in polytime but computing the weighted model integral on an XDD is in general \#P-hard.
+
+
+\subsection{Algebraic Likelihood Weighting}
+
+Performing probabilistic inference with Boolean random variables boils down to performing computations in the so-called probability semiring. \citet{kimmig2017algebraic} formulated a generalization of probabilistic inference on Boolean formulas by using arbitrary semirings, which they dubbed algebraic model counting. 
+\citet{zuidbergdosmartires2019exact} picked up this idea and also formulated probabilistic inference in the discrete-continuous domain (using SMT formulas) as a semiring computation by reformulating weighted model integration as an algebraic model counting problem. The advantage of this approach is that by simplifying an algberaic structure that adheres to the properties already proves the correctness of the inference algorithm. 
+
+
+
+
+
+
+% Probabilistic programming languages that successfully handle mixtures of discrete and continuous random variables, including conditioning with zero probability events deploy either purely symbolic inference algorithms~\citep{gehr2016psi,shan2017exact} or extend the likelihood weighting~\citep{fung1989weighing} algorithm leading to a hybrid symbolic-approximate inference algorithm~\citep{nitti2016probabilistic,wu2018discrete}.
+
+In this section we frame the {\em lexicographic likelihood weighting} (LLW) algorithm~\citep{wu2018discrete} in an algebraic model counting context, which we dub algebraic likelihood weighting (\ialw). LLW is based on ideas presented in~\citep{nitti2016probabilistic} and combines sampling based probabilistic inference with symbolic inference to correctly handle mixtures of discrete and continuous random variables. The advantage of framing LLW  as an algebraic model counting problem is that the resulting algorithm becomes agnostic of the underlying inference mechanism (\eg Monte Carlo sampling, or symbolic integration). Moreover, we can simply reuse algorithms already developed in the WMI literature in order to perform inference in \dcproblogsty.
+
+Following \citet{kimmig2017algebraic}, we first define a labelling function, which maps atomic SMT formulas to elements of a semiring, and continue by defining the semiring operations.
+
+\begin{definition}[\ialw labeling function]
+	\label{def:label_alpha_alw}
+	Let be an atomic SMT formula. Then the label of the atomic formula $l$ is given by:
+	\begin{align*}
+		\alpha_{\ialw}(l) \coloneqq 
+		\begin{cases}
+% 			(p(l), 0)& \text{if $l$ is a Boolean variable} \\
+			(p(x{=}v),1) & \text{if $l$ encodes \probloginline{observation(x,v)}, \ie $l\leftrightarrow (x{=}v)$} \\
+			(\ive{l},0) & \text{otherwise} 
+		\end{cases}
+	\end{align*}
+    In the first case $p(x{=}v)$ denotes the value of the probability distribution of the random variable $x$ evaluated at $v$.
+	The label of a negated atomic SMT formula $ \neg l$ is given by:
+	\begin{align*}
+		\alpha_{\ialw}(\neg l) \coloneqq 
+		\begin{cases}
+% 			(1-p(l),0)& \text{if $l$ is a Boolean variable} \\
+			(1,0) & \text{if $l$ encodes \probloginline{observation(x,v)}}\\
+			(\ive{\neg l},0) & \text{otherwise} 
+		\end{cases}
+	\end{align*}
+\end{definition}
+
+\begin{example}[ALW labeling function]
+
+\end{example}
+
+
+\begin{definition}[\ialw semiring]
+	The elements of the semiring $\mathcal{S}_{\ialw}$ are given by the set
+	\begin{equation}\label{eqn:set_aws}
+		\mathcal{A}_{\ialw}\coloneqq \left \{ (a, d) \right \}
+	\end{equation}
+	where $a$ denotes a real-valued weight (produce by the labeling function) and $d$ the number of probability densities (continuous probability distribution) that have contributed to $a$. The neutral elements $e^\oplus$ and $e^\otimes$ are defined as:
+	\begin{align}
+		e_{\ialw}^\oplus  \coloneqq (0,0)  &&
+		e_{\ialw}^\otimes  \coloneqq (1,0)
+	\end{align}
+	For the addition and multiplication we define:
+	\begin{align}
+		(a_1,d_1) \oplus
+		(a_2,d_2)
+		&\coloneqq
+		\begin{cases}
+			(a_1+a_2,d_1) &\quad  \text{if $d_1=d_2$} \\
+			(a_1,d_1) &\quad  \text{if $d_1<d_2$} \\
+			(a_2,d_2) &\quad  \text{if $d_1>d_2$}
+		\end{cases} \\
+		(a_1,d_1) \otimes
+		(a_2,d_2)
+		&\coloneqq (a_1 \times a_2 , d_1+d_2)  &
+	\end{align}
+\end{definition}
+
+\citet{zuidbergdosmartires2019exact} have shown that the weighted model integral is correctly computed on compiled logic structures that respect determinism (e.g XSDD, XADD), if the properties of a commutative semiring are respected and if the labeling function and the addition of the semiring form a neutral pair.
+
+\begin{lemma} The structure $\mathcal{S}_{\ialw}=({\cal A}_{\ialw}, \oplus, \otimes, e^\oplus,e^\otimes)$ is a commutative semiring.
+\end{lemma}	
+
+\begin{lemma} The pair  $(\oplus, \alpha_{\ialw})$ is neutral ($\alpha_{\ialw}(l)\oplus \alpha_{\ialw}(\neg l) = e_{\ialw}^{\otimes}$).
+\end{lemma}
+
+Performing a computation on a compiled SMT formula using the \ialw semiring gives a tuple of tuple of two elements, which we denote by 
+$$\ialw(\support,\weight)=\Big( \ialw_1(\support, w), \ialw_2(\support, w) \Big)$$
+We can now express probabilities of a conditional queries in terms of algebraic likelihood weights. 
+\begin{align}
+    p(\support_q|\support_e) &=
+    \begin{dcases}
+        \frac{\E[\ialw_1(\support_q \land \support_e, {\weight_{q,e}})]}{\E[\ialw_1(\support_e, \weight_e)]} & \text{if $\ialw_2(\support_q {\land} \support_e, \weight_{q,e})\geq \ialw_2(\support_e, \weight_e)$}\\
+        0 & \text{else}
+    \end{dcases} \\
+     &=\begin{dcases}
+        \frac{\wmi(\support_q \land \support_e, {\weight_{q,e}})]}{\wmi(\support_e, \weight_e)]} & \text{if $\ialw_2(\support_q {\land} \support_e, \weight_{q,e})\geq \ialw_2(\support_e, \weight_e)$}\\
+        0 & \text{else}
+    \end{dcases} 
+\end{align}
+$\E(\ialw_1(\cdot, \cdot))$ denotes the expected value of the first element of tuple obtained by the algebraic likelihood computation and is equal to the weighted model integral over the same SMT formula.
+
+\begin{example}[ALW on a circuit]
+
+\end{example}
+
+
+\subsection{What about \problogsty's External Engine?}
+
+
+Syntactically, the \dcplpsty assembler language does not make a difference between Boolean random variables (\probloginline{flip}\lstinline[columns=fixed]{/2}) and other random variables (\eg \probloginline{normal}\lstinline[columns=fixed]{/2}).
+Furthermore, \dcplpsty is constituted of a logic program (deterministic system) and random variables (independent choices).
+This indicates that implementations of probabilistic logic programming languages with and without continuous random variables should not be too different from each other.
+After all, a probabilistic logic programming language with continuous random variables simply adds additional probability distributions besides the \probloginline{flip} distribution.  
+
+
+% Assume now that the algebraic model count of $\support_q \land \support_e$ and $\support_e$ evaluate respectively to:
+% \begin{align}
+% 	\AMC(\support_{q}\land \support_e , \alpha_{\ialw})&= (\amc_{qe}, d_{qe}) \label{eqn:amc_alw_qe} \\
+% 	\AMC(\support_e , \alpha_{\ialw})&= (\amc_{e}, d_{e}) \label{eqn:amc_alw_e}
+% \end{align}
+
+% The conditional probability is then given by:
+% \begin{align}
+% 	p(\support_{q} | \support_e) =
+% 	\begin{cases}
+% 		\frac{\wmi(\support_q \land \support_e, \weight_{qe})}{\wmi(\support_e, \weight_{e})} & \text{if $d_{qe}=d_e$} \\
+% 		0  & \text{if $d_{qe}>d_e$} 
+% 	\end{cases} \label{eqn:conditional_wmi}
+% \end{align}
+
+% Note, in Equations~\ref{eqn:amc_alw_qe} to~\ref{eqn:conditional_wmi} we have omitted the dependence of the algebraic model counts and the weighted model integration on the Boolean and/or real variables.
+
+
+
+% \todo{talk about difference BLOG and DC to ALW, make difference on algorithmic level}
+% DC~\citep{nitti2016probabilistic} and BLOG~\citep{wu2018discrete} do return the correct probabilities as well, however, the advantage of using Sampo in conjunction with ALW gives515the correct result without drawing any samples.

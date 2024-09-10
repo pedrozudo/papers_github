@@ -1,0 +1,53 @@
+
+\section{Weighted Model Integration}
+\label{app:wmi}
+
+Standard weighted model counting only supports discrete probability distributions. To repair this omission, WMC has recently been extended towards weighted model integration (WMI)~\citep{belle2015probabilistic}, supporting additionally continuous variables. Contrary to WMC, which is formulated using weighted propositional logic formulas, WMI uses so-called {\em weighted  satisfiability modulo theory} (SMT) formulas. We refer the reader to~\citep{barrett2009handbook} for a treatise on (unweighted) SMT formulas.
+
+\begin{example}\label{example:wmi_intro}
+    Consider the theory $\mathtt{broken}$
+	\begin{align}
+	\textstyle{\texttt{broken} \leftrightarrow ( \texttt{no\_cool} \land (\texttt{t}> 20) )  \lor (\texttt{t}> 30)} \label{eqn:broken}
+	\end{align}
+	where \texttt{no\_cool} is a Boolean variable and \texttt{t} a real-valued variable.
+    Let us assume that \texttt{t} is distributed  according to $\texttt{t} \sim \mathcal{N}_\texttt{t}(20,5)$ and that the probability for $\texttt{no\_cool}$ being true is $0.01$. Determining the probability of the formula being true/satisfied is the weighted model integration problem.
+\end{example}
+
+
+We see in Example~\ref{example:wmi_intro} that SMT formulas generalize traditional propositional logic formulas by additionally allowing the use of expressions formulated in a background theory. More formally, following \cite{zuidbergdosmartires2019exact}:
+
+\begin{definition}[SMT($\mathcal{RA}$) (real arithmetics)] \label{def:smtra}
+	Let $\bvars$ be a set of $M$ Boolean and $\xvars$ a set of $N$ real variables.
+	An {\bf atomic formula} is an expression of the form $g(X) \bowtie c$, where $c \in \mathbb{Q}$, $\bowtie \in \{ =,\neq, \geq,\leq,>,< \}$, and  $g:\mathbb{R}^{N} \rightarrow \mathbb{R}$. The symbols $\mathbb{Q}$  and $\mathbb{R}$ denote the rational number and real numbers, respectively. 
+	We then define SMT($\mathcal{RA}$) formulas as Boolean combinations (by means of the standard Boolean operators $\{\neg, \land, \lor, \rightarrow, \leftrightarrow \}$) of {\bf Boolean variables} $b_i \in \bvars$ and of {\bf atomic formulas} over $\xvars$.
+
+	We distinguish two special cases:
+	\begin{itemize}
+		\item SMT($\mathcal{NRA}$) (non-linear real arithmetics): atomic formulas take the form $\sum_i c_i \cdot x_i^{p_i}\bowtie c$, where the $x_i \in \xvars$ and $c_i,c, p_i \in \mathbb{Q}$.  
+		\item SMT($\mathcal{LRA}$) (linear real arithmetics): atomic formulas take the form $\sum_i c_i \cdot x_i \bowtie c$, where the $x_i \in \xvars$ and $c_i,c \in \mathbb{Q}$.
+	\end{itemize}
+\end{definition}
+
+We define weighted model integration in terms of an indicator function over an SMT formula, cf.~\citep{kolb2019exploit}.
+\begin{definition}[{\bf WMI}]\label{def:wmi}
+Given a set $\bvars$ of $M$ Boolean variables,  $\xvars$ of $N$ real variables, a weight function $\pweight:
+\mathbb{B}^M {\times} \mathbb{R}^N {\rightarrow} \mathbb{R}_{\geq 0}$, and a support $\support$, in the form of an SMT formula, over $\bvars$ and  $\xvars$, the weighted model integral is given by:
+\begin{align}
+  \wmi(\support, \pweight {\mid} \xvars, \bvars) = \sum_{\bvars} \int \ive{\support(\xvars, \bvars)} \pweight({\xvars},{\bvars}) d{\xvars} \label{eqn:def_wmi}
+\end{align}
+where we use the Iverson bracket notation in $\ive{\support(\xvars, \bvars)}$ to denote the indicator function of $\support(\xvars, \bvars)$. If the set of real variables $\xvars$ is empty the WMI task reduces to WMC (cf.~\ref{app:amc}).
+\end{definition}
+
+\citet{kolb2019exploit} further manipulate the expression in Equation~\ref{eqn:def_wmi} in order to
+% get rid of the Boolean dependencies in the weights function $\pweight$ and to 
+transform the $\lor$-$\land$ structure present in $\ive{\support(\xvars, \bvars)}$ into a simple conjunction of SMT atoms.
+\begin{align}
+\wmi(\support, \pweight {\mid} \xvars, \bvars)&=\sum_{\wsupport_i \in \wtuples} \sum_{\bvars} \int \llbracket  \wsupport_i  (\xvars, \bvars) \rrbracket \pwweight(\xvars, \bvars) d\xvars \label{eqn:wmi_sum_ive_weight} \\
+&=\sum_{\wsupport_i \in \wtuples} \sum_{\bvars} \int \Bigg\llbracket  \bigwedge_{j} \wsupport_{ij} (\xvars, \bvars) \Bigg\rrbracket \pwweight(\xvars, \bvars) d\xvars 
+\end{align}
+The weighted model integral in Equation~\ref{eqn:def_wmi} over a support with disjunctions and conjunctions, has become now a sum of multiple weighted model integrals whose supports are simple conjunctions of SMT atoms. $\wtuples$ denotes the set of mutually exclusive SMT formulas whose disjunction is equivalent to the original SMT formula $\support$, \ie $\support\leftrightarrow \lor_i \support_i \leftrightarrow \lor_i \land_j  \support_{ij}$.
+
+% For the purely Boolean case, they correspond to the possible worlds of $\support$. 
+
+
+

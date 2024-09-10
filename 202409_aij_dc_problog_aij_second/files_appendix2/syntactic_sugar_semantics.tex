@@ -1,0 +1,590 @@
+\section{Detailed Discussion on \dcproblogsty}
+\label{sec:detaileddcproblog}
+
+
+
+
+\subsection{Syntactic Sugar Semantics}
+\label{sec:semantics_syntactic_sugar}
+
+We now formalize the declarative semantics of \dcproblogsty, \ie \dfplpsty extended with probabilistic facts, annotated disjunctions and distributional clauses,
+The idea is to define program transformations that eliminate these three modelling constructs from a \dcproblogsty program, resulting in a \dfplpsty program for which we have defined the semantics in Section~\ref{sec:semantics}.
+
+Throughout this section, we will treat distributional facts as distributional clauses with empty bodies, and we will only consider ground programs for ease of notation. As usual, a non-ground program is shorthand for its Herbrand grounding.
+
+
+\begin{definition}[Statement]
+    A \emph{\dcproblogsty statement} is either a probabilistic fact, an annotated disjunction, a distributional clause, or a normal clause.
+\end{definition}
+
+\begin{definition}[\dcproblogsty program] \label{def:fullprog}
+    A \dcproblogsty program $\program$ is a countable set of ground \dcproblogsty statements.
+\end{definition}
+
+
+
+
+
+
+\subsubsection{Eliminating Probabilistic Facts and Annotated Disjunctions}
+
+
+
+
+\begin{example}\label{ex:running-sugar-full}
+	We use the following \dcproblogsty program as running example.
+	\begin{problog*}{linenos}
+p ~ beta(1,1).
+p::a.
+b ~ normal(3,1) :- a.
+b ~ normal(10,1) :- not a.
+c ~ normal(b,5).
+0.2::d; 0.5::e; 0.3::f :- not b<5, b < 10.
+g :- a, not f, b+c<15.
+	\end{problog*}
+\end{example}
+
+
+
+\begin{definition}[Eliminaton Rules for Probabilistic Facts and ADs]\label{def:elim-ad}
+	Let $\program$ be  a \dcproblogsty program. We define the following elimination rules (ER) to eliminate probabilistic facts and annotated disjunctions.
+	\begin{itemize}
+		\item[ER1:] replace each probabilistic fact $p\prob \mu$ in $\program$ by
+		      \begin{align*}
+			       & \nu \sim flip(p).  \\
+			       & \mu \lpif \nu=:=1.
+		      \end{align*}
+		      with a fresh random variable $\nu$ for each probabilstic fact.
+		\item[ER2:] replace each AD $p_1\prob\mu_1;\dots;p_n \prob \mu_n \lpif \beta$ in $\program$ by
+		      \begin{align*}
+			       & \nu \sim finite([p_1 : 1, \dots, p_n : n]) \\
+			       & \mu_1 \lpif \nu=:=1, \beta.                \\
+			       & \dots                                      \\
+			       & \mu_n \lpif \nu=:=n, \beta.
+		      \end{align*}
+		      with a fresh random variable $\nu$ for each AD.
+	\end{itemize}
+\end{definition}
+Note that if the probability label(s) of a fact or AD include random terms, as in the case of \probloginline{p::a} in the Example~\ref{ex:running-sugar-full},  then these are  parents of the newly introduced random variable. However, the new random variable will not be a parent of other random variables, as they are only used locally within the new fragments. They thus introduce neither cycles nor infinite ancestor sets into the program.
+
+
+\begin{definition}[AD-Free Program] \label{def:ad_free_program}
+	An \emph{AD-free} \dcproblogsty program \adfreeprogram is a \dcproblogsty program that contains neither probabilistic facts nor annotated disjunctions. We denote by $\headsdc_\adfreeprogram$ the set of atoms $\tau \sim \delta$ that appear as head of a distributional clause in $\adfreeprogram$, and by $\randomtermset_\adfreeprogram$ the set of random terms in $\headsdc_\adfreeprogram$.
+\end{definition}
+
+
+\begin{example}\label{ex:running-sugar-adfree}
+	Applying Definition~\ref{def:elim-ad} to Example~\ref{ex:running-sugar-full} results in
+	\begin{problog*}{linenos}
+p ~ beta(1,1).
+x ~ flip(p).
+a :- x =:= 1.
+b ~ normal(3,1) :- a.
+b ~ normal(10,1) :- not a.
+c ~ normal(b,5).
+y ~ finite([0.2:1,0.5:2,0.3:3]).
+d :- y =:= 1, not b<5, b < 10.
+e :- y =:= 2, not b<5, b < 10.
+f :- y =:= 3, not b<5, b < 10.
+g :- a, not f, b+c<15.
+	\end{problog*}
+	We have $\headsdc_\adfreeprogram=\{ \, \text{\probloginline{p~beta(1,1)}},\,\allowbreak \text{\probloginline{x~flip(p)}},\,\allowbreak  \text{\probloginline{b~normal(3,1)}},\,\allowbreak \text{\probloginline{b~normal(10,1)}},\allowbreak \text{\probloginline{c~normal(b,5)}},\,\allowbreak \text{\probloginline{y~finite[0.2:1,0.5:2.0.3:3])}} \, \}$. Furthermore, we also have $\randomtermset_\adfreeprogram = \{ \mathprobloginline{p}, \mathprobloginline{x}, \mathprobloginline{b}, \mathprobloginline{c}, \mathprobloginline{y} \}$.
+\end{example}
+
+
+
+
+\subsubsection{Eliminating Distributional Clauses}
+\label{sec:eliminate_dc}
+
+While eliminating probabilistic facts and annotated disjunctions is a rather straightforward local transformation, eliminating distributional clauses is more involved. The reason is that a distributional clause has a global effect in the program, as it defines a condition under which a random term has to be \emph{interpreted} as a specific random variable when mentioned in a distributional clause or comparison atom. Therefore, eliminating a distributional clause involves both introducing the relevant random variable explicitly to the program and pushing the condition from the body of the distributional clause to all the places in the logic program that interpret the original random term.
+
+Before delving into the mapping from an AD-free \dcproblogsty to a \dfplpsty program, we introduce some relevant terminology.
+
+\begin{definition}[Parents and Ancestors for Random Terms]
+	\label{def:parentancestor2}
+	Given an AD-free program \adfreeprogram with $\tau_p$ and $\tau_c$ in $\randomtermset_\adfreeprogram$. We call $\tau_p$   a \emph{parent} of  $\tau_c$ if and only if  $\tau_p$ appears in the distribution term $\delta_c$ associated with $\tau_c$  in $\headsdc_\adfreeprogram$ ($\tau_c\sim \delta_c \in \headsdc_\adfreeprogram$).
+	We define \emph{ancestor} to be the transitive closure of \emph{parent}.
+\end{definition}
+
+
+
+\begin{figure}[h]
+	\centering
+	\tikzstyle{node}=[circle, text centered, draw,thick]
+	\begin{tikzpicture}[remember picture]
+
+
+		\node[node] (p) {\probloginline{p}};
+		\node[node] (x) [below=of p] {\probloginline{x}};
+
+		\node[node] (b) [right=of p] {\probloginline{b}};
+		\node[node] (c) [below=of b] {\probloginline{c}};
+
+		\node[node] (y) [right=of b] {\probloginline{y}};
+
+
+		\draw[->,thick] (p) to  (x);
+		\draw[->,thick] (b) to  (c);
+
+
+	\end{tikzpicture}
+	\caption{Directed acyclic graph representing the ancestor relationship between the random variables in Example~\ref{def:ad_free_program}.
+		The random terms \probloginline{p}, \probloginline{b} and \probloginline{y} have the empty set as their ancestor set. The ancestor set of \probloginline{x} is $\{ \mathprobloginline{p} \}$ and \probloginline{c} is $\{ \mathprobloginline{b} \}$.}
+\end{figure}
+
+
+
+
+
+
+For random terms, we distinguish  \emph{interpreted occurrences} of the term that need to be resolved to the correct random variable from other occurrences where the  random term is treated as any other term in a logic program, \eg, as an argument of a logical atom.
+\begin{definition}[Interpreted Occurrence]
+	\label{def:interpreted_occ}
+	An \emph{interpreted occurrence} of a random term $\tau$ in an AD-free program \adfreeprogram is one of the following:
+	\begin{itemize}
+		\item the use of $\tau$ as parameter of a distribution term in the head of a distributional clause in \adfreeprogram
+		\item the use of $\tau$  in a comparison literal in the body of a (distributional or normal) clause in \adfreeprogram
+	\end{itemize}
+	We say that a clause \emph{interprets} $\tau$ if there is at least one interpreted occurrence of $\tau$ in the clause.
+\end{definition}
+
+\begin{definition}[Well-Defined AD-free Program]\label{def:dc-df-well-def}
+	Given an AD-free program \adfreeprogram with $\dclauses_\adfreeprogram$ the set of distributional clauses in \adfreeprogram, we call $\dclauses_\adfreeprogram$ \emph{well-defined} if the following conditions hold:
+	\begin{description}
+		\item[DC1] For each random term $\tau \in \randomtermset_\adfreeprogram$,  the number of  distributional clauses $\tau \sim \delta \lpif \beta$ in $\adfreeprogram$ is finite, and these clauses all have mutually exclusive bodies. This means that only a single rule can be true at once.
+		\item[DC2] All distribution terms in $\dclauses_\adfreeprogram$ are well-defined for all possible values of the random terms they interpret.
+		\item[DC3] Each random term has a finite set of ancestors.
+		\item[DC4] The ancestor relation is acyclic.
+	\end{description}
+\end{definition}
+
+
+
+% Note that the arguments of a predicate \mathfunctor{\mu}{k} can contain elements of $\distdb$ and $\comparisonfacts$. In this case they will have a purely logical meaning. We discuss this in more detail in Definition~\ref{def:interpreted_occ}. 
+
+
+
+
+
+
+
+
+
+We now discuss how to reduce a (valid) \dcproblogsty program to a \dfplpsty program. This happens in two steps. First, we eliminate distributional clauses and introduce appropriate distributional facts instead (see Definition~\ref{def:elim-dc}). Second, we {\em contextualize} interpreted occurrences of random terms in clause bodies (see Definition~\ref{def:core_encoding}).
+
+The first step introduces a new built-in predicate \predicate{rv}{2} that associates random terms in a well-defined AD-free program with explicit random variables in the \dfplpsty program it is transformed into. This predicate is used in the bodies of clauses that interpret random terms (\cf Definition~\ref{def:interpreted_occ}) to appropriately contextualize those.
+
+The idea behind the built-in \predicate{rv}{2} predicate is to restrict the applicability of a clause to contexts where all the random terms can be interpreted, \ie to contexts where the random terms are random variables. This implies that in contexts where such a random term cannot be interpreted, the \emph{entire} body evaluates to false.
+
+
+\begin{definition}[Eliminating Distributional Clauses]\label{def:elim-dc}
+	Let $\dclauses_{\adfreeprogram}$ be a well-defined set of distributional clauses.
+	We denote by $\delta_{\rho_1, \dots, \rho_k}$ a distribution term that involves exactly $k$ different random terms $\rho_1,\ldots,\rho_k$.
+	For each ground random term $\tau\in \randomtermset_{\adfreeprogram}$ we simultaneously define the following sets:
+	\begin{itemize}
+		\item the set of distributional facts for $\tau$
+		      \begin{align*}
+			      \distdb(\tau) =
+			      \{
+			      \tau^\beta_{\nu_1,\ldots,\nu_k}
+			       & \sim \delta^\beta_{\nu_1,\ldots,\nu_k}
+			      \\
+			       & \mid
+			      (\tau \sim \delta_{\rho_1,\ldots,\rho_k} \lpif \beta \in \dclauses_\adfreeprogram
+			      ,
+			      v_1\in \randomvariableset(\rho_1), \ldots, v_k\in \randomvariableset(\rho_k)
+			      \}
+		      \end{align*}
+		\item    the set of (fresh) random variables for $\tau$
+		      \begin{equation*}
+			      \randomvariableset(\tau) = \{\nu \mid \nu\sim \delta \in \distdb(\tau)\}
+		      \end{equation*}
+		\item the set of context clauses for $\tau$
+		      \begin{align*}
+			       & \logicprogram^{c}(\tau)
+			      =
+			      \\
+			       &
+			      \quad \biggl\{\text{\probloginline{rv}}(\tau,\tau^\beta_{\nu_1,\ldots,\nu_k})
+			      \lpif
+			      \text{\probloginline{rv}}(\rho_1,\nu_1),\ldots,\text{\probloginline{rv}}(\rho_k,\nu_k), \beta
+			      \\
+			       &
+			      \quad \bigm|
+			      \tau \sim \delta_{\rho_1,\ldots,\rho_k} \lpif \beta \in \dclauses_{\adfreeprogram}, \nu_1\in \randomvariableset(\rho_1), \ldots, \nu_k\in \randomvariableset(\rho_k)
+			      \biggr\}
+		      \end{align*}
+	\end{itemize}
+\end{definition}
+
+At first glance, Definition~\ref{def:elim-dc} seems to contain a mutual recursion involving $\distdb(\cdot)$ and $\randomvariableset(\cdot)$.
+However, if we recall that for a well-defined set of distributional clauses $\dclauses_\adfreeprogram$ the ancestor relationship between random terms constitutes an acyclic directed graph, the apparent mutual recursion evaporates. We can now define the distributional facts encoding of the distributional clauses, which will give rise to a \dfplpsty program instead of \dcproblogsty program.
+
+\begin{definition}[Distributional Facts Encoding]
+	\label{def:core_encoding}
+	Let $\adfreeprogram$ be an AD-free \dcproblogsty program and $\dclauses_{\adfreeprogram}$ its set of distributional clauses. We define the distributional facts encoding of $\dclauses_{\adfreeprogram}$  as
+	$\dclauses_{\adfreeprogram}^{DF}\coloneqq \distdb\cup \logicprogram^{c}$, with
+	\begin{align*}
+		\distdb = \bigcup_{\tau\in \randomtermset_{\adfreeprogram}}\distdb(\tau)
+		 &  &
+		\logicprogram^{c} = \bigcup_{\tau\in \randomtermset_{\adfreeprogram}} \logicprogram^{c}(\tau)
+	\end{align*}
+	using $\distdb(\cdot)$ and $\logicprogram^{c}(\cdot)$ from Definition~\ref{def:elim-dc}.
+\end{definition}
+
+
+
+\begin{example}[Eliminating Distributional Clauses]
+	\label{ex:running-sugar-core-encoding}
+	We demonstrate the elimination of distributional clauses using the DCs in Example~\ref{ex:running-sugar-adfree}, \ie
+	\begin{problog*}{linenos}
+p ~ beta(1,1).
+x ~ flip(p).
+b ~ normal(3,1) :- a.
+b ~ normal(10,1) :- not a.
+c ~ normal(b,5).
+y ~ finite([0.2:1,0.5:2,0.3:3]).
+	\end{problog*}
+	Here,  the distribution terms in Line 2 and Line 5 (\probloginline{flip(p)} and \probloginline{normal(b,5)}) contain one parent random term each (\probloginline{p} and \probloginline{b}, respectively), whereas all others have no parents. As \probloginline{b} is defined by two clauses, we get fresh random variables for each of them, which in turn  introduces different fresh random variables for the child \probloginline{c}.
+	This gives us:
+	\begin{problog*}{linenos}
+v1 ~ beta(1,1).
+rv(p,v1).
+v2 ~ flip(v1).
+rv(x,v2) :- rv(p,v1).
+v3 ~ normal(3,1).
+rv(b,v3) :- a.
+v4 ~ normal(10,1).
+rv(b,v4) :- not a.
+v5 ~ normal(v3,5).
+rv(c,v5) :- rv(b,v3).
+v6 ~ normal(v4,5).
+rv(c,v6) :- rv(b,v4).
+v7 ~ finite([0.2:1,0.5:2,0.3:3]).
+rv(y,v7).
+	\end{problog*}
+\end{example}
+
+
+
+
+
+
+
+Eliminating distributional clauses (following Definition~\ref{def:elim-dc}) introduces the distributional facts and context rules necessary to encode the original distributional clauses. To complete the transformation to a \dfplpsty program, we further transform the logical rules. Prior to that, however, we need to define the {\em contextualization function}.
+
+\begin{definition}[Contextualization Function] \label{def:context_function}
+	Let $\beta$ be a conjunction of atoms and let its comparison literals interpret the random terms $\tau_1,\ldots,\tau_n$.
+	Furthermore, let $\Lambda_i$ be a special logical variable associated to a random term $\tau_i \in \randomtermset_{\adfreeprogram}$ for each $\tau_i$.
+	We define $\contextfunc(\beta)$ to be the  conjunction of literals obtained by replacing the interpreted occurrences of the $\tau_i$ in $\beta$ by their corresponding $\Lambda_i$
+	and conjoining to this modified conjunction $\text{\probloginline{rv}}(\tau_i,\Lambda_i)$ for each $\tau_i$.
+	We call $\contextfunc(\cdot)$ the contextualization function.
+\end{definition}
+
+\begin{definition}[Contextualized Rules]\label{def:adfree-to-core}
+	Let \adfreeprogram be an AD-free program with logical rules $\logicprogram^\adfreeprogram$ and distributional clauses $\dclauses_\adfreeprogram$,
+	and let $\dclauses_\adfreeprogram^{DF}=\distdb\cup \logicprogram^{c}$ be the distributional facts encoding of $\dclauses_\adfreeprogram$. We define the contextualization of the bodies of the rules $\logicprogram^\adfreeprogram \cup \logicprogram^{DF}$ as the sequential application of the following contextualization rules:
+	\begin{enumerate}[label=\alph*.]
+		\item[CR1:] apply the contextualization function $\contextfunc$ to all bodies in $\logicprogram^\adfreeprogram\cup \logicprogram^{c}$ and obtain:
+		      \begin{align*}
+			      \logicprogram^\Lambda = \{\eta \lpif \contextfunc(\beta) \mid \eta \lpif \beta \in \logicprogram^\adfreeprogram \cup \logicprogram^{c} \}
+		      \end{align*}
+		\item[CR2:] obtain the set of ground logical rules $\logicprogram$ by grounding each logical variable $\Lambda_i$ in $\logicprogram^\Lambda$  with random variables $\nu_i\in \randomvariableset(\tau_i)$ in all possible ways.
+	\end{enumerate}
+	We call $\logicprogram$ the contextualized logic program of $\adfreeprogram$, \fixed{Furthermore, we define $\dfadfreeprogram\coloneqq\distdb \cup \logicprogram $ to be the corresponding \dcplpsty program.}
+\end{definition}
+
+The contextualization function $\contextfunc(\cdot)$ creates non-ground comparison atoms, \eg $\Lambda_i>5$. Contrary to (ground) random terms, non-ground logical variables in such a comparison atom are not interpreted occurrences (\cf~Definition~\ref{def:interpreted_occ}) and the comparison itself only has a logical meaning. By grounding out the freshly introduced logical variables we obtain a purely logical program where the comparison atoms contain either arithmetic expressions or random variables (instead of random terms).
+
+
+\begin{example}[Contextualizing Random Terms]
+	\label{example:contextualization}
+	Let us now study the effect of the second transformation step.
+	Consider again the AD-free program in Example~\ref{ex:running-sugar-adfree} and the set of rules and distributional clauses obtained in Example~\ref{ex:running-sugar-core-encoding}.
+	The contextualization rule CR1 (\cf Definition~\ref{def:adfree-to-core})  rewrites the logical rules in the AD-free input program to
+	% \linelabel{line:comment_r2_t2a_rule}
+	\begin{problog*}{linenos}
+a :- rv(x,Lx), Lx =:= 1.
+d :- rv(y,Ly), rv(b,Lb), Ly =:= 1, not Lb<5, Lb < 10.
+e :- rv(y,Ly), rv(b,Lb), Ly =:= 2, not Lb<5, Lb < 10.
+f :- rv(y,Ly), rv(b,Lb), Ly =:= 3, not Lb<5, Lb < 10.
+g :- rv(b,Lb), rv(c,Lc), a, not f, Lb+Lc < 15.
+	\end{problog*}
+	These rules then get instantiated (rule CR2) to
+	\begin{problog*}{linenos}
+a :- rv(x, v2), v2 =:= 1.
+d :- rv(y,v7), rv(b,v3), v7 =:= 1, not v3<5, v3 < 10.
+e :- rv(y,v7), rv(b,v3), v7 =:= 2, not v3<5, v3 < 10.
+f :- rv(y,v7), rv(b,v3), v7 =:= 3, not v3<5, v3 < 10.
+d :- rv(y,v7), rv(b,v4), v7 =:= 1, not v4<5, v4 < 10.
+e :- rv(y,v7), rv(b,v4), v7 =:= 2, not v4<5, v4 < 10.
+f :- rv(y,v7), rv(b,v4), v7 =:= 3, not v4<5, v4 < 10.
+g :- rv(b,v3), rv(c,v5), a, not f, v3+v5<15.
+g :- rv(b,v3), rv(c,v6), a, not f, v3+v6<15.
+g :- rv(b,v4), rv(c,v5), a, not f, v4+v5<15.
+g :- rv(b,v4), rv(c,v6), a, not f, v4+v6<15.
+	\end{problog*}
+	Together with the distributional facts and rules obtained in Example~\ref{ex:running-sugar-core-encoding}, this last block of rules forms the \dcplpsty program that specifies the semantics of the AD-free \dcproblogsty program, and thus the semantics of the \dcproblogsty program in Example~\ref{ex:running-sugar-full}.
+\end{example}
+
+
+
+
+We note that the mapping from an AD-free program to a set of distributional facts and contextualized rules as defined here is purely syntactical, and written to avoid case distinctions.
+Therefore, it usually produces overly verbose programs.
+For instance, for random terms introduced by a distributional fact, the indirection via \probloginline{rv} is only needed if there is a parent term in the distribution that has context-specific interpretations.
+The grounding step may introduce rule instances whose conjunction of \probloginline{rv}-atoms is inconsistent.
+This is for example the case for the last three rules for \probloginline{g} in the Example~\ref{example:contextualization}, which we illustrate in the example below.
+
+
+\begin{example}\label{ex:running-sugar-simplified}
+	The following is a (manually) simplified version of the \dfplpsty program for the running example, where we propagated definitions of  \probloginline{rv}-atoms:
+	\begin{problog*}{linenos}
+v1 ~ beta(1,1).
+v2 ~ flip(v1).
+v3 ~ normal(3,1).
+v4 ~ normal(10,1).
+v5 ~ normal(v3,5).
+v6 ~ normal(v4,5).
+v7 ~ finite([0.2:1,0.5:2,0.3:3]).
+
+a :- v2 =:= 1.
+d :- a,     v7 =:= 1, not v3<5, v3 < 10.
+e :- a,     v7 =:= 2, not v3<5, v3 < 10.
+f :- a,     v7 =:= 3, not v3<5, v3 < 10.
+d :- not a, v7 =:= 1, not v4<5, v4 < 10.
+e :- not a, v7 =:= 2, not v4<5, v4 < 10.
+f :- not a, v7 =:= 3, not v4<5, v4 < 10.
+g :- a,     a,     a, not f, v3+v5<15.
+g :- a,     not a, a, not f, v3+v6<15.  % inconsistent
+g :- not a, a,     a, not f, v4+v5<15.  % inconsistent
+g :- not a, not a, a, not f, v4+v6<15.  % inconsistent
+	\end{problog*}
+	In the bodies of the last three rules we have, inter alia, conjunctions of \probloginline{a} and \probloginline{not a}. This can never be satisfied and renders the bodies of these rules inconsistent.
+\end{example}
+
+
+\begin{definition}[Semantics of AD-free \dcproblogsty Programs]
+	\label{def:semantics_adfree}
+	The semantics of an AD-free \dcproblogsty program \adfreeprogram is the semantics of the \dfplpsty program $ \dfadfreeprogram = \distdb \cup \logicprogram$. We call $\adfreeprogram$ valid if and only if $\dfadfreeprogram$ is valid.
+\end{definition}
+
+\begin{definition}[Semantics of $\dcproblogsty$ Programs]
+	The semantics of a $\dcproblogsty$ program $\program$ is the semantics of the AD-free \dcproblogsty program $\adfreeprogram$. We call $\program$ valid if and only if $\adfreeprogram$ is valid.
+\end{definition}
+
+Programs with distributional clauses can make programs with combinatorial structures more readable by grouping random variables with the same role  under the same random term. However, the programmer needs to be aware of the fact that distributional clauses have non-local effects on the program, as they affect the interpretation of their random terms also outside the distributional clause itself. This can be rather subtle, especially  if the bodies of the distributional clauses with the same random term are not exhaustive.
+We discuss this issue in more detail in Appendix~\ref{sec:non-mixture-dc}.
+
+\subsection{Syntactic Sugar: Validity}
+\label{sec:dcvalidity}
+
+As stated above, a DC-ProbLog program $\program$  is syntactic sugar for an AD-free program $\adfreeprogram$ (Definition~\ref{def:elim-ad}),
+and is valid if $\dfadfreeprogram$ as specified in Definition~\ref{def:semantics_adfree} is a valid \dfplpsty program, \ie the distributional database is well-defined,
+the comparison literals are measurable,
+and each consistent fact database results in a two-valued  well-founded  model if added to the logic program (Definition~\ref{def:core-valid}).
+For the distributional database to be well-defined (Definition~\ref{def:well-defd-facts}), it suffices to have $\dclauses_\adfreeprogram$ well-defined  (Definition~\ref{def:dc-df-well-def}), as can be verified by comparing the relevant definitions. Indeed, a well-defined $\dclauses_\adfreeprogram$ is a precondition for the transformation as stated in the definition.
+
+The transformation changes neither distribution terms nor comparison literals, and thus maintains the measurability of the latter.
+% \linelabel{line:comment_grammar_r2}
+As far as the logic program structure is concerned, the transformation to a \dfplpsty adds rules for \probloginline{rv} based on the bodies of all distributional clauses, and uses positive \probloginline{rv} atoms in the bodies of all clauses  that interpret random terms to ensure that all interpretations of random variables are anchored in the appropriate parts of the distributional database. This level of indirection does not affect the logical reasoning for programs that only interpret random terms in appropriate contexts. It is the responsibility of the programmer to ensure that this is the case and indeed results in appropriately defined models.
+
+
+
+
+
+
+
+
+
+
+
+\subsection{Syntactic Sugar: Additional Constructs}
+\label{sec:Additionalsyntacticsugar}
+
+\subsubsection{User-Defined Sample Spaces}
+The semantics of \dcproblogsty as presented in the previous sections only alllows for random variables with numerical sample spaces, \eg normal distributions, or Poisson distributions. For categorical random variables, however, one might like to give a specific meaning to the elements in the sample space instead of a numerical value.
+\begin{example}
+	Consider the following program:
+	\begin{problog*}{linenos}
+color ~ uniform([r,g,b]).
+red:- color=:=r.
+	\end{problog*}
+	Here we discribe a categorical random variable (uniformaly distributed) whose sample space is the set of expressions $\{\text{\probloginline{r}},\text{\probloginline{b}},\text{\probloginline{g}}\}$. By simply associating a natural number to each element of the sample space we can map the program back to a program whose semantics we already defined:
+	\begin{problog*}{linenos}
+color ~ uniform([1,2,3]).
+r:- color=:=1,
+red:- r.
+	\end{problog*}
+\end{example}
+
+Swapping out the sample space of discrete random variables with natural numbers is always possible as the cardinality of such a sample space is either smaller (finite categorical) or equal (infinite) to the cardinality of the natural numbers.
+
+\subsubsection{Multivariate Distributions}
+
+Until now we have restricted the syntax and semantics of \dcproblogsty to univariate distributions, \eg the univariate normal distribution. At first this might seem to severely limit the expressivity of \dcproblogsty, as probabilistic modelling with multivariate random variables is a common task in modern statistics and probabilistic programming. However, this concern is voided by realizing that multivariate random variables can be decomposed into {\em combinations} of independent univariate random variables. We will illustrate this on the case of the bivariate normal distribution.
+
+\begin{example}[Constructing the Bivariate Normal Distribution]
+	Assume we would like to construct a random variable distributed according to a bivariate normal distribution:
+	\begin{align*}
+		\begin{pmatrix} \nu_1 \\ \nu_2 \end{pmatrix}
+		\sim
+		\mathcal{N}\left(
+		\begin{pmatrix}
+				\mu_1 \\  \mu_2
+			\end{pmatrix}
+		,
+		\begin{pmatrix}
+				\sigma_{11} & \sigma_{12} \\
+				\sigma_{21} & \sigma_{22} \\
+			\end{pmatrix}
+		\right)
+	\end{align*}
+	The equation above can be rewritten as:
+	\begin{align*}
+		\begin{pmatrix} \nu_1 \\ \nu_2 \end{pmatrix}
+		\sim
+		\begin{pmatrix}
+			\mu_1 \\  \mu_2
+		\end{pmatrix}
+		+
+		\begin{pmatrix}
+			\eta_{11} & \eta_{12} \\
+			\eta_{21} & \eta_{22} \\
+		\end{pmatrix}
+		\begin{pmatrix}
+			\mathcal{N}(0, \lambda_1) \\
+			\mathcal{N}(0, \lambda_2)
+		\end{pmatrix}
+	\end{align*}
+	where it holds that
+	\begin{align*}
+		\begin{pmatrix}
+			\sigma_{11} & \sigma_{12} \\
+			\sigma_{21} & \sigma_{22} \\
+		\end{pmatrix}
+		=
+		\begin{pmatrix}
+			\eta_{11} & \eta_{12} \\
+			\eta_{21} & \eta_{22} \\
+		\end{pmatrix}
+		\begin{pmatrix}
+			\lambda_1 & 0         \\
+			0         & \lambda_2
+		\end{pmatrix}
+		\begin{pmatrix}
+			\eta_{11} & \eta_{21} \\
+			\eta_{12} & \eta_{22} \\
+		\end{pmatrix}
+	\end{align*}
+	It can now be shown that the bivariate distributions can be expressed as:
+	\begin{align*}
+		\begin{pmatrix} \nu_1 \\ \nu_2 \end{pmatrix}
+		\sim
+		\begin{pmatrix}
+			\mathcal{N}(\mu_{\nu_1}, \sigma_{\nu_1}) \\
+			\mathcal{N}(\mu_{\nu_2}, \sigma_{\nu_2}) \\
+		\end{pmatrix}
+	\end{align*}
+	where $\mu_{\nu_1}$, $\mu_{\nu_2}$, $\sigma_{\nu_1}$ and $\sigma_{\nu_2}$ can be expressed as:
+	\begin{align*}
+		\mu_{\nu_1} & = \mu_1 \qquad
+		            & \sigma_{\nu_1} = \sqrt{ \eta_{11}\lambda_1^2 + \eta_{12}\lambda_2^2 } \\
+		\mu_{\nu_2} & = \mu_2 \qquad
+		            & \sigma_{\nu_2} = \sqrt{ \eta_{21}\lambda_1^2 + \eta_{22}\lambda_2^2 }
+	\end{align*}
+	We conclude from this that a bivariate normal distribution can be modeled using two univariate normal distributions that have a shared set of parameters and is thereby semantically defined in \dcproblogsty.
+
+\end{example}
+
+Expressing multivariate random variables in a user-friendly fashion in a probabilistic programming language is simply a matter of adding syntactic sugar for combinations of univariate random variables once the semantics are defined for the latter.
+
+\begin{example}[Bivariate Normal Distribution]
+	Possible syntactic sugar to declare a bivariate normal distribution in \dcproblogsty, where the mean of the distribution in the two dimensions is $0.5$ and $2$, and the covariance matrix is
+	$
+		\begin{bmatrix}
+			2   & 0.5 \\
+			0.5 & 1
+		\end{bmatrix}
+	$.
+	\begin{problog*}{linenos}
+(x1,x2) ~ normal2D([0.5,2], [[2, 0.5],[0.5,1]])
+q:- x1<0.4, x2>1.9.
+	\end{problog*}
+\end{example}
+
+
+On the inference side, the special syntax might then additionally be used to deploy dedicated inference algorithms. This is usually done in probabilistic programming languages that cater towards inference with multivariate (and often continuous) random variables~\citep{carpenter2017stan,bingham2019pyro}. Note that probability distributions are usually constructed by applying transformations to a set of independent uniform distribution. From this viewpoint the builtin-in \probloginline{normal/2}, denoting the univariate normal distribution, is syntactic sugar for such a transformation as well.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection{Beyond Mixtures}\label{sec:non-mixture-dc}
+\label{sec:beyondmixtures}
+
+By definition, we impose on distributional clauses mutual exclusivity of their bodies when they share a random term (\cf Definition~\ref{def:dc-df-well-def}). That is, if we have a set of distributional clauses: $\{ \tau \sim \delta_i\lpif \beta_1 \dots, \tau \sim \delta_n\lpif \beta_n  \}$ we impose that the conjunction of two distinct bodies $\beta_i$ and $\beta_j$ ($i \neq j$) is false.
+
+A further condition that we might impose, which is, however, not necessary to define a valid distributional clause, is exhaustiveness. Let us consider again the set of distributional clauses  $\{ \tau \sim \delta_i\lpif \beta_1 \dots, \tau \sim \delta_n\lpif \beta_n  \}$. We call this set exhaustive if the disjunction of all the $\beta_i$'s is equivalent to true.
+
+A set of exhaustive distributional clauses can be interpreted as a mixture models as they assign a unique distribution to the random term in any possible context. When, the bodies of such distributional clauses are not exhaustive, however, they may
+interact with the logic program in rather subtle ways, especially if negation is involved. We demonstrate this in the examples below.
+
+\begin{example}
+	Consider the  following program fragments
+	\begin{problog}
+q :- not (x=:=1).
+	\end{problog}
+	and
+	\begin{problog}
+aux :- x=:=1.
+q :- not aux.
+	\end{problog}
+	and now assume \probloginline{x} follows a mixture distribution, \eg,
+	\begin{problog}
+0.2::b.
+x~flip(0.5) :- b.
+x~flip(0.9) :- not b.
+	\end{problog}
+	With such a mixture model, as in the case of a distributional fact, "\probloginline{x} has an associated distribution" is always true, and both fragments agree on the truth value of \probloginline{q}.
+\end{example}
+In general, however, only the first of these two conditions is necessary, and it is thus possible to  associate a distribution with a random term in \emph{some} contexts only.
+
+\begin{example}
+	Consider again the two program fragments above with the following non-exhaustive definition of \probloginline{x}:
+	\begin{problog}
+0.2::b.
+x~flip(0.5) :- b.
+	\end{problog}
+	With this definition, "\probloginline{x} has an associated distribution" is true if and only if \probloginline{b} is true, and the two fragments therefore no longer agree on the truth values of \probloginline{q}, as we more easily see after eliminating the distributional clause. We omit the transformation of the probabilistic fact for brevity. The fragment defining \probloginline{x} transforms to
+	\begin{problog}
+v1~flip(0.5).
+rv(x,v1) :- b.
+	\end{problog}
+	The first program fragment maps to
+	\begin{problog}
+q :- rv(x,v1), not (v1=:=1).
+	\end{problog}
+	and the second one to
+	\begin{problog}
+aux :- rv(x,v1), v1=:=1.
+q :- not aux.
+	\end{problog}
+	which clearly exposes the difference in how the negation is interpreted.
+\end{example}
+As this example illustrates, if random variables are defined through non-exhaustive sets of DCs, we can no longer refactor the logic program independently of the definition of the random variables in general, as it interacts with the context structure. The reason is that \dcproblogsty's declarative semantics builds upon the principle that the distributional database is declared \emph{independently} of the logic program, and can thus be combined modularly and declaratively with \emph{any} logic program over its comparison atoms. This is no longer the case with such arbitrary sets of DCs, which intertwine the definition of the two parts of a \dfplpsty program. We note that this differs from the procedural view on the existence of random variables taken in the \dcsty language~\citep{nitti2016probabilistic}, as we
+discuss in more detail in Appendix~\ref{sec:dcproblog-dc}.
+

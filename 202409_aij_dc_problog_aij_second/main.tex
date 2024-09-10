@@ -1,0 +1,282 @@
+%\documentclass[preprint]{elsarticle}
+\documentclass[final]{elsarticle}
+
+\makeatletter
+\def\ps@pprintTitle{%
+ \let\@oddhead\@empty
+ \let\@evenhead\@empty
+ \def\@oddfoot{}%
+ \let\@evenfoot\@oddfoot}
+\makeatother
+
+\usepackage{lineno}
+\modulolinenumbers[5]
+
+\usepackage{hyperref}
+
+
+
+
+
+
+%% `Elsevier LaTeX' style
+% \bibliographystyle{elsarticle-num}
+\bibliographystyle{plainnat}
+% \biboptions{authoryear}
+
+
+
+\newcommand\hmmax{0}
+\newcommand\bmmax{0}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{amsmath}
+\usepackage{amssymb,amsthm}
+
+\usepackage{stmaryrd}
+\usepackage[noend]{algpseudocode}
+\usepackage[dvipsnames,table,xcdraw]{xcolor}
+\usepackage{xspace}
+% \usepackage[cachedir=minted-cache,newfloat]{minted}
+% \usepackage[finalizecache=true,cachedir=minted-cache,newfloat]{minted}
+\usepackage[frozencache=true,cachedir=minted-cache,newfloat]{minted}
+% \usepackage[utf8]{inputenc}
+\usepackage{caption}
+\usepackage{listings}
+\usepackage{nicefrac}
+\usepackage{multirow}
+\usepackage{textcomp} % nice greek alphabet
+\usepackage{textgreek}
+\usepackage{changepage}
+\usepackage{cancel}
+\usepackage{subcaption}
+\usepackage{tikz}
+\usetikzlibrary{arrows, calc,shapes.geometric,shapes.multipart,positioning,tikzmark}
+\usetikzlibrary{arrows,shapes,trees}
+\usepackage{enumitem}
+\usepackage{multicol}
+\usepackage{bm}
+
+\usepackage[T1]{fontenc}
+\usepackage{txfonts}
+\usepackage{mdframed}
+\usepackage{scrextend}
+\usepackage{blindtext}
+\usepackage[section]{placeins}
+
+\usepackage{xassoccnt}
+\usepackage{chngcntr}
+\usepackage{thm-restate}
+\usepackage{xpatch}
+\usepackage{fixmath}
+\usepackage{soul}
+
+\usepackage[htt]{hyphenat}
+
+\hyphenation{data-base ground-ers}
+
+\usepackage[linesnumbered,ruled,vlined,algosection]{algorithm2e}
+\DontPrintSemicolon
+\SetKwInput{KwInput}{Input}                % Set the Input
+\SetKwInput{KwOutput}{Output}              % set the Output
+\newcommand\mycommfont[1]{\footnotesize\ttfamily\textcolor{gray}{#1}}
+\SetCommentSty{mycommfont}
+
+% \usepackage[bbgreekl]{mathbbol}
+
+
+
+\graphicspath{{figures/}}
+
+%%%%%%%%%%%%%%%%%%%%%%
+\input{macros}
+%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+\numberwithin{equation}{section}
+
+
+%Commands definitions
+\newcommand{\setbackgroundcolour}{\pagecolor[rgb]{0.19,0.19,0.19}}
+\newcommand{\settextcolour}{\color[rgb]{0.77,0.77,0.77}}
+\newcommand{\invertbackgroundtext}{\setbackgroundcolour\settextcolour}
+
+%Command execution. 
+%If this line is commented, then the appearance remains as usual.
+% \invertbackgroundtext
+
+\setlist[itemize]{itemsep=0pt}
+\setlist[enumerate]{itemsep=0pt}
+
+
+\begin{document}
+
+
+\setcounter{page}{1}
+\renewcommand{\thepage}{\roman{page}}
+
+\setcounter{section}{0}
+\renewcommand{\thesection}{R\arabic{section}}
+
+\renewcommand{\theequation}{R\arabic{section}.\arabic{equation}}
+
+% \input{rebuttal}
+% \clearpage
+
+\setcounter{page}{1}
+\renewcommand{\thepage}{\arabic{page}}
+
+\setcounter{section}{0}
+\renewcommand{\thesection}{\arabic{section}}
+\renewcommand{\theequation}{\arabic{section}.\arabic{equation}}
+
+
+
+
+\begin{frontmatter}
+
+    \title{Declarative Probabilistic Logic Programming\\in Discrete-Continuous Domains}
+    % \tnotetext[mytitlenote]{}
+
+    \author[orebro]{Pedro Zuidberg Dos Martires}
+    \author[orebro,kuleuven,leuvenai]{Luc De Raedt}
+    \author[kuleuven,leuvenai]{Angelika Kimmig}
+
+
+    \address[orebro]{Centre for Applied Autonomous Sensor Systems, Örebro University, Sweden}
+    \address[kuleuven]{Department of Computer Science, KU Leuven, Belgium}
+    \address[leuvenai]{Leuven.AI, Belgium}
+
+
+
+    % \begin{abstract}
+    % A core strength of probabilistic logic programming languages, which belong to the best understood probabilistic programming languages in the scientific literature, are their declarative semantics. However, this is only true for programs limited to random variables with finite sample spaces. When extending PLP languages to the discrete-continuous domain, procedural semantics have usually been preferred over declarative semantics.
+    % We introduce \dcproblogsty, a PLP language capable of representing random variables in the discrete-continuous domain, which we equip with purely declarative semantics.
+    % Additionally, we develop the first inference algorithm for a probabilistic programming language in the discrete-continuous domain based on knowledge compilation. As such, we generalize conventional PLP in a twofold fashion. On the hand, \dcproblogsty extends the declarative semantics to random variables with infinite (and uncountable) sample spaces, instead of finite ones only. On the other hand, we generalize the state-of-the-art knowledge compilation approach towards inference in conventional PLP languages to the discrete-continuous domain.
+    % \end{abstract}
+
+
+    \begin{abstract}
+        Over the past three decades, the logic programming paradigm has been successfully expanded
+        to support probabilistic modeling, inference and learning. The resulting paradigm
+        of probabilistic logic programming (PLP) and its programming languages owes much of its success to a declarative semantics,
+        the so-called distribution semantics. However, the distribution semantics is limited to discrete random variables only.
+        While PLP has been extended in various ways for supporting hybrid, that is, mixed discrete and continuous
+        random variables, we are still lacking a declarative semantics for hybrid PLP that not only generalizes
+        the distribution semantics and the modeling language but also the standard inference algorithm
+        that is based on knowledge compilation.
+        We contribute the {\em measure semantics} together with the hybrid PLP language
+        \dcproblogsty (where DC stands for distributional clauses) and its inference engine {\em infinitesimal algebraic likelihood weighting} (IALW).
+        These have the original distribution semantics, standard PLP languages
+        such as \problogsty, and standard inference engines for PLP based on knowledge compilation as special cases.
+        Thus, we generalize the state of the art of PLP towards hybrid PLP in three different aspects: semantics, language and inference.
+        Furthermore, IALW is the first inference algorithm for hybrid probabilistic programming based on knowledge compilation.
+    \end{abstract}
+
+
+
+
+    
+
+
+
+
+
+    \begin{keyword}
+        Probabilistic Programming \sep Declarative Semantics \sep Discrete-Continuous Distributions \sep Likelihood Weighting \sep Logic Programming \sep Knowledge Compilation \sep Algebraic Model Counting
+    \end{keyword}
+
+\end{frontmatter}
+
+% \linenumbers
+
+
+
+
+\input{files_main/introduction}
+
+\input{files_main/panorama}
+
+\input{files_main/semantics}
+%
+\input{files_main/dcproblog}
+%
+\input{files_main/tasks}
+%
+\input{files_main/dc2smt}
+%
+\input{files_main/evaluating}
+
+\input{files_main/related_work}
+
+\input{files_main/conclusions}
+
+\section*{Acknowledgement}
+
+This research received funding from the Wallenberg AI, Autonomous Systems and Software Program (WASP) of the Knut and Alice Wallenberg Foundation, the Flemish Government (AI Research Program),
+the KU Leuven Research Fund, the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation programme (grant agreement No [694980] SYNTH: Synthesising Inductive Data Models), and
+the Research Foundation - Flanders.
+
+
+\bibliography{references}
+
+\newpage
+\clearpage
+
+\appendix
+
+% \setcounter{section}{0}
+% \renewcommand{\thesection}{\Roman{section}}
+% \renewcommand{\theequation}{\Roman{section}.\arabic{equation}}
+% \renewcommand{\thetheorem}{\Roman{section}.\arabic{theorem}}
+% \renewcommand{\thedefinition}{\Roman{section}.\arabic{definition}}
+
+
+
+% \input{files_appendix1/lp}
+
+% \input{files_appendix1/amc}
+
+% \input{files_appendix1/compilation}
+
+
+\setcounter{section}{0}
+\renewcommand{\thesection}{\Alph{section}}
+\renewcommand{\theequation}{\Alph{section}.\arabic{equation}}
+\renewcommand{\thetheorem}{\Alph{section}.\arabic{theorem}}
+\renewcommand{\thedefinition}{\Alph{section}.\arabic{definition}}
+
+\input{files_appendix2/lp_new}
+
+\input{files_appendix2/app_table}
+
+\input{files_appendix2/semantics_proofs}
+
+\input{files_appendix2/syntactic_sugar_semantics.tex}
+
+\input{files_appendix2/detailed_comp_to_GutmanNittiDC}
+
+% \input{files_appendix2/smart_grounding}
+
+\input{files_appendix2/transformation_proofs}
+
+% \input{files_appendix2/labeled_propositional_to_SMT}
+
+% \input{files_appendix2/implementation}
+
+\
+
+
+
+
+
+\end{document}

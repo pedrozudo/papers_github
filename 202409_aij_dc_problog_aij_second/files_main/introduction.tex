@@ -1,0 +1,123 @@
+\section{Introduction}
+\label{sec:introduction}
+
+Probabilistic logic programming (PLP) is at the crossroads of two parallel developments in artificial intelligence and machine learning.
+On the one hand, there are the probabilistic programming languages with built-in support for machine learning. These languages can be used to represent very expressive -- Turing equivalent
+-- probabilistic models, and they provide primitives for inference and learning.
+On the other hand, there is the longstanding open question for integrating the two main frameworks
+for reasoning, that is logic and probability, within a common framework \citep{russell2015unifying,deraedt:mc16}.
+Probabilistic logic programming~\citep{de2015probabilistic,riguzzi2018foundations} fits both paradigms and goes back to at least the early 90s
+with seminal works by \citet{sato1995statistical} and \citet{poole1993probabilistic}. 
+\citeauthor{poole1993probabilistic} introduced ICL, the Independent Choice Logic, an elegant
+extension of the Prolog programming language, and \citeauthor{sato1995statistical} introduced
+the {\em distribution semantics} for probabilistic logic programs in conjunction with a learning algorithm based on expectation maximization (EM).
+The PRISM language \citep{sato1995statistical}, which utilizes the distribution semantics and the EM learning algorithm constitutes, to the best of the authors' knowledge, the very first probabilistic programming language with support for machine learning.
+
+
+Today, there is a plethora of probabilistic logic programming languages, most of which are based
+on extensions of the ideas by \citeauthor{sato1995statistical} and~\citeauthor{poole1993probabilistic} ~\citep{sato1997prism,kersting2000bayesian,vennekens2004logic,de2007problog}. However, the vast majority of them is restricted to discrete, and more precisely finite categorical, random variables. 
+When merging logic with probability, the restriction to discrete random variables
+is natural and allowed Sato to elegantly extend the logic program semantics
+into the celebrated distribution semantics.   
+
+
+
+
+\begin{example}[Probabilistic Logic Program]
+  \label{example:intro}
+
+  \new{
+  Consider the probabilistic logic program below (written in \problogsty syntax~\citep{fierens2015inference}), where we model the behavior of two machines. We first state that there are two machines (Line~\ref{line:exintro:1}). Subsequently, we say that the temperature has a probability of $0.8$ to be low (Line \ref{line:exintro:temp}) and that the cooling of the machines works with probability $0.99$ and $0.95$ respectively (Lines \ref{line:exintro:cool1} and \ref{line:exintro:cool2}) These labeled facts are called \textit{probabilistic facts}. We also model that the machines themselves work: either if the cooling is working (Line~\ref{line:exintro:work1}) or if the temperature is low (Line~\ref{line:exintro:work2}).
+  }
+  \begin{problog*}{linenos}
+machine(1). machine(2). @\label{line:exintro:1}@
+0.8::temperature(low). @\label{line:exintro:temp}@
+0.99::cooling(1).@\label{line:exintro:cool1}@
+0.95::cooling(2).@\label{line:exintro:cool2}@
+
+works(N):- machine(N), cooling(N). @\label{line:exintro:work1}@
+works(N):- machine(N), temperature(low). @\label{line:exintro:work2}@
+
+    \end{problog*}
+    \new{
+We can now, for instance, ask for the conditional probability of the first machine working given that the second one works:
+    $$
+    P(\mathprobloginline{works(1)}=\top \mid \mathprobloginline{works(2)}=\bot).
+    $$
+The (exact) inference algorithm currently implemented in \problogsys~\citep{fierens2015inference,dries2015problog2} then returns as answer the probability $\approx 0.998$.
+}
+\end{example}
+
+While \citeauthor{sato1995statistical}'s extension of logic programming to the probabilistic domain is elegant, it also imposes an important restriction to random variables with countable sample spaces. This raises the question of how to extend the distribution semantics towards hybrid, \ie discrete-continuous, random variables.
+
+Defining the semantics of probabilistic programming language with support for random variables with infinite and possibly uncountable sample spaces is a much harder task. This can be observed when looking at the development of important imperative and functional probabilistic programming languages~\citep{goodman2008church,mansinghka2014venture} that support  continuous random variables. 
+These works initially focused on inference, typically using  a particular Monte Carlo approach, yielding  an operational or procedural semantics. It is only follow-up work that started to address a declarative semantics for such hybrid probabilistic programming languages.
+~\citep{staton2016semantics,wu2018discrete}.
+%\footnote{Aside from some subtle differences (\cf~\citep{kimmig2017probabilistic}), in non-logical probabilistic programming languages declarative semantics are usually called denotational and procedural semantics are referred to as operational.}
+
+The PLP landscape has experienced similar struggles. First approaches for  hybrid PLP languages were achieved by restricting the language~\citep{gutmann2010extending,gutmann2011magic,islam2012inference} or via recourse to procedural semantics~\citep{nitti2016probabilistic}.  The key contributions of this paper are:
+
+\begin{enumerate}[label={\bf C\arabic*}]
+  \setcounter{enumi}{0}
+\item We introduce the {\em measure semantics} for mixed discrete-continuous probabilistic logic programming.
+Our {\em measure semantics} (based on measure theory) extends \citeauthor{sato1995statistical}'s distribution semantics and supports:
+\begin{itemize}
+    \item  \label{item:k1} a countably infinite number of random variables,
+     \item a uniform treatment of discrete and continuous random variables,
+      \item a clear separation between probabilistic dependencies and logical dependencies by extending the ideas of \citet{poole2010probabilistic} to the hybrid domain.
+    \end{itemize}
+\item \label{item:k3} We introduce \dcproblogsty, an expressive PLP language in the discrete-continuous domain,
+which incorporates the{\em measure semantics}. 
+ \dcproblogsty has standard discrete PLP, \eg ProbLog~\citep{fierens2015inference}, as a special case (unlike other hybrid PLP languages~\citep{gutmann2011magic,nitti2016probabilistic}).
+    \item \label{item:k2}  We introduce a novel inference algorithm, {\em infinitesimal algebraic likelihood weighting} (IALW), for hybrid PLPs,
+which extends the standard knowledge compilation approach used in PLP towards mixed discrete continuous distributions, and  which 
+provides an operational semantics for hybrid PLP.
+\end{enumerate}
+
+
+In essence, our contributions ~\ref{item:k1} and ~\ref{item:k3} generalize both  Sato's distribution semantics and discrete PLP such that in the absence of random variables with infinite sample spaces we recover the \problogsty language and declarative semantics. It is noteworthy that our approach of disentangling probabilistic dependencies and logical ones, allows us to express more general distributions than state-of-the-art approaches such as~\citep{gutmann2011magic,nitti2016probabilistic,azzolini2021semantics}. 
+Contribution \ref{item:k2} takes this generalization to the inference level: in the exclusive presence of finite random variables our IALW algorithm reduces to \problogsty's current inference algorithm~\citep{fierens2015inference}.
+
+
+
+
+
+
+
+
+
+
+
+
+% Probabilistic logic programming (PLP) constitutes a well-studied field within computer science, with a rich tradition dating back to the early 1990s. In particular, \citet{dantsin1990probabilistic}, \citet{ng1992probabilistic}, and \citet{poole1993probabilistic} generalized earlier ideas of \citet{nilsson1986probabilistic} and \citet{pearl1988probabilistic} on probabilistic logic towards probabilistic logic programming. In \citeyear{sato1995statistical}, \citeauthor{sato1995statistical} then presented his seminal work on {\em distribution semantics} for probabilistic logic programs. All these early works on PLP restrict random variables to finite categorical (usually binary) random variables.
+
+% An advantage of restricting a probabilistic programming language to finite random variables is the relative straightforwardness of defining a declarative semantics for programs, i.e giving meaning to programs regardless of the underlying inference algorithm used in the implementation of the language.
+% In PLP, this is often done by falling back on \citeauthor{sato1995statistical}'s distribution semantics~\citep{sato1997prism,kersting2000bayesian,vennekens2004logic,de2007problog}.
+
+% Defining declarative semantics for a language including random variables with infinite and possibly uncountable sample spaces is a much harder task. This can be observed when looking at the development of non-logic probabilistic programming languages~\citep{goodman2008church,mansinghka2014venture}, whose focus is on continuous random variables and which were only defined with regard to a specific Monte Carlo inference algorithm. Only follow-up works started tackling the issue of fully declarative semantics for non-logic probabilistic programming languages in discrete-continuous domains~\citep{staton2016semantics,wu2018discrete}.\footnote{Aside from some subtle differences (\cf~\citep{kimmig2017probabilistic}), in non-logical probabilistic programming languages declarative semantics are usually called denotational and procedural semantics are referred to as operational.}
+
+% The PLP landscape has experienced similar struggles. First attempts of extending the traditionally finite sample space to discrete-continuous domains (also called hybrid) were achieved by restricting the language~\citep{gutmann2010extending,gutmann2011magic,islam2012inference} or via recourse to procedural semantics~\citep{nitti2016probabilistic}. This brings us to our first key contribution:
+
+
+% \begin{enumerate}[label={\bf C\arabic*}]
+%   \setcounter{enumi}{0}
+% \item
+% We introduce \dcproblogsty, a fully expressive PLP language in the discrete-continuous domain, which we equip with fully declarative semantics based on \citeauthor{sato1995statistical}'s distribution semantics. \dcproblogsty is a PLP language with:
+%     \begin{itemize}
+%         \item \label{item:k1} a countably infinite number of random variables
+%         \item a uniform treatment of discrete and continuous random variables
+%         \item a clear separation between probabilistic dependencies and logical dependencies by extending the ideas of \citet{poole2010probabilistic} to the hybrid domain
+%         \item standard discrete PLP, \eg ProbLog~\citep{fierens2015inference}, as a special case (unlike other hybrid PLP languages~\citep{gutmann2011magic,nitti2016probabilistic}).
+%     \end{itemize}
+% \end{enumerate}
+% Our second key contribution concerns extending probabilistic inference in discrete PLP, \eg \problogsty~\citep{fierens2015inference}, to discrete-continuous domains. 
+% \begin{enumerate}[label={\bf C\arabic*}]
+%   \setcounter{enumi}{1}
+%     \item \label{item:k2} We present {\em infinitesimal algebraic likelihood weighting} (IALW), a novel inference algorithm that allows for the combination of knowledge compilation~\citep{darwiche2002knowledge} and sampling based approaches in hybrid domains. 
+% \end{enumerate}
+
+% In essence, our contribution ~\ref{item:k1} generalizes Sato's distribution semantics such that in the absence of random variables with infinite sample spaces we recover the \problogsty language.
+% It is noteworthy that our approach of disentangling probabilistic dependencies and logical ones, allows us to express more general distributions than state-of-the-art approaches, \eg~\citep{gutmann2011magic,nitti2016probabilistic,azzolini2021semantics}. 
+% Contribution \ref{item:k2} takes this generalization to the inference level: in the exclusive presence of finite random variables our ALW algorithm reduces to \problogsty's current inference algorithm~\citep{fierens2015inference}.
+
+

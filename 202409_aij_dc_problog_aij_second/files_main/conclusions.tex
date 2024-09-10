@@ -1,0 +1,29 @@
+\section{Conclusions}\label{sec:conclusions}
+
+
+We introduced \dcproblogsty, a hybrid PLP language for the discrete-continuous domain and its accompanying measure semantics.
+\dcproblogsty strictly extends the discrete \problogsty language \citep{de2007problog,fierens2015inference} and the negation-free \dcsty~\citep{gutmann2011magic} language.
+In designing the language and its semantics we adapted ~\citet{poole2010probabilistic}'s design principle of percolating probabilistic logic programs into two separate layers: the random variables and the logic program.
+% , and applied it to both the discrete and the continuous random variables. 
+ Boolean comparison atoms then form the  link between the two layers.
+It is this clear separation between the random variables and the logic program that has allowed us to use simpler language constructs and to write programs using a  more concise and intuitive syntax than alternative hybrid PLP approaches \citep{gutmann2010extending,nitti2016probabilistic,speichert2019learning,azzolini2021semantics}.
+
+Separating random variables from the logic program also allowed us to develop the IALW algorithm to perform inference in the hybrid domain. 
+IALW is the first algorithm based on knowledge compilation and algebraic model counting for hybrid probabilistic programming languages
+and as such it generalizes the standard knowledge compilation based approach for PLP.
+It is noteworthy that IALW correctly computes conditional probabilities in the discrete-continuous domain using the newly introduced infinitesimal numbers semiring.
+
+
+Interesting future research directions include adapting ideas from functional probabilistic programming (the other declarative programming style besides logic programming) in the context of probabilistic logic programming. For instance, extending \dcproblogsty with a type system~\citep{Schrijvers2008TowardsTP} or investigating more recent advances, such as {\em quasi-Borel spaces}~\citep{heunen2017convenient} in the context of the measure semantics.
+
+
+
+% We presented \dcproblogsty, a PLP language for the discrete-continuous domain. \dcproblogsty strictly extends the discrete \problogsty language \citep{de2007problog,fierens2015inference} and the negation-free \dcsty~\citep{gutmann2011magic} language.
+% In designing the language we followed the approach of percolating probabilistic logic programs into two layers 1) random variables 2) logic program. We adapted this paradigm from~\citet{poole2010probabilistic} and applied it to the discrete-continuous setting. Boolean comparison atoms form the link between the two layers.
+
+% When compared to other PLP languages following Sato's distribution semantics \citep{gutmann2010extending,nitti2016probabilistic,speichert2019learning,azzolini2021semantics}, the clear separation between the random variables and the logic program has allowed us to eliminate bloated language constructs and to write programs using a concise and intuitive syntax.
+
+% With IALW, we have also presented the first algorithm based on knowledge compilation and algebraic model counting for hybrid probabilistic programming languages. It is noteworthy that IALW correctly computes conditional probabilities in the discrete-continuous domain using the newly introduced infinitesimal numbers semiring.
+
+% Besides providing an efficient implementation of the \dcproblogsty language together with the IAWL inference algorithm, 
+% interesting future directions of research might include incorporating ideas from functional probabilistic programming (the second declarative programming style besides logic programming). For instance, extending \dcproblogsty with a type system~\citep{Schrijvers2008TowardsTP} or investigating more recent advances, such as {\em quasi-Borel spaces}~\citep{heunen2017convenient} in the context of the distribution semantics.

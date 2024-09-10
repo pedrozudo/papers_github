@@ -1,0 +1,332 @@
+\section{\dcproblogsty Syntax and Type System} \label{sec:syntax}
+\ak{I propose to move the type system and multiple dispatch stuff to a separate implementation section as much as possible;\ie, from here onwards: 1) introduce DC-ProbLog programs as normal logic program + probabilistic facts + distributional facts + comparison predicates instead of wrapped query terms, 2) show that these map to DC-PLP, 3) add further syntactic sugar (is/2, distributional clauses, anything else? are annotated disjunctions part of DC-ProbLog?) and show how that maps back onto the basic version, 4) talk about multiple dispatch and all that }
+
+
+\todo{this is just moved from earlier sec 3, needs linking to DC-PLP and merging with semantics in next section; the goal is to introduce DC-ProbLog as a higher level modeling language that makes concrete choices for the reserved functors in DC and introduces nicer syntax / syntactic sugar, but for its semantics maps back to (an instance of) DC-PLP}
+
+\subsection{Type System}
+Before we formally specify the syntax of \dcproblogsty, we specify a hierarchical type system. To this end we will modify the type system given in~\citep{sterling1994art}, one of the main references on \prologsty. The base type in the type system of~\citep{sterling1994art} is the \type{Term} type, from which other types are subtyped. In other words: everything is a \type{Term}.
+\begin{enumerate}
+	\item[]   \type{Term}
+	\begin{itemize}		
+		\item \type{Atomic}
+		\begin{itemize}
+			\item \type{Atom}
+			\item \type{Number}
+		\end{itemize}
+		\item \type{Compound}
+	\end{itemize}
+\end{enumerate}
+
+{\em Logical variables} (technically referred to as {\em meta-logical variables}~\citep[Chapter 10]{sterling1994art}) are omitted from the type system hierarchy, as they can ground to any type, depending on the context. In Figure~\ref{fig:type_system_prolog} we give a diagrammatic representation of the \prologsty type system.
+Note that \problogsty uses a different nomenclature: atom terms in \problogsty correspond to the union of atom terms and compound terms in the \prologsty nomenclature of~\citep{sterling1994art}. In a first step we are going to change the \prologsty type system to match the nomenclature of \problogsty.
+\begin{enumerate}
+	\item[]   \type{Term}
+	\begin{itemize}		
+		\item \type{Number}
+	\end{itemize}
+	\begin{itemize}
+		\item \type{Atom}
+	\end{itemize}
+\end{enumerate}
+
+In Table~\ref{table:comp_type_system} we give a side by side comparison of the two type systems and in Figure~\ref{fig:type_system_prolog} and~\ref{fig:type_system_problog} we give diagrammatic representations of both type systems.
+
+\begin{table}[h]
+	\caption{Comparison of the \prologsty type system and the \problogsty type system.}
+	\label{table:comp_type_system}
+	\begin{center}
+		\begin{tabular}{c||c|c|c}
+			example \type{Term} & \multicolumn{2}{c|}{\prologsty} & \problogsty \\ 
+			\hline
+			\probloginline{3} & \type{Number} & \multirow{2}{*}{\type{Atomic}}  &  \type{Number}  \\
+			\cline{1-1} \cline{4-4}
+			\probloginline{foo} & \type{Atom} &   & \multirow{2}{*}{\type{Atom}}  \\
+			\cline{1-3}
+			\probloginline{bar(foo)} &  \multicolumn{2}{c|}{\type{Compound}}  &   \\
+			%	\probloginline{foo} & \begin{tabular}{@{}c|c@{}}
+			%		\type{Atom} &\multirow{0}{c}{\phantom{\type{Atomic}}} 
+			%	\end{tabular}  &  \type{Atom} \\
+		\end{tabular}
+	\end{center}
+\end{table}
+
+
+
+\begin{figure}[h!]
+	\centering
+	\begin{minipage}{.45\textwidth}
+		\centering
+		\includegraphics[width=0.85\linewidth]{../figures/type_hierarchy_prolog.pdf}
+	\end{minipage}%
+	\hfill
+	\begin{minipage}{.45\textwidth}
+		\centering
+		\includegraphics[width=0.85\linewidth]{../figures/type_hierarchy_problog.pdf}
+	\end{minipage}
+	\par
+	\medskip
+	\noindent
+	\begin{minipage}[t]{.45\textwidth}
+		\captionof{figure}[Diagrammatic representation of the hierarchical \prologsty type system.]{Diagrammatic representation of the hierarchical \prologsty type system~\citep{sterling1994art}. The \type{Number} type is further subtyped into \type{Integer} and \type{Float}.}
+		\label{fig:type_system_prolog}
+	\end{minipage}%
+	\hfill
+	\begin{minipage}[t]{.45\textwidth}
+		\captionof{figure}[Diagrammatic representation of the hierarchical \problogsty type system.]{Diagrammatic representation of the hierarchical \problogsty type system. The \type{Number} type is further subtyped into \type{Integer} and \type{Float}.}
+		\label{fig:type_system_problog}
+	\end{minipage}
+\end{figure}
+
+
+
+Analogously to the just introduced type system of \problogsty, the base type for \dcproblogsty is again the \type{Term} type. At this point we modify the \problogsty type system by subtyping terms with a \type{Distrbution} type and a \type{Symbol} type. 
+Dividing \dcproblogsty terms into \type{Distribution} terms and \type{Symbol} terms reflects the characterization of~\citet{poole2010probabilistic} of probabilistic programs as being constituted of independent choices (\type{Distribution}) and a deterministic system (\type{Symbol}).
+
+\begin{definition}\label{def:type_system}
+	The \dcproblogsty type system is a hierarchical type system with each type being a disjoint union of its subtypes.
+	\begin{enumerate}
+		\item[] \type{Term} 
+		\begin{enumerate}
+			\item[1.] \type{Distribution}
+			\begin{itemize}
+				\item \type{DiscreteD}
+				\item \type{ContinuousD}
+				\item \type{MixtureD}
+			\end{itemize}
+			\item[2.] \type{Symbol}
+			\begin{itemize}		
+				\item \type{Arithmetic}
+				\begin{itemize}
+					\item  \type{RandomVariable}
+					%			\begin{itemize}
+					%				\item \type{DiscreteRV}
+					%				\item \type{ContinuousRV}
+					%				\item \type{MixtureRV}
+					%			\end{itemize}
+					\item \type{Number}
+				\end{itemize}
+				\item \type{Atom}
+			\end{itemize}
+		\end{enumerate}
+	\end{enumerate}
+\end{definition}
+
+A diagrammatic overview of the \dcproblogsty type system is given in Figure~\ref{fig:type_system}.
+
+\begin{figure}[t]
+	\begin{center}
+		\includegraphics[width=\linewidth]{../figures/type_hierarchy.pdf}
+	\end{center}
+	\caption[Diagrammatic representation of the hierarchical \dcproblogsty type system.]{Diagrammatic representation of the hierarchical \dcproblogsty type system. Compared to Definition~\ref{def:type_system},  the \type{Number} type is further subtyped into \type{Integer} and \type{Float} types and the \type{RandomVariable} type is subtyped into \type{DiscreteRV}, \type{ContinuousRV}, and \type{MixtureRV}. These subtypes of \type{RandomVariable} mimic the subtypes of the \type{Distribution} type.}
+	\label{fig:type_system}
+\end{figure}
+
+
+
+%A type is a disjoint union of its subtytpes, for example:
+%$$\type{Term}=\type{Distribution} \cup \type{Symbol}$$
+
+
+
+
+
+
+
+\subsubsection{Distribution Terms}
+As already seen in Examples~\ref{example:dcproblog_machine} and~\ref{example:dcproblog_poisson_population}, \type{Distribution} terms determine the probability distribution according to which a random variable is distributed.
+
+\begin{definition}[\type{Distribution}]
+	Terms of type \type{Distribution} are constructed by using a reserved random function symbol and applying it to a (possible empty) tuple of input arguments, which maps the input tuple to a distribution term.
+	Distribution terms are only allowed to be invoked as a second argument to the reserved distribution predicate \probloginline{is}\lstinline[columns=fixed]|/2|.
+	This also means that random function symbols are only used there as well. \dcproblogsty subtypes the \type{Distribution} type into the \type{DiscreteD}, \type{ContinuousD}, and \type{MixtureD} types.
+\end{definition}
+
+\probloginline{poisson(6)} and \probloginline{normal(20,5)} are for instance of types \type{DiscreteD} and  \type{ContinuousD}, respectively.
+Note that distributions of type \type{ContinuousD} denote {\em absolutely continuous} probability distributions\footnote{\dcproblogsty does not support {\em singular continuous} probability distributions such as the Cantor distribution.}. \ak{would be nice to have a hint on why this restriction is there} We give an example of a distribution of type \type{MixtureD} in Example~\ref{ex:indian_gpa_function}.
+%\begin{example} \probloginline{mixed} is a random variables that is a mixture of a continuous part (the truncated normal between $0$ and $4$ with mean $3$ and standard deviation $1$) and a discrete part. 
+%\begin{problog}
+%mixted~Mix((0.998,TruncNormal(3,1,0,4)),(0.001,4),(0.001,4))
+%\end{problog}
+%\end{example}
+
+%For and example, see Example~\ref{example:dcproblog_poisson_population}: we have the random function symbol \probloginline{poisson}\lstinline[columns=fixed]{/1}, apply it to the input tuple \probloginline{(6)}, and obtain a term of type \type{Distribution}.
+
+
+\subsubsection{Symbol Terms}
+\type{Symbol} terms are the building blocks of the discrete structure that makes up a logic program and as such determine also the deterministic system of a probabilistic logic program. Beyond the reserved syntax, which is used to define the distribution terms, the user is free to use any identifier (following \prologsty conventions) to declare \type{Symbol} terms -- this includes standard \prologsty terms such as lists.
+%The subtyping of the \type{Symbol} type (shown in Figure~\ref{fig:type_system}) follows the convention given in~\citep[Chapter 9]{sterling1994art}.
+
+\begin{definition}[\type{Arithmetic}]
+	Terms of type \type{Symbol} for which arithmetic operations are defined are of type \type{Arithmetic}. \type{Arithmetic} terms can be used as second argument to the builtin \probloginline{is}\lstinline[columns=fixed]|/2| functor. \type{Arithmetic} terms are subtyped with \type{RandomVariable} terms and \type{Number} terms.
+%	\ak{Def 6.3 Arithmetic terms: if (as stated in def 6.1) each type is the disjoint union of its subtypes, that means that "arithmetic" is made up exclusively of numbers and RVs, \ie, terms like 3-2 or min(x,5) for a RV x are not allowed, whereas the first two sentences of def 6.3 suggests they might be allowed (only having numbers and RVs directly on the rhs of is/2 seems quite boring...). Which is it?
+%		Related to this, defs 6.8 and 6.10 talk about RVs and Numbers, why not simply "arithmetic"?}
+\end{definition}
+We talk in more detail about \type{Arithmetic} terms and their evaluation in Subsection~\ref{sec:arithmetic}.
+
+\begin{definition}[\type{RandomVariable}] \label{def:random_variable}
+	\type{RandomVariable} terms are named by the programmer using distributional facts with the binary infix predicate \probloginline{is}\lstinline[columns=fixed]|/2| and inherit their subtype from the distribution term. All random variables present in a \dcproblogsty program are named. \type{RandomVariable} terms are a subtype of the \type{Arithmetic} type. \ak{Def 6.4: why do you restrict random variables to be arithmetic? What about color(Ball)~uniform([red,green,blue])? Of course, such finite discrete domains could be encoded using integers and then translated back in the LP, so theoretically speaking it's probably not a restriction to only have numbers, but from a modeling perspective, it is surprising to me.}
+\end{definition}
+
+Examples of terms of type \type{RandomVariable} would be \probloginline{temperature} and \probloginline{n_people} in Examples~\ref{example:dcproblog_machine} and~\ref{example:dcproblog_poisson_population}, where we declared the random variables through so-called {\em distributional facts}: 
+\begin{problog}
+temperature ~ normal(20,5).
+n_people ~ poisson(6).
+\end{problog}
+As mentioned in Defintion~\ref{def:random_variable}, \type{RandomVariable} terms inherit their type from the associated \type{Distribution} term, \eg a \type{ContinuousD} term induces a random variable term of type \type{ContinuousRV}.
+
+Note that not all probabilistic programming languages enforce the naming of random variables. In the functional probabilistic programming language \anglicansty~\citep{wood2014approach}, for instance, the user can declare anonymous random variables, much like anonymous functions, \ie \textlambda-functions.
+\ak{Discussion of named/unnamed between Defs 6.4 and 6.5: would be nice to have a brief hint on why you made that choice}
+
+\begin{definition}[\type{Number}] Terms of type \type{Number} are used to express numerical data types such as integers and floating point numbers.	
+\end{definition}
+
+
+\ak{terminology mix-up; predicates never form terms}
+\begin{definition}[\type{Atom}]
+	An atom is of the form \probloginline{p(t@$_1$@,@\dots @, t@$_n$@ )} where \probloginline{p} is a predicate of arity $n$ and the \probloginline{t@$_i$@} are \type{Symbol} terms~\citep{fierens2015inference}. Predicates used to construct \type{Atom} terms must not clash with the builtin predicates and reserved random function symbols used to declare \type{Distribution} terms. Terms of type \type{Atoms} constitute the building blocks of the discrete structure of a probabilistic logic program.
+\end{definition}
+
+Examples of atoms terms would be \probloginline{foo} or \probloginline{bar(foo,42)}. The latter is constructed using the predicate \lstinline{bar/2} and the tuple of \type{Symbol} terms \probloginline{(foo,42)}. \probloginline{foo} is of type \type{Atom} and \probloginline{42} is a \type{Number} term.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Syntax}
+%Based on the type system, we now define the syntactic components of DC-ProbLog and its syntax.
+\begin{definition}[Deterministic Rules and Facts]
+	A (normal) logic program is a set of rules. A rule is a universally quantified expression of the form
+	\begin{problog}
+h:- b@$_1$@, @\dots@, b@$_n$@.
+	\end{problog}
+	where \probloginline{h} is an \type{Atom} term and $\{ \text{\probloginline{b@$_1$@}}, \text{\dots},\text{\probloginline{b@$_n$@}} \}$ is a set of $n$ literals.
+	Literals are either \type{Atom} terms, or their negation.
+	The \type{Atom} term \probloginline{h} is called the head of the rule and \probloginline{b@$_1$@, @\dots@, b@$_n$@} the body. The latter represents the
+	conjunction $\text{\probloginline{b@$_1$@}} \land \cdots \land  \text{\probloginline{b@$_n$@}}$. A fact is a rule that has \probloginline{true} as its body and is simply written as
+	\begin{problog}
+h.
+	\end{problog}
+\end{definition}
+
+
+
+
+\begin{definition}[Probabilistic Facts]
+	Probabilistic facts are of the form \probloginline{p::fact}. \probloginline{p} is a term of type \type{Number} or \type{RandomVariable}, with $0{\leq} \text{\probloginline{p}} {\leq} 1$  and \probloginline{fact} is a ground atom. 
+	%\begin{definition} A {\bf probabilistic fact} is a ground definite fact labeled with a probability.
+\end{definition}
+
+
+\begin{definition}[Distributional Facts]
+	Distributional facts introduce random variable terms and associate them with a distribution using the reserved binary predicate \probloginline{~}\lstinline[columns=fixed]|/2| in infix notation. A distributional fact is a ground fact of the form \probloginline{rand ~ distribution}, where \probloginline{distribution} is a well-typed distribution term with output type \type{DistributionX} and \probloginline{rand} is a ground term whose functor is not reserved. The distributional fact introduces \probloginline{rand} as a random variable of type \type{RandomVariableX}, \ie the type of the random variable term mimics the type of the distribution term.
+\end{definition}
+Distributional facts can be thought of as the link between the independent choices (in form of distributions) and the discrete structure (in form of rules and facts).
+
+\begin{definition}[Comparison predicates] \label{def:comparison}
+	\dcproblogsty (similar to \prologsty and \problogsty) uses a fixed set of builtin binary predicates whose truth values depend on the \emph{evaluation} of its arguments. For terms that can be evaluated (\type{RandomVariable} terms and \type{Number} terms) we use the set
+	$\bowtie=\{ \text{\probloginline{=:=}}, \text{\probloginline{=\=}}, \text{\probloginline{<}}, \text{\probloginline{>}},  \text{\probloginline{=<}}, \text{\probloginline{>=}} \}$
+	of binary predicates written in infix notation.
+	Each of these has the usual \prologsty arithmetic interpretation of evaluating each side and comparing the results.
+	Just as for \prologsty arithmetic, truth values of atoms using these predicates are determined through an evaluation process that is external to the (probabilistic) logic program. Such atoms can be used in clause bodies, but never in clause heads (or as facts).
+\end{definition}
+
+%We will further discuss arithmetic evaluations in Subsection~\ref{sec:arithmetic}.
+
+\begin{example} Comparison predicates allow for the comparison of random variables to numbers. 
+	\begin{problog*}{linenos}
+x ~ normal(0,3).
+q:- x>0.
+query(q).
+	\end{problog*}
+\end{example}
+
+
+
+%\begin{definition}\label{def:distributional_fact}
+%	A {\bf distributional fact} is a ground definite fact with the reserved binary predicate \probloginline{is}\lstinline[columns=fixed]|/2| used in infix notation.
+%\end{definition}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Multiple Dispatch} \label{ref:multiple_dispatch}
+The attentive reader might have noticed that in Definition~\ref{def:comparison} we used the same comparison predicates, for \type{RandomVariable} terms as well as \type{Number} terms. In \dcproblogsty we resolve this clash through {\em multiple dispatching}\citep{castagna1995calculus}.
+{ Multiple dispatching} is the process of dynamically selecting at run time\footnote{In the context of logic programming we understand as run time the time it takes to ground the logic program part of a \dcproblogsty program.} a specific implementation of a function based on the types of the arguments that are fed as input to the corresponding function symbol.
+Such functions are referred to as {\em multimethods}. 
+An early example of multiple dispatch is the {\em Common Lisp Object System}~\citep{keene1989object}. Multiple dispatch is also the programming paradigm on which the \juliasty programming language is built~\citep{bezanson2017julia}. We reuse this idea in the context of probabilistic logic programming with random function symbols to retain a simple and neat syntax.
+Consider, for instance, the declaration of the normal distribution in Example~\ref{example:dcproblog_machine}.
+The definition of the function is the following:
+$$ \text{\probloginline{normal}}: \type{Number} \times \type{Number} \rightarrow \type{ContinuousD}$$
+However, the arguments of a normal distribution (its mean and standard deviation) might as well be random variables themselves.
+Multiple dispatching then allows us to {\em overload} the \probloginline{normal} function symbol by using arguments of a different type\footnote{For simplicity we omit that the standard deviation has to be a strictly positive (real) number, which can be enforced by extending the type system.}:
+\begin{align*}
+	\text{\probloginline{normal}}&: \type{RandomVariable} \times \type{Number} \rightarrow \type{ContinuousD} \\
+	\text{\probloginline{normal}}&: \type{Number} \times \type{RandomVariable} \rightarrow \type{ContinuousD} \\
+	\text{\probloginline{normal}}&: \type{RandomVariable} \times \type{RandomVariable} \rightarrow \type{ContinuousD}
+\end{align*}
+The exact implementation of these random function symbols is left to the designer of the implementation of the language.
+%In the next Subsection~\ref{sec:arithmetic} we will encounter further usages of multiple dispatching in \dcproblogsty.
+
+
+
+
+\subsection{Arithmetic Evaluation}\label{sec:arithmetic}
+
+\ak{Sec 6.1.4: you say the correct functor is determined during grounding, but doesn't grounding (at least to some extend) depend on the type of inference? \eg, if we ground during sampling, I'd expect the second line of ex 6.4 to ground the X to different numbers in different samples / runs, whereas exact inference techniques (including techniques to find the relevant ground program of a query) would probably ground to something symbolic? Theoretically speaking, grounding usually refers to grounding wrt the Herbrand universe, \ie, all the symbols in the program (plus in the case of arithmetic the countably many outcomes of arithmetic evaluations), but continuous distributions are extending that potential universe into the uncountable, so we need to be careful (and I need to think about this again for the journal version...)}
+
+\prologsty implementations reserve a set of predicate names for system-related procedures. These system predicates are usually deployed when the goal is to perform efficient arithmetic operations on numbers, either by using specialized algortihms or specialized hardware. For example, when a user wants to add up the integers \probloginline{3} and \probloginline{5} they simply write \probloginline{Sum is 3+5}. The predicate \probloginline{is}\lstinline[columns=fixed]|/2| takes the second argument, passes it to an external evaluation engine, which performs integer addition, and unifies the result with the logical variable \probloginline{Sum}. It is rather obvious that the concept of multiple dispatch comes in handy here: the same functors can be used to perform the same operations on terms of different types. The correct functor is only dertermined during the grounding of the logic program, \ie during runtime.
+
+The key difference between the external arithmetic engine of \prologsty (or \problogsty) and the external arithmetic engine of \dcproblogsty is that the external engine of the latter is capable of performing arithmetic operations (perform evaluations) with random variables. Combining this innovation with multiple dispatch allows us to retain the same syntax (same functor) to perform arithmetic operations on \type{RandomVariable} terms and/or \type{Number} terms.
+
+
+\begin{example} A \dcproblogsty code snippet showing how random variable terms can be used in an arithmetic expression. 
+	\begin{problog*}{linenos}
+x ~ normal(0,3).
+q:- X is x+3, X>3.
+query(q).
+	\end{problog*}
+\end{example}
+
+Multiple dispatch allows \dcproblogsty to call specific implementations of the comparison predicates in the external arithmetic engine.
+In other words, multiple dispatch allows for using the same predicate for semantically different terms.
+Comparing two terms of type \type{Number}, for example, materializes as a deterministic fact, whereas a comparison between terms of types \type{Number} and \type{RandomVariable} materializes as a probabilistic query. We will see how this extremely useful mechanism works in the next Section~\ref{sec:semantics}, where we also introduce the semantics of \dcproblogsty.
+
+
+
+
+\subsection{Relationship of Multiple Dispatch to Typing in \prologsty}
+
+Traditionally \prologsty is {\em weakly typed}. This means that only at run time (grounding time) it is checked whether a relation with certain arguments is present in the logic database, which is a set of ground relations. If the relation is not present, \prologsty implementations do usually not throw an error but the proof of the goal that is currently proven fails. For builtin predicates such as \probloginline{is}\lstinline[columns=fixed]|/2| or any comparison predicates, the run time type system is more strict and the \prologsty implementation might actually throw an error. For instance, the presence of the relation \probloginline{three=:=3} in a proof would throw an error.
+Such typed arithmetic relations can be thought of as {\em multirelations}, which have a different interpretations based on their type at run time. In other words, they are the logic programming equivalent to multimethods: their interpretation depends on their predicate and the types of their arguments. 
+
+In \dcproblogsty we extend this idea of multirelations using the framework of multiple dispatch. The major difference being that the typed relations in \dcproblogsty are not only used to select the right computation in the external arithmetic engine (\eg floating point addition vs. integer addition) but the multirelations in \dcproblogsty can also affect the structure of the probabilistic program. We will encounter examples thereof in Section~\ref{sec:dcproblog}, where we rewrite a \dcproblogsty program as a DC-PLP program and where we have rewrite rules that do not only depend on the predicate of a relation but also on the types of the relation's arguments.
+
+Note that in \dcproblogsty not only the builtin comparison predicates and the \probloginline{is}\lstinline[columns=fixed]|/2| have a typed signature but also the random function symbols, \eg \probloginline{normal/2}. We can say that interpreted predicated and functors, that is predicates and functors that have a system internal meaning, possess a type signature. This results in a type dependent calculus.
+
+
+
+
+\subsubsection*{Strongly Typed \prologsty}
+
+While \prologsty is traditionally not strongly/statically typed, there have been efforts to extend \prologsty with such a type system. The most interesting effort is probably the one presented in~\citet{Schrijvers2008TowardsTP}, where the authors develop the idea of partially typing a \prologsty program, \ie typing is optional and untyped code is interpreted instead of compiled.  Our efforts to utilize multiple dispatch within a (probabilistic) logic programming language can be understood as an effort orthogonal to the efforts towards statically typed \prologsty. Introducing predicates with strongly typed signatures can also be regarded as adding interpreted predicates to the internal \prologsty engine. 

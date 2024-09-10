@@ -1,0 +1,139 @@
+
+
+\section{Relation to the DC language}\label{sec:dcproblog-dc}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Distributional clauses were first introduced in the language of the same name  by \cite{gutmann2011magic}, which at that point did not support negation. For negation-free programs, our interpretation of distributional clauses exactly corresponds to theirs, and \dcproblogsty thus generalizes both ProbLog (with negation) and the original (definite) distributional clause language.
+
+% Indeed, our stochastic $W_P$-operator is a direct generalization of 
+% Gutmann et al.'s stochastic $T_P$-operator, and also  incorporates the checks on when a comparison can use a random variable into the definition of the operator executing the program.
+% Our declarative view, on the other hand, incorporates these into the transformed program itself, thus making the meaning of a program independent of its execution mechanism. 
+
+In the following, we first discuss how the semantics of \dcproblogsty differs from \cite{nitti2016probabilistic}'s procedural view on negated comparison atoms, and then how \dcproblogsty's acyclicity conditions imposed on valid programs differ from those of \cite{gutmann2011magic}.
+
+
+\subsection{Non-exhaustive sets of DCs}\label{sec:proc-nitti}
+\cite{nitti2016probabilistic}  have extended the procedural view of the stochastic $T_P$ operator to locally stratified programs with negation under the perfect models semantics.\footnote{Local stratification is a necessary condition for perfect models semantics, and a sufficient one for well-founded semantics. On this class of programs, both semantics agree~\citep{van1991well}} In their view, a distributional clause \probloginline{x~d :- body} is informally interpreted  as "if \probloginline{body} is true, define a random variable \probloginline{x} with distribution \probloginline{d}". They then use the principle that "any comparison involving a non-defined variable will fail; therefore, its negation will succeed", \ie, they apply negation as failure to comparison atoms. 
+In contrast, as already illustrated in Section~\ref{sec:non-mixture-dc}, we take a purely declarative view here, where all random variables are defined up front, independently of logical reasoning, and distributional clauses serve as syntactic sugar to compactly talk about a group of random variables. Then, truth values of comparison atoms are fully determined by their external interpretation, and do not involve reasoning about whether a random variable is defined or not. That is, we apply classical negation to comparison atoms, and restrict negation as failure to atoms defined by the logic program itself.
+
+The following example adapted from \cite{nitti2016probabilistic} illustrates the difference.
+\begin{example}\label{ex:dc-vs-dcproblog}
+	Consider the following program about the color of certain objects, where the number of objects is given by the random variable \probloginline{n}:
+	\begin{problog}
+n ~ uniform([1,2,3]).
+color(1) ~ uniform([red,green,blue]) :- 1=<n .
+color(2) ~ uniform([red,green,blue]) :- 2=<n .
+color(3) ~ uniform([red,green,blue]) :- 3=<n .
+not_red :- not color(2)=:=red .
+not_red_either :- color(2)=\=red.
+	\end{problog}
+	The \dcproblogsty semantics is given by the transformed program:
+	\begin{problog}
+v0 ~ uniform([1,2,3]).
+v1 ~ uniform([red,green,blue]).
+v2 ~ uniform([red,green,blue]).
+v3 ~ uniform([red,green,blue]).
+
+rv(n,v0).
+rv(color(1),v1) :- rv(n,v0), 1=<v0.
+rv(color(2),v2) :- rv(n,v0), 2=<v0.
+rv(color(3),v3) :- rv(n,v0), 3=<v0.
+
+not_red :- rv(color(2),v2), not v2=:=red.
+not_red_either :- rv(color(2),v2), v2=\=red.
+	\end{problog}
+	If $\mathprobloginline{n}=1$ (i.e., $\mathprobloginline{v0}=1$), neither \probloginline{color(2)} nor \probloginline{color(3)} are associated with a distribution.  Thus, \probloginline{rv(color(2),v2)} fails, and both \probloginline{not_red} and \probloginline{not_red_either} therefore fail as well, independently of the values of the comparison literals.
+	In contrast, under 
+	the procedural semantics of \cite{nitti2016probabilistic}, \probloginline{color(2)=:=red} fails in this case, and \probloginline{not_red} thus succeeds. Similarly, \probloginline{color(2)=\=red} fails, and  \probloginline{not_red_either} thus fails.  
+	Both views agree for $n>1$.
+\end{example}
+
+This example again illustrates that DC-ProbLog's semantics clearly follows the spirit of the distribution   semantics of defining a distribution over interpretations of basic facts (comparison atoms in this case) independently of the logic program rules. 
+%In this view, all random variables "exist" and  "are defined" in all possible worlds, and  truth values of 
+%comparison atoms thus exclusively depend on the external evaluation with respect to the current values of these random variables. This also implies that the negation of a comparison atom is equivalent to the comparison atom using the negated comparison operator, \eg, \probloginline{color(2)=:=red} and \probloginline{not color(2)=\=red} are equivalent, as are \probloginline{n>=2} and \probloginline{not n<2}.  \ak{we should probably stress these declarative aspects earlier already}
+We note that the expressive power of logic programs allows the programmer to explicitly model the procedural view of "failure through undefined variable" in the program if desired, as illustrated in the following example. 
+
+\begin{example}
+	The following DC-ProbLog program is equivalent to the procedural interpretation of the program in  Example~\ref{ex:dc-vs-dcproblog}:
+	\begin{problog*}{linenos}
+n ~ uniform([1,2,3]).
+color(1) ~ uniform([red,green,blue]) :- 1=<n .
+color(2) ~ uniform([red,green,blue]) :- 2=<n .
+color(3) ~ uniform([red,green,blue]) :- 3=<n .
+not_red :- not color(2)=:=red.     
+not_red :- not 2=<n.               
+not_red_either :- 2=<n, color(2)=\=red.
+	\end{problog*}
+	We explicitly model that \probloginline{not_red} is true if either \probloginline{color(2)} can be interpreted and \probloginline{color(2)=:=red} is false (line 5, which is how \dcproblogsty interprets the first clause), or \probloginline{color(2)} cannot be interpreted (line 6, negating the body of the DC in line 3). Similarly, \probloginline{not_red_either} is true if and only if \probloginline{color(2)} can be resolved and \probloginline{color(2)=\=red} is true (line 7, repeating the body of the DC in line 3).
+\end{example}
+
+
+\subsection{Program validity}
+To define valid programs, \citet{gutmann2011magic} impose acyclicity criteria based on the structure of the clauses in the program, whereas we use the ancestor relation between random variables in \dcproblogsty. This means that \dcproblogsty accepts certain cycles in the logic program structure that are rejected by \dcsty, as illustrated in the following example. 
+
+\begin{example}
+	We model a scenario where a property of a node in a network is either initiated locally with probability $0.1$, or propagated from a neighboring node that has the property with probability $0.3$. We consider a two node network with directed edges from each of the nodes to the other one, and directly ground the program for this situation.
+	\begin{problog}
+local(n1) ~ flip(0.1).
+local(n2) ~ flip(0.1).
+transmit(n1,n2) ~ flip(0.3) :- active(n1).
+transmit(n2,n1) ~ flip(0.3) :- active(n2).
+active(n1) :- local(n1)=:=1.
+active(n2) :- local(n2)=:=1.
+active(n1) :- transmit(n2,n1)=:=1.
+active(n2) :- transmit(n1,n2)=:=1.
+	\end{problog}
+	This program is not distribution-stratified based on \citep{gutmann2011magic}, where in order to avoid cyclic probabilistic dependencies 1) DC heads have to be of strictly higher rank than any of their body atoms, 2) heads of regular clauses have to have at least the same rank as each body atom, and 3) atoms involving random terms have to have at least the same rank as the head of the DC introducing the random term. This is impossible with our program due to the cyclic dependency between \probloginline{active}-atoms and \probloginline{transmit}-random terms. The \dcproblogsty semantics, in contrast,  is clearly specified through the mapping:
+	\begin{problog}
+x1 ~ flip(0.1).
+x2 ~ flip(0.1).
+x3 ~ flip(0.3).
+x4 ~ flip(0.3).
+rv(local(n1),x1).
+rv(local(n2),x2).
+rv(transmit(n1,n2),x3) :- active(n1).
+rv(transmit(n2,n1),x4) :- active(n2).
+active(n1) :- rv(local(n1),x1), x1=:=1.
+active(n2) :- rv(local(n2),x2), x2=:=1.
+active(n1) :- rv(transmit(n2,n1),x4), x4=:=1.
+active(n2) :- rv(transmit(n1,n2),x3), x3=:=1.
+	\end{problog}
+	We have four independent random variables, and a definite clause program whose meaning is well-defined despite of the cyclic dependencies between derived atoms. We can equivalently rewrite the logic program part to avoid deterministic auxiliaries:
+	\begin{problog}
+x1 ~ flip(0.1).
+x2 ~ flip(0.1).
+x3 ~ flip(0.3).
+x4 ~ flip(0.3).
+active(n1) :- x1=:=1.
+active(n2) :- x2=:=1.
+active(n1) :- active(n2), x4=:=1.
+active(n2) :- active(n1), x3=:=1.
+	\end{problog}
+	Furthermore, \dcproblogsty agrees with the ProbLog formulation of the original program, \ie,
+	\begin{problog}
+0.1::local_cause(n1).
+0.1::local_cause(n2).
+0.3::transmit_cause(n1,n2) :- active(n1).
+0.3::transmit_cause(n2,n1) :- active(n2).
+active(n1) :- local_cause(n1).
+active(n2) :- local_cause(n2).
+active(n1) :- transmit_cause(n2,n1).
+active(n2) :- transmit_cause(n1,n2).
+	\end{problog}
+	The AD-free program is
+	\begin{problog}
+v1 ~ flip(0.1).
+local_cause(n1) :- v1=:=1.
+v2 ~ flip(0.1).
+local_cause(n2) :- v2=:=1.
+v3 ~ flip(0.3).
+transmit_cause(n1,n2) :- v3=:=1, active(n1).
+v4 ~ finite(0.3).
+transmit_cause(n2,n1) :- v4=:=1, active(n2).
+active(n1) :- local_cause(n1).
+active(n2) :- local_cause(n2).
+active(n1) :- transmit_cause(n2,n1).
+active(n2) :- transmit_cause(n1,n2).
+	\end{problog}
+	As this already is a \dfplpsty program, we can skip the further rewrites. While the definite clauses are factored differently compared to the earlier variants, their meaning is the same. 
+\end{example}
