@@ -1,0 +1,1139 @@
+
+
+
+
+
+
+\begin{abstract}
+	By recursively nesting sums and products, probabilistic circuits have emerged in recent years as an attractive class of generative models as they enjoy, for instance, polytime marginalization of random variables.
+	In this work we study these machine learning models using the framework of quantum information theory, leading to the introduction of \textit{positive unital circuits} (\puncs),
+	which generalize circuit evaluations over positive real-valued probabilities to circuit evaluations over positive semi-definite matrices.
+	As a consequence, \puncs strictly generalize probabilistic circuits as well as recently introduced circuit classes such as PSD circuits.
+\end{abstract}
+
+
+
+\section{Introduction}
+
+
+
+Probabilistic circuits (PCs)~\citep{darwiche2003differential,poon2011sum} belong to an unusual class of probabilistic models: they are highly expressive but at the same time also tractable.
+For instance, so-called decomposable probabilistic circuits~\citep{darwiche2001decomposable} encode probability distributions using nested sums and products over positive real-valued numbers and allow for the computation of marginals in time polynomial in the size of the circuit.
+\citet{zhang2020relationship} noted that it is exactly this restriction to positive values that limits the expressive efficiency (or succinctness) of PCs~\citep{martens2014expressive,decolnet2021compilation}. In particular, the positivity constraint on the set of elements that PCs operate on prevents them from modelling negative correlations between variables.
+
+Circuits that are incapable of modelling negative correlations, \ie circuits that can only combine probabilities in an additive fashion, are also called monotone circuits~\citep{shpilka2010arithmetic}.
+This restricted expressiveness can be combatted by the use of so-called \textit{non-monotone} circuits, where subtractions are allowed as a third operation (besides sums and products). Interestingly, \citet{valiant1979negation} showed that a mere single subtraction can render non-monotone circuits exponentially more expressive than monotone circuits -- a result that has recently been refined for a subclass of decomposable circuits~\citep{loconte2025sum}.
+
+As shown by \citet{harviainen2023inference} and \citet{agarwalprobabilistic}, non-monotone circuits do, however, introduce an important complication: if non-monotone circuits are not designed carefully, verifying whether a circuit encodes a valid probability distribution or not is an NP-hard problem. This does also render learning the parameters of a circuit practically infeasible.
+
+Using the concept of \textit{positive operator valued measures} from quantum information theory, which encode random events as positive semi-definite matrices, we are able to devise non-monotone circuits that nonetheless encode proper (normalized) probability distributions by construction.
+Our approach extends a line of recent works presented in the circuit literature ~\citep{sladek2023encoding,loconte2024subtractive,wangrelationship,loconte2025sum}. However, our work is the first that establishes this deep connection between concepts in quantum information theory and tractable probabilistic models.
+Furthermore, the non-monotone circuits that we introduce generalize probabilistic circuits and PSD circuits~~\citep{sladek2023encoding,loconte2024subtractive,loconte2025sum}\footnote{PSD circuits were later on rebranded as sum of compatible squares circuits~\citep{loconte2025sum}}.
+
+The remainder of the paper is structured as follows. We introduce in Section \ref{sec:qit} the necessary concepts from quantum information theory. In Section \ref{sec:puncs} we then use these concepts to construct tractable probability distributions using positive operator circuits. In Section \ref{sec:special_cases} we impose specific restrictions on the functional form of the computation units in \puncs and show how these restrictions lead to circuit classes known in the literature, \eg probabilistic circuits in Section \ref{sec:diagcircuits}.
+
+In Section~\ref{sec:nsdnmcircuit} we then drop the so-called property of \textit{structured decomposability}, which has been imposed so far on all non-monotone circuit models. As such, we introduce the first circuit model that is non-monotone and only adheres to the weaker property of \textit{decomposability}. We discuss related work in Section~\ref{sec:related} and end the paper with concluding remarks in Section~\ref{sec:conclusions}.
+
+
+
+
+
+% \begin{enumerate*}
+% 	\item We generalize probabilistic circuits over scalars to operator-valued circuits and introduce \puncs (Section~\ref{sec:puncs}).
+% 	\item We use the concept of noise in quantum information theory to construct deep operator mixture circuits, dubbed \noisepuncs (Section~\ref{sec:noisecircuits}).
+% 	\item We provide an efficient parametrization such that the constructed probability distributions using \puncs are normalized by construction (Section~\ref{sec:efficient_param}).
+% \end{enumerate*}
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{A Primer on Quantum Information Theory}
+\label{sec:qit}
+
+
+A widely used and elegant framework to describe measurements of quantum systems is the so-called \textit{positive operator-valued measure} (POVM) formalism. While POVMs have physical interpretations in terms of quantum information and quantum statistics, we will only be interested in their mathematical properties as we use them to show that  circuits (defined in Section~\ref{sec:puncs}) form valid probability distributions.
+We refer the reader to \citep{nielsen2001quantum} for an in-depth exposition on the topic, as well as quantum computing and quantum information theory in general.
+\begin{definition}[Positive Semidefinite]
+	A $\numbond {\times} \numbond$ Hermitian matrix $H$ is called positive semi-definite (PSD) if and only if $\forall \xvars {\in}  \mathbb {C} ^{\numbond}: \xvars^{*} H \xvars {\geq} 0$, where $\xvars^{*}$ denotes the conjugate transpose and $\mathbb {C}^{\numbond}$ the $\numbond$-dimensional space of complex numbers.
+\end{definition}
+\begin{definition}[{POVM~\citep[Page 90]{nielsen2001quantum}}]
+	\label{def:povm}
+	A positive operator-valued measure
+	% with a finite number of elements acting on a finite-dimensional Hilbert space $\mathcal{H}$,
+	is a set of PSD  matrices $\{E(i)\}_{i=0}^{\numevents-1}$ ($I$ being the number of possible measurement outcomes) that sum to the identity:
+	\begin{talign}
+		\sum_{i=0}^{\numevents-1} E(i) = \mathbb{1},
+		\label{eq:povm_normalized}
+	\end{talign}
+\end{definition}
+Before defining the probability of a specific $i$ occurring, we need the notion of a density matrix~\citep{neumann1927wahrscheinlich,landau1927dampfungsproblem}:
+\begin{definition}[{Density Matrix~\citep[Page 102]{nielsen2001quantum}}]
+	\label{def:density_matrix}
+	A density matrix $\rho$ is a PSD matrix of trace one, \ie $\Tr [\rho]=1$.
+\end{definition}
+\begin{definition}[{Event Probability~\citep[Page 102]{nielsen2001quantum}}]
+	\label{def:eventprob}
+	Let $\rho$ be a density matrix and let $i$ denote an event with $E(i)$ being the corresponding element from the POVM. The probability of the event $i$ happening, \ie measuring the outcome $i$, is given by
+	\begin{talign}
+		p(i) = \Tr [ \rho E(i)]
+		\label{eq:povm_prob}
+	\end{talign}
+\end{definition}
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+
+\begin{restatable}{proposition}{proppovmprob}
+	\label{prop:povmprob}
+	The expression in Equation~\ref{eq:povm_prob} defines a valid probability distribution.
+\end{restatable}
+
+\begin{proof}
+	While this is a well-known result we were not able to identify a concise proof in the literature. We therefore provide one in Appendix~\ref{sec:proof:prop:povmprob}.
+\end{proof}
+
+Given that the $E(i)$'s completely describe the event $i$ such that its event probability can be computed, they represent the quantum state of a system. This quantum state (represented by a matrix) lives in a certain Hilbert space. The changes that a quantum state can undergo are then described by so-called \textit{quantum operations} acting on the Hilbert space. We can construct such operations using Kraus' theorem.
+
+
+\begin{theorem}[Kraus' Theorem~\citep{kraus1983states}]
+	Let $\mathcal{H}$  and $\mathcal {G}$ be Hilbert spaces of dimension $N$ and $M$ respectively, and $\qop$ be a quantum operation between $\mathcal{H}$  and $\mathcal {G}$. Then, there are matrices
+	$\{ \kraus_j \}_{j=1}^{D}$ (with $D\leq NM$)
+	mapping $\mathcal{H}$ to $\mathcal {G}$ such that for any state $E(i)$
+	\begin{talign}
+		\qop(E(i)) = \sum_{j=1}^{D} \kraus_j E(i) \kraus_j^*
+		\label{eq:def:kraus}
+	\end{talign}
+	provided that $ \sum _{j} \kraus_{j}^{*} \kraus_{j}\leq \mathbb {1} $ (in the Loewner order sense).
+\end{theorem}
+
+\begin{proof}
+	See \citep[Chapter 8]{nielsen2001quantum}
+\end{proof}
+The $\kraus_j$ matrices are usually referred to as Kraus operators.
+
+
+
+
+
+
+% \todo{talk about Loewner order}
+
+
+% \citep[Corollary 4.2]{baksalary1989some}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Positive Unital Circuits}
+\label{sec:puncs}
+
+
+
+A popular subclass of probabilistic circuits are so-called structured decomposable  probabilistic circuits~\citep{darwiche2011sdd} that are also smooth~\citep{darwiche2001tractable}. The advantage of this circuit subclass is that they can be implemented in a rather straightforward fashion on modern AI accelerators, as demonstrated by \citet{peharz2019random,peharz2020einsum}.
+For the sake of exposition, we will limit ourselves in a first instance to such circuits that adhere to structured decomposability and will generalize to (non-structured) decomposable circuits in Section~\ref{sec:nsdnmcircuit}. For a detailed account on these different circuit properties we refer the reader to~\citep{vergari2021compositional}.
+
+\begin{figure}[t]
+	\centering
+	\input{tex_input/partition}
+
+	\caption{
+		Partition circuit over four binary variables $x_i$ with $i \in \{0,1,2,3\}$, which are given as inputs to the circuit. The internal nodes of the partition circuit correspond the computation units.}
+	\label{fig:circuit}
+\end{figure}
+
+
+\citet{zuidberg2024probabilistic} introduced an abstraction for these smooth structured decomposable circuits in the form of partition trees.
+We further refine this by introducing the concept of a \textit{partition circuit}.
+We give such a circuit in Figure~\ref{fig:circuit}.
+Note, the concept of a partition tree, and hence a partition circuit, is related to the concept of a variable tree~\citep{pipatsrisawat2008new}. However, partition circuits emphasize an interpretation as computation graphs, unlike variable trees.
+
+
+
+\begin{definition}[Partition Circuit]
+	\label{def:partition_circuit}
+	A partition circuit over a set of variables is a parametrized computation graph taking the form of a binary tree. The partition circuit consists of two kinds of computation units:
+	\textit{leaf} and \textit{internal} units (including a single \textit{root}).
+	Units at the same distance from the root form a layer.
+	Furthermore, let $\circuit_k$ denote the root unit or an internal unit. The unit $\circuit_k$ then receives its inputs from two units in the previous layer, which we denote by $\circuit_{k_l}$ and $\circuit_{k_r}$. Each computation unit is input to exactly one other unit, except the root unit, which is the input to no other unit.
+\end{definition}
+
+
+
+
+
+
+\subsection{Positive Operator Circuits}
+
+Using the concept of partition circuits we construct positive operator circuits. Positive operator circuits can be thought of as generalizing circuit evaluations with probabilities to circuit evaluations with PSD matrices.
+% Note, in the definition below we use $\Ocircuit_k$ instead of $\circuit_k$ to make this generalization explicit.
+\begin{definition}[Positive Operator Circuit (Partition Circuit)]
+	\label{def:poc}
+	Let   $\xvars{=}\{\xvar_0,\dots ,\xvar_{\numvar{-}1}  \}$ be a set of discrete variables.
+	We define an operator circuit as a partition circuit whose computation units take the following functional form:
+	\begin{align}
+		 & {\Ocircuit}_k(\xvars_k){=}
+		\begin{cases}
+			E_{\xvar_k}
+			% A_{k} \times  e_{\xvar_k} \otimes  e^*_{\xvar_k} \times A_{k}^*,
+			 & \text{if $k$ is leaf}
+			\\
+			\qop_k \Bigl(\Ocircuit_{k_l}(\xvars_{k_l}) \otimes \Ocircuit_{k_r}(\xvars_{k_r}) \Bigr)
+			 & \text{else},
+		\end{cases}
+		\label{eq:poc:def}
+	\end{align}
+	where the  $E_{\xvar_k}$'s are quantum state matrices, and where the $\qop_k$ quantum operations.
+\end{definition}
+Note that using the Kronecker product between $\Ocircuit_{k_l}(\xvars_{k_l})$ and  $\Ocircuit_{k_r}(\xvars_{k_r})$ is a sensible choice as it describes the joint state of both subsystems.
+
+
+% \begin{definition}
+% 	We call an operator circuit \textit{positive} if we have that the bilinear forms $\bilinear_k$ are such that
+% 	\begin{align}
+% 		\bilinear_k \Bigl(\Ocircuit_{k_l}(\xvars_{k_l}), \Ocircuit_{k_l}(\xvars_{k_l}) \Bigr) \quad \text{is a PSD matrix}
+% 		\label{def:eq:bilinear_psd}
+% 	\end{align}
+% 	if $\Ocircuit_{k_l}(\xvars_{k_l})$ and $\Ocircuit_{k_l}(\xvars_{k_l})$ are PSD.
+% \end{definition}
+
+
+
+\begin{restatable}{proposition}{proppocpsd}
+	\label{prop:pocpsd}
+	Positive operator circuits are PSD.
+\end{restatable}
+
+
+\begin{proof}
+	We know that all the leaves carry PSD matrices as they describe quantum states. Passing these on recursively to the quantum operations in the internal units retains the positive semi-definiteness as the Kronecker product between two PSD matrices is again PSD.
+\end{proof}
+
+
+
+
+
+
+\subsection{Constructing a Probability Distribution}
+
+
+In Section~\ref{sec:qit} we saw that we can construct a probability distribution using a density matrix $\rho$ and a positive operator-valued measure, with the latter being a set of PSD matrices (\cf Definition~\ref{def:povm}) that sum to the unit matrix. Using a positive operator circuit $\Ocircuit(\xvars)$ we indeed have a set of PSD matrices. Namely, one for each instantiation of the $\xvars$ variables. We now introduce \textit{positive unital (operator) circuits} (\puncs) for which also the summation to the unit matrix holds.
+
+\begin{definition}
+	\label{def:cp_unital}
+	We call a quantum operation \textit{unital} if
+	\begin{align}
+		\qop_k(\mathbb{1}_{k_l} \otimes \mathbb{1}_{k_r})
+		=\qop_k(\mathbb{1}_{k_l k_r})
+		=  \mathbb{1}_k,
+	\end{align}
+	where $\mathbb{1}_{k}$, $\mathbb{1}_{k_l}$, $\mathbb{1}_{k_l k_r}$, and $\mathbb{1}_{k_r}$  denote unit matrices of appropriate size,
+\end{definition}
+
+\begin{restatable}{proposition}{propqopunital}
+	\label{prop:qopunital}
+	Unital quantum operations are valid in the sense that the inequality $\sum_j \kraus_{j}^* \kraus_{j} \leq \mathbb{1}$ holds for all unital quantum operations.
+\end{restatable}
+
+\begin{proof}
+	See Appendix~\ref{sec:proof:prop:qopunital}
+\end{proof}
+
+
+\begin{definition}
+	We call a positive operator circuit \textit{unital} if the quantum operations $\qop_k$ are unital, and if the sets $\{ E_{\xvar_k} \}_{\xvar_k \in \Omega(\Xvar_k)}$ form a POVM for each $\Xvar_k$.
+\end{definition}
+% We will also refer to positive unital operator circuits as positive unital circuits, or \puncs.
+
+
+\begin{restatable}{proposition}{proppuncPOVM}
+	\label{prop:puncPOVM}
+	Let $\Xvars$ denote a set of random variables with sample space $\Omega(\Xvars)$.
+	Then the set $\{ \Ocircuit(\xvars)\}_{\xvars \in \Omega(\Xvars)}$ of positive unital circuits forms a POVM.
+\end{restatable}
+
+\begin{proof}
+	See Appendix~\ref{sec:proof:prop:puncPOVM}
+\end{proof}
+
+
+
+
+\begin{restatable}{theorem}{theopuncprobdist}
+	\label{theo:puncprobdist}
+	Let $\rho$ be a density matrix and $\Ocircuit(\xvars)$ a positive unital circuit. The function
+	\begin{align}
+		p_\Xvars(\xvars) = \Tr [\Ocircuit(\xvars) \rho]
+		\label{eq:theo:prob_operator}
+	\end{align}
+	is a proper probability distribution over the random variables $\Xvars$ with sample space $\Omega(\Xvars)$.
+\end{restatable}
+
+\begin{proof}
+	This follows from Propositions~\ref{prop:povmprob} and~\ref{prop:puncPOVM}
+\end{proof}
+
+One of the outstanding properties of probabilistic circuits is that they are tractable -- in the sense that they allow for polytime marginalization of random variables. Positive unital circuits retain this property.
+
+\begin{proposition}
+	\label{prop:efficientmarg_sdpunc}
+	Positive unital circuits allow for tractable marginalization.
+\end{proposition}
+
+\begin{proof}
+	(Sketch) The proof is rather straightforward and hinges on the fact that the quantum operations in the internal units are assumed to be computable in polytime and on the fact that the marginalization of a random variable is performed by pushing the sum to the corresponding leaf in the partition circuit. Analogous to the proof of Proposition~\ref{prop:puncPOVM}.
+\end{proof}
+
+
+
+
+
+
+\section{Special Cases}
+\label{sec:special_cases}
+
+We will now make certain structural assumptions on the matrices representing the quantum states and the functional form of the quantum operations $\qop$. By doing so, we obtain the PSD circuits introduced by~\citet{sladek2023encoding} and (structured decomposable) probabilistic circuits as described by \citet{peharz2020einsum} as special cases (Section~\ref{sec:purestate} and Section~\ref{sec:diagcircuits} respectively).
+
+\subsection{Hadamard Product Units}
+
+First, however, we note that our formulation of \puncs already encompasses canonical polyadic tensor decompositions~\citep{carroll1970analysis} -- a popular choice in the circuit literature \citep{shih2021hyperspns,loconte2025relationship} to merge partitions that uses the Hadamard product instead of the Kronecker product.
+
+Specifically, we observe that the Hadamard product between two matrices $A$ and $B$ can be rewritten using a Kronecker product;
+\begin{align}
+	A \circ B = P (A \otimes B) P^*,
+\end{align}
+where $P$ is the semi-unitary partial permutation matrix selecting a principal sub-matrix \citep[Corollary 2]{visick2000quantitative}.
+This also means that a quantum operation involving a Hadamard product can be rewritten using a Kronecker product:
+\begin{talign}
+	\qop (A \circ B )
+	& = \sum_i K_i (A\circ B) K_i^*
+	\nonumber
+	\\
+	& = \sum_i K_i P  (A\otimes B) P^* K_i^*
+	\nonumber
+	\\
+	& =  \sum_i K_i'  (A\otimes B) K_i'^* = \qop'(A \otimes B)
+\end{talign}
+Note that, for $\qop'$ to be unital it suffices that $\sum_i K_i K_i^* = \mathbb{1}$ as $P$ is semi-unitary ($PP^* = \mathbb{1}$).
+
+From the discussion above we conclude that we can safely limit the discussion to circuits with Kronecker products as circuits with Hadamard products follow as a special case.
+
+
+
+\subsection{Pure Quantum States}
+\label{sec:purestate}
+
+As the matrices that represent quantum states are PSD, we can decompose them as follows using the spectral theorem:
+\begin{talign}
+	\Ocircuit = \sum_j \Vcircuit_j \otimes \Vcircuit_j^*,
+\end{talign}
+with the $\Vcircuit_j$'s denoting the eigenvectors.
+As a special case we then have so-called pure states. That is quantum states constructed with a single eigenvector:
+\begin{align}
+	\Ocircuit = \Vcircuit \otimes \Vcircuit^*,
+\end{align}
+We will show now that by restricting \puncs to performing operations on pure quantum states gives us the special case of PSD circuits as introduced by \citet{sladek2023encoding}, which we define first using a partition circuit.
+\begin{definition}
+	\label{def:vpoc}
+	Let   $\xvars{=}\{\xvar_0,\dots ,\xvar_{\numvar{-}1}  \}$ be a set of $\numvar$ discrete variables.
+	A PSD circuit is a partition circuit whose computation units take the following functional form:
+	\begin{align}
+		{\Vcircuit}_k(\xvars_k){=}
+		\begin{cases}
+			U_{k} \times  e_{\xvar_k},
+			 & \text{if $k$ leaf}
+			\\
+			U_{k} {\times}  \left( \Vcircuit_{k_l}  (\xvars_k)  \otimes   \Vcircuit_{k_r} (\xvars_k) \right),
+			 & \text{else}
+		\end{cases}
+		\label{eq:vector_units}
+	\end{align}
+	where the $U_k$'s are semi-unitary matrices.
+	The probability $p_\Xvars(\xvars)$ is computed via
+	\begin{align}
+		p_\Xvars(\xvars) = {\Vcircuit}^*_{root}(\xvars) \times  \rho \times {\Vcircuit}_{root}(\xvars),
+	\end{align}
+	where $\rho$ is a density matrix.
+\end{definition}
+Note that in the original formulation \citet{sladek2023encoding} used non-semi-unitary matrices. However, \citet{loconte2024faster} have recently shown that there is no loss in expressiveness with such a restriction.
+
+To show that PSD circuits are a special case of \puncs we now impose the following restriction on the quantum operations $\qop_k$:
+\begin{align}
+	\qop_k (\Ocircuit_{k_l} \otimes \Ocircuit_{k_l} )
+	 & =
+	\kraus_{k} \left( \Ocircuit_{k_l}  \otimes  \Ocircuit_{k_r} \right) \kraus_{k}^*
+	\label{eq:pureinternal}
+\end{align}
+That is, we limit the quantum operation to having  only a single pair of Kraus operators. For the quantum operation to be unital we need to have $\kraus_{k} \kraus_{k}^*=\mathbb{1}$. That is, $\kraus_{k}$ has to be semi-unitary,
+
+Furthermore, we make the following choice in the leaves:
+\begin{align}
+	E_{\xvar_k} = K_{k} \left( e_{\xvar_k} \otimes e_{\xvar_k}^* \right) \kraus_{k}^*,
+	\label{eq:pureleaf}
+\end{align}
+where the set  $\{ e_{\xvar_k} \}_{\xvar_k \in \Omega(\Xvar_k)}$ is a complete set of orthonormal basis vectors, and $\kraus_{k}$ is again semi-unitary.
+
+We can show that this choice for $E_{\xvar_k}$ forms a POVM. Firstly, by observing that each $E_{\xvar_k}$ is PSD. Secondly, by verifying the completeness of the set of operators:
+\begin{talign}
+	\sum_{\xvar_k \in \Omega(\Xvar_k)} E_{\xvar_k}
+	& = \sum_{\xvar_k \in \Omega(\Xvar_k)} K_{k} \left( e_{\xvar_k} \otimes e_{\xvar_k}^*  \right) K_{k}^*
+	\nonumber
+	\\
+	& =
+	K_{k} \left(  \sum_{\xvar_k \in \Omega(\Xvar_k)}  e_{\xvar_k} \otimes e_{\xvar_k}^*  \right) K_{k}^*
+	\nonumber
+	\\
+	& =
+	K_{k} \mathbb{1} K_{k}^*= \mathbb{1}
+\end{talign}
+
+\begin{definition}
+	We call a positive unital circuit pure if Equation~\ref{eq:pureinternal} and Equation~\ref{eq:pureleaf} hold.
+\end{definition}
+
+
+\begin{restatable}{proposition}{propOveq}
+	\label{prop:Oveq}
+	For computation units of a pure positive unital circuit and a PSD circuit it holds that
+	\begin{align}
+		\forall k: \Ocircuit_k(\xvars_k) = \Vcircuit_{k}(\xvars_{k}) \otimes \Vcircuit^*_{k}(\xvars_{k}).
+		\label{eq:def:opvec_equivalent}
+	\end{align}
+	given that $U_k=\kraus_k$
+\end{restatable}
+
+\begin{proof}
+	See Appendix~\ref{sec:proof:prop:Oveq}
+\end{proof}
+
+
+
+\begin{corollary}
+	Pure positive unital circuits perform operations on pure quantum states exclusively.
+\end{corollary}
+
+\begin{proof}
+	This follows immediately from Proposition~\ref{prop:Oveq}.
+\end{proof}
+
+\begin{restatable}{proposition}{propvoequiprob}
+	\label{prop:voequiprob}
+	A PSD circuit and a pure \punc encode the same probability distribution if $U_k=\kraus_k$ for each unit~$k$.
+\end{restatable}
+
+
+
+\begin{proof}
+	See Appendix~\ref{sec:proof:prop:voequiprob}
+\end{proof}
+
+In this subsection we have shown that by making specific choices in the functional form of the leaves and the internal units of a positive unital circuit we recover the special case of PSD circuits and its variants \citep{loconte2024subtractive,loconte2025sum}. Furthermore, our analysis also provides the rather satisfying interpretation of PSD circuits as quantum circuits acting on pure states exclusively. While this connection has already been pointed out informally by \citet{wangrelationship}, we give a formal argument.
+
+
+
+
+
+
+% Lastly,  for the set of  basis vectors $\{e_{\xvar_s} \}_{s=0}^{\samplespacesize-1}$ in the leaves we choose the set of standard basis vectors, \ie one-hot unit vectors, with each basis vector $e_s$ corresponding to a random outcome. Although different choices of basis vectors would be valid as well, For the $A_k$ we use, as already mentioned, the orthonormal discrete Fourier transform matrix, which we truncate if $\numbond<\samplespacesize$.
+
+% In order to parametrize positive unitary circuits, we need to find a functional form of the bilinear forms such that Equation~\ref{def:eq:bilinear_psd} and Equation~\ref{def:eq:bilinear_unitpreserving} hold, and such that we have $A_k A_k^*=\mathbb{1}$. This means that we have to chose $A_k$ such that it is semi-unitary.
+
+
+% For $\gamma$ this is rather straightforward as we can simply use:
+% $
+% 	\gamma = \frac{\tilde{\gamma}}{\sqrt{\Tr [\tilde{\gamma} \tilde{\gamma}^*]}},
+% $
+% where $\tilde{\gamma}\in \mathbb{C}^{B\times B}$ is an arbitrary complex values matrix. Note that we have almost by definition $\Tr [\rho] = 1$.
+
+
+
+
+% \begin{restatable}{proposition}{propcomputationalcomplexity}
+% 	\label{prop:computationalcomplexity}
+% 	Let $\numvar$ be the number of variables $\xvars_k$,  having all the  domain size $\samplespacesize$, and let the $L_k$ and $R_k$ matrices be $\numbond\times \numbond$ square matrices, with $\numbond\leq \samplespacesize$.
+% 	We can perform marginal inference in \puncs in $\bigO(\numvar \samplespacesize^3)$ when using the bilinear form from Equation~\ref{eq:polyadicbilinear}.
+% \end{restatable}
+
+% \begin{proof}
+% 	See Append \ref{sec:proof:prop:computationalcomplexity}
+% \end{proof}
+
+
+
+
+
+
+
+
+
+
+
+% \begin{restatable}{proposition}{propcomputationalcomplexityvec}
+% 	\label{prop:computationalcomplexityvec}
+% 	\puncs in their vector representation compute joint probabilities in time $\bigO(\numvar \samplespacesize^2)$
+% \end{restatable}
+
+% \begin{proof}
+% 	See Section~\ref{sec:proof:prop:computationalcomplexityvec}
+% \end{proof}
+
+% Note that the vector representation can only be used for computing joint probabilities as marginalizing out variables forces us to go to the matrix representation of operator circuits.
+
+
+% Note also that the vector representation of \puncs can be seen as a PSD circuits~\cite{sladek2023encoding} or equivalently sum of squares circuits~\citep{loconte2025sum}, which we obtained by imposing a specific functional structure on the bilinear forms.
+
+
+
+
+
+
+
+
+
+\subsection{Diagonal Positive Unital Circuits}
+\label{sec:diagcircuits}
+
+The oldest and most widely used class of tractable circuits fall into the model class of probabilistic circuits. These probabilistic circuits are well understood, and their properties have been mapped out comprehensively \citep{vergari2021compositional}. We now show how we retrieve probabilistic circuits as a special case from \puncs by imposing specific constraints on the functional form of the computation units of \puncs. Specifically, by ensuring that the computations performed in \puncs are closed over diagonal matrices. Before imposing diagonal closedness on \puncs, we start by giving a definition of probabilistic circuits in terms of a partition circuits.
+
+
+
+
+\begin{definition}[Probabilistic Circuit (Partition Circuit)]
+	\label{def:sdprobabilisticcircuit}
+	Let   $\xvars = \{\xvar_0, \allowbreak \dots ,\allowbreak \xvar_{\numvar{-}1}  \}$ be a set of discrete variables.
+	% with domains of size $\samplespacesize$.
+	We define a probabilistic circuit as a partition circuit whose computation units take the following functional form:
+	\begin{align}
+		 & {\Pcircuit}_k(\xvars_k){=}
+		\begin{cases}
+			P_{\xvar_k}
+			 & \text{if $k$ is leaf}
+			\\
+			W_k {\times} \Bigl(\Pcircuit_{k_l}(\xvars_{k_l}) {\otimes} \Pcircuit_{k_l}(\xvars_{k_l}) \Bigr)
+			 & \text{else},
+		\end{cases}
+		\nonumber
+	\end{align}
+	where the  $\Pcircuit_{\xvar_k}$'s are real-valued positive vectors such that summing over $\xvar_k$ gives a vector with exclusively ones as entries ($\sum_{\xvar_k} P_{\xvar_k}= [ 1, \dots, 1 ]^T$), and where the $W_k$'s are row-normalized matrices with positive entries only, \ie $\forall k,i: \sum_j W_{kij}=1$, where the $i$ and $j$ indices index the matrix. Furthermore, the dimensions of the $W_k$'s, $\Pcircuit_{\xvar_k}$'s and $\Pcircuit_k(\xvars_k)$ are such that they match the matrix-vector products in the computation units.
+\end{definition}
+
+
+
+
+
+\begin{restatable}{proposition}{proplpcvalid}
+	\label{prop:circuit_is_prob}
+	Every entry of a vector $\Pcircuit_k(\xvars_k)$ forms a valid probability distribution.
+\end{restatable}
+
+\begin{proof}
+	The proof is included for the sake of completeness in Appendix~\ref{app:circuit_is_prob} and follows a similar structure to those found in the literature, \eg \citep{peharz2015theoretical}.
+\end{proof}
+
+Next, we define \textit{diagonal} \puncs. For this, consider the following functional form of a quantum operation:
+\begin{talign}
+	\qop (\Ocircuit)
+	=
+	\sum_j J_j D_{j}\Ocircuit D^*_{j} J_j^*,
+	\label{eq:diagonalinternal}
+\end{talign}
+where the  $D_{j}$'s are diagonal matrices such that $\Tr [D_{j}D^{*}_{j}]=1$.
+The $J_j$ are sparse matrices that are zero everywhere but in the $j$-th row where all their entries are $1$. For instance, if we assume that $J_2$ is a $3$ by $3$ matrix it takes the following form:
+$
+	J_2 =
+	\left(
+	\begin{smallmatrix}
+			0 & 0 & 0 \\
+			1 & 1 & 1 \\
+			0 & 0 & 0
+		\end{smallmatrix}
+	\right).
+$
+Together, $J_j$ and $D_j$ represent the Kraus operators $K_j {=} J_j D_j$.
+
+
+Given that $\Ocircuit$ is PSD it is obvious that also $\qop(\Ocircuit)$ in Equation~\ref{eq:diagonalinternal} is PSD: the individual term of the sum on the right-hand side are all PSD and the sum of PSD matrices is again a PSD matrix. For showing that the quantum operation is also unital, we rewrite the expression as follows:
+\begin{talign}
+	\qop(\mathbb{1}) = \sum_j J_j \diagmat (w_j) J_j^*,
+\end{talign}
+where $w_j$ is a vector whose entries correspond to the diagonal elements of the matrix $D_jD_j^*$. Simply carrying out the matrix products results in:
+\begin{talign}
+	\qop(\mathbb{1}) = \sum_j H_j  \sum_i w_{ji},
+\end{talign}
+where $H_j$ is a square matrix that is zero everywhere but on the $j$-th entry of the diagonal where it is $1$. From the condition that $\Tr [D_{j}D^{*}_{j}]=1$ it immediately follows that $ \sum_i w_{ji}=1$. This leaves us with:
+\begin{talign}
+	\qop(\mathbb{1}) = \sum_j H_j  = \mathbb{1}.
+\end{talign}
+
+Furthermore, in the leaves we pick
+\begin{align}
+	E_{\xvar_k} = \Delta_{\xvar_k}  \Delta_{\xvar_k}^*,
+	\label{eq:diagonalleaf}
+\end{align}
+such that the $\Delta_{\xvar_k}$'s are diagonal matrices and such that $\sum_{\xvar_k} \Delta_{\xvar_k} \Delta_{\xvar_k}^*=\mathbb{1}$.
+
+
+\begin{definition}
+	We call a positive unital circuit diagonal if Equation~\ref{eq:diagonalinternal} and Equation~\ref{eq:diagonalleaf} hold.
+\end{definition}
+
+
+\begin{restatable}{proposition}{propdiagpunc}
+	\label{prop:diagpunc}
+	All operators $\Ocircuit_k (\xvars_k)$ in a diagonal \punc can be represented as diagonal matrices.
+\end{restatable}
+
+\begin{proof}
+	See Appendix~\ref{sec:proof:prop:diagpunc}
+\end{proof}
+
+
+
+
+
+
+
+
+
+
+
+\begin{restatable}{proposition}{propPCPunciso}
+	\label{prop:PCPunciso}
+	Probabilistic circuits and diagonal \puncs are isomorphic.
+\end{restatable}
+
+
+
+\begin{proof}
+	See Appendix~\ref{sec:proof:prop:PCPunciso}
+\end{proof}
+
+This last proposition tells us that every (structured decomposable) probabilistic circuits can be represented as a diagonal \punc (and vice versa).
+
+
+
+\subsection{Block-Diagonal \puncs}
+
+In order to combat theoretical limitations of pure and diagonal \puncs, \citet{loconte2025sum} introduced a circuit class dubbed \textit{\textmu SOCS}. In Appendix~\ref{sec:noisyblockdiagonalpuncs} we show how this circuit class can be represented with \puncs over block-diagonal matrices. Interestingly, this allows us to discuss the concept of noise in quantum information theory.
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Decomposable \puncs}
+\label{sec:nsdnmcircuit}
+
+Using the concept of partition circuits we were able to define the different circuits in terms of matrix-matrix or matrix-vector multiplications. This was, however, only possible because the circuits we have studied so far obey the property of \textit{structured decomposability}~\citep{pipatsrisawat2008new,darwiche2011sdd}.
+We will now study circuits adhering to the weaker property of (non-structured) decomposability. To this end, we first define probabilistic circuits in the usual way using nested sum and product units \citep{vergari2021compositional} (and not partition circuits).
+
+\begin{definition}[Probabilistic Circuit]
+	\label{def:probabilisticcircuit}
+	Let   $\xvars = \{\xvar_0, \allowbreak \dots ,\allowbreak \xvar_{\numvar{-}1}  \}$ be a set of discrete variables.
+	A probabilistic circuit is a computation graph consisting of three kinds of computational units:
+	\textit{leaf}, \textit{product}, and \textit{sum}.
+	Each product or sum unit receives inputs from a set of input units denoted by $\inputs(k)$.
+	Each unit $k$ encodes a function $\pcircuit_{k}(\xvars_k)$ with $\xvars_k {\subseteq} \xvars$ as follows:
+	\begin{align*}
+		{\pcircuit}_k(\xvars_k)=
+		\begin{cases}
+			f_k({\xvar_k})                                                & \text{if $k$ leaf unit}    \\
+			\pcircuit_{k_l}(\xvars_{k_l})  \pcircuit_{k_r} (\xvars_{k_r}) & \text{if $k$ product unit} \\
+			\sum_{j\in\inputs(k)} \weight_{kj} \pcircuit_j(\xvars_j)      & \text{if $k$ sum unit}
+		\end{cases}
+		% \label{eq:def:circuit}
+	\end{align*}
+	where $f_{\xvar_k}$  denotes a parametrized function such that $\sum_{\xvar_k} f_{\xvar_k}=1$ and where $\forall k: \sum_{j\in\inputs(k)} \weight_{kj} =1$.
+\end{definition}
+
+\begin{proposition}
+	Let $\Xvars_k$ be a set of random variables with sample space $\Omega(\Xvars_k)$ equal to the possible values for $\xvars_k$.
+	A probabilistic circuit $\pcircuit(\xvars_k)$ then defines a proper probability distribution as
+	$
+		p_{\Xvars_k}(\xvars_k) = \pcircuit_k (\xvars_k)
+	$.
+\end{proposition}
+
+\begin{proof}
+	We need to show that $\forall \xvars_k {\in} \Omega(\Xvars_k): p_{\Xvars_k}(\xvars_k){\geq} 0$ and that $\sum_{\xvars_k \in \Omega(\Xvars_k)} p_{\Xvars_k}(\xvars_k)=1$. Both of which are trivial.
+\end{proof}
+
+
+The sums and products that we write explicitly in Definition~\ref{def:probabilisticcircuit} are also implicitly present in Definition~\ref{def:sdprobabilisticcircuit}, namely within the matrix-vector product of the internal computation units of the underlying partition circuit.
+
+
+\subsection{A Primer on Decomposability}
+
+
+
+
+
+
+
+We can now define the concept of (non-structured) decomposability using the concept of a scope function.
+
+
+\begin{definition}[Scope]
+	\label{def:scope:cond}
+	The scope of a unit $k$, denoted by $\scope(k)$, is the set of random variables $\Xvars_k$ for which the function $\pcircuit_k (\cdot)$ encodes a probability distribution.
+\end{definition}
+
+\begin{definition}[Decomposability]
+	A circuit is decomposable if the inputs of every product unit
+	$k$ encode distributions over disjoint sets of random variables:
+	$\scope (k_l) \cap \scope (k_r) = \emptyset$ with $\{k_l, k_r\}= \inputs (k)$.
+\end{definition}
+
+It is precisely this decomposability property that enables tractable (any-order) marginalization in probabilistic circuits, as well as positive operator circuits and relaxing the property of decomposability leads necessarily to a decrease in tractability \citep{choi2020probabilistic,vergari2021compositional,zuidberg2024probabilistic}. Usually the smoothness property is also assumed to hold
+\begin{definition}[Smoothness]
+	A circuit is smooth if for every sum unit $k$ its inputs encode distributions over the same random variables:
+	$\forall j_1, j_2 {\in} \inputs(k)$ it holds that $\scope(j_1){=}\scope(j_2) $.
+\end{definition}
+Note that for circuits constructed using a partition tree, the decomposability and smoothness properties hold by construction. We give a graphical representation of a decomposable circuit in Figure \ref{fig:dcircuit}.
+
+
+
+\begin{figure}
+	\centering
+
+	\input{tex_input/dcircuit.tex}
+	\caption{Graphical representation of a (non-structured) decomposable probabilistic circuit. We have four binary random variables in the leaves at the bottom. These are first passed individually through a set of sum units. In the second layer of the circuit we then have for blocks of computation units $\kappa_1$, $\kappa_2$, $\kappa_3$, and $\kappa_4$ (from lest to right). Each with their own scope ($\scope(\kappa_1)= \{ \Xvar_1, \Xvar_2  \}$, $\scope(\kappa_2)= \{ \Xvar_1, \Xvar_3  \}$, $\scope(\kappa_3)= \{ \Xvar_2, \Xvar_4  \}$, and $\scope(\kappa_4)= \{ \Xvar_3, \Xvar_4  \}$). At the root we have a block of computations $\kappa_{root}$ with $\scope(\kappa_{root}) = \{ \Xvar_1, \Xvar_2, \Xvar_3, \Xvar_4 \}$. Note that we slightly abuse notation and applied the scope function on sets of computation units instead of single computations units.
+	}
+	\label{fig:dcircuit}
+\end{figure}
+
+
+
+\begin{definition}[Structured Decomposability]
+	A circuit is structured decomposable if the circuit is decomposable and product units with identical scope decompose identically: let $k$ and $j$ be two product nodes. If we have that $\scope (k_l) {=} \scope(j_l)$ and $\scope (k_r) {=} \scope(j_r)$ for every pair of product nodes where $\scope(k) {=} \scope(j)$, then we call a circuit structured decomposable.
+\end{definition}
+
+
+For partition circuits, we have again that the property of structured decomposability is respected by construction.
+We give a structured decomposable circuit in Figure \ref{fig:sdcircuit}.
+
+
+
+
+We can now compare the two circuits in Figure~\ref{fig:dcircuit} and Figure~\ref{fig:sdcircuit}. Specifically, we point to the computational blocks at the root of the circuits, where we have for each circuit four product units and a single sum unit. In both circuits the scope of all the product units (and the sum unit) is the same:
+
+\begin{align}
+	\scope(\pcircuit_{k}^{NSD}) & = {\Xvar_1,\Xvar_2,\Xvar_3,\Xvar_4 }
+	\\
+	\scope(\pcircuit_{k}^{SD})  & = {\Xvar_1,\Xvar_2,\Xvar_3,\Xvar_4 },
+\end{align}
+where $NSD$ stands for non-structured decomposable and $SD$ for structured decomposable. The index $k \in \{1,2,3,4 \}$ specifies in both cases the individual product units at the root (going from left to right). For the structured decomposable circuit in Figure~\ref{fig:sdcircuit} we have that the scope arises from the same union of random variables for all four units: $\scope(\pcircuit_{k}^{SD}) =  \{\Xvar_1,\Xvar_2 \} \cup \{\Xvar_3,\Xvar_4 \}$, for $k \in \{1,2,3,4 \}$.
+
+The situation for the non-structured decomposable circuit presents itself differently. Here we have $\scope(\pcircuit_{k}^{SD}) =  \{\Xvar_1,\Xvar_2\} \cup \{\Xvar_3,\Xvar_4 \}$, for $k \in \{2,3\}$ and $\scope(\pcircuit_{k}^{NSD}) =  \{\Xvar_1,\Xvar_3\} \cup \{\Xvar_2,\Xvar_4 \}$, for $k \in \{1,4 \}$ -- showing that not all product units with the same scope decompose their respective scopes in the same fashion.
+
+\citet{pipatsrisawat2008new} showed that dropping the requirement that the product nodes with the same scope decompose in the same way leads to exponential gains in expressiveness. In the next subsection we show how we can construct non-structured decomposable non-monotone circuits. This is in contrast to all the non-monotone circuits discussed in the previous sections and the non-monotone circuits discussed in the literature \citep{sladek2023encoding,loconte2025sum,loconte2024subtractive,wangrelationship}.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection{Dropping Structured Decomposability}
+\label{sec:nonstructdecomp}
+
+
+
+
+
+
+
+
+
+
+
+\begin{definition}[Positive Unital Circuit]
+	\label{def:dpunc}
+	Let   $\xvars = \{\xvar_0, \allowbreak \dots ,\allowbreak \xvar_{\numvar{-}1}  \}$ be a set of discrete variables.
+	A positive unital circuit is a computation graph consisting of three kinds of computational units:
+	\textit{leaf}, \textit{product}, and \textit{sum}.
+	Each product or sum unit receives inputs from a set of input units denoted by $\inputs(k)$.
+	Each unit $k$ encodes a function $\ocircuit_{k}(\xvars_k)$ with $\xvars_k {\subseteq} \xvars$ as follows:
+	\begin{align*}
+		{\ocircuit}_k(\xvars_k)=
+		\begin{cases}
+			e_{\xvar_k}                                                           & \text{if $k$ leaf unit}    \\
+			\ocircuit_{k_l}(\xvars_{k_l}) \otimes \ocircuit_{k_r}  (\xvars_{k_r}) & \text{if $k$ product unit} \\
+			\sum_{j\in\inputs(k)} \weight_{kj} \qop_{kj} (\ocircuit_j(\xvars_j) ) & \text{if $k$ sum unit}
+		\end{cases}
+		% \label{eq:def:circuit}
+	\end{align*}
+	where $e_{\xvar_k}$  denotes an element of a POVM. The $\qop_{kj}$ are unital quantum operations and the $w_{kj}$ are positive real-valued scalars and obey $\forall k: \sum_j w_{kj} {=}1$.
+\end{definition}
+
+
+
+Note how the sum units form convex combinations of quantum operation, \ie quantum mixtures.
+From now on we will denote (non-structured) decomposable \puncs by \dpuncs (\cf Definition~\ref{def:dpunc}) and structured decomposable \puncs by \sdpuncs (\cf Section \ref{sec:puncs}).
+
+
+
+\begin{restatable}{theorem}{theoproperprobdpunc}
+	\label{theo:properprobdpunc}
+
+	Let $\Xvars_k$ be a set of random variables with sample space $\Omega(\Xvars_k)$ equal to the possible values for $\xvars_k$.
+	A \dpunc $\ocircuit(\xvars_k)$ and a density matrix $\rho$ then define a proper probability distribution as
+	$
+		p_\Xvars(\xvars) = \Tr [\ocircuit(\xvars) \rho]
+		\label{eq:theo:prob_operator_nsd}
+	$.
+\end{restatable}
+\begin{proof}
+	See Appendix~\ref{sec:proof:theo:properpropdpunc}
+\end{proof}
+
+
+
+
+
+\begin{restatable}{proposition}{propsdpuncsubsetdpunc}
+	\label{prop:sdpuncsubsetdpunc}
+	\sdpuncs are a proper subset of \dpuncs.
+\end{restatable}
+
+\begin{proof}
+	See Appendix~\ref{sec:proof:prop:sdpuncsubsetdpunc}
+\end{proof}
+
+
+
+
+
+\begin{proposition}
+	(Non-structured) decomposable probabilistic circuits are a proper subset of \dpuncs.
+\end{proposition}
+
+\begin{proof}
+	This follows trivially from the observation that restricting the circuit elements $\ocircuit_k$ to  $1{\times}1$ dimensional PSD matrices we are left with positive real-valued scalars. In this case the Kronecker product becomes the usual product over the reals and quantum operations simplify to identity operations, and Definition~\ref{def:dpunc} is equivalent to that of a probabilistic circuit (Definition~\ref{def:probabilisticcircuit}).
+\end{proof}
+
+\begin{proposition}
+	\dpuncs allow for tractable marginalization.
+\end{proposition}
+
+\begin{proof}
+	The proof follows a similar rationale as the one for Proposition~\ref{prop:efficientmarg_sdpunc}
+\end{proof}
+
+
+
+
+\begin{figure}
+	\centering
+
+	\input{tex_input/sdcircuit.tex}
+	\caption{
+		Graphical representation of a structured decomposable probabilistic circuit. We have four binary random variables in the leaves at the bottom. These are first passed individually through a set of sum units. In the second layer of the circuit we then have two blocks of computation units $\kappa_1$, $\kappa_2$ with scopes ($\scope(\kappa_1)= \{ \Xvar_1, \Xvar_2  \}$ and $\scope(\kappa_2)= \{ \Xvar_3, \Xvar_4  \}$). At the root we have a block of computations $\kappa_{root}$ with $\scope(\kappa_{root}) = \{ \Xvar_1, \Xvar_2, \Xvar_3, \Xvar_4 \}$. One can easily see how such a circuit maps on to a partition circuits by associating each block of computation units to a unit in a partition circuit, \cf Figure~\ref{fig:circuit}.
+	}
+	\label{fig:sdcircuit}
+\end{figure}
+
+
+
+To the best of our knowledge, we present with \dpuncs the first non-monotone tractable circuit class that encodes (together with a denisty matrix) a positive function and that does not adhere to structured decomposability but only (non-structured) decomposability, regardless of the input.
+This means that similarly to how non-monotone structured decomposable circuits, \eg \sdpuncs and the works of \citep{sladek2023encoding,loconte2025sum,wangrelationship}, generalize the language of (weighted) \textit{SDNNFs} \citep{pipatsrisawat2008new}, \dpuncs generalize the strictly larger language of \textit{DNNFs} \citep{darwiche2001decomposable}.
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+\section{Related Work}
+\label{sec:related}
+\puncs extend recent advancements in the probabilistic circuit literature (PSD circuits \citep{sladek2023encoding}, SOCS \citep{loconte2025sum}, and inception circuits \citep{wangrelationship}),
+which in turn extend the traditionally monotone circuits to the non-monotone setting.\footnote{We refer the reader to \citep[Section 5]{loconte2025sum} for a discussion on the relationship between inception circuits and SOCS.}.
+The main differentiator of \puncs with regard to these works is that we can use decomposability instead of structured decomposability.
+
+% The major difference between these works and \puncs is that \puncs do not require the property of structured decomposability.
+% to hold but only the weaker (non-structured) decomposability property.
+
+
+Furthermore, positive unital circuits provide also a different perspective on constructing non-monotone circuits. While the methods described in ~\citep{sladek2023encoding,loconte2024subtractive,loconte2025sum,wangrelationship} regard such circuits as sum of (nested) squares, we interpret them as probabilistic events described by positive semi-definite matrices that are combined within a circuit using unit preserving quantum operations. As such, we also establish a strong link between quantum information theory and the circuit literature.
+
+As already pointed out by \citet{loconte2024subtractive,loconte2025sum,loconte2025relationship} structured decomposable circuits share many aspects with \textit{tensor networks}~\citep{orus2014practical,white1992density} -- a class of statistical models developed in the condensed matter physics community, which have in recent years also been applied to supervised and unsupervised machine learning~\citep{cheng2019tree,han2018unsupervised,stoudenmire2016supervised}. In this regard, and given that tensor networks originate in the physics community, it is rather surprising that tensor networks have so far not been formulated using POVMs and quantum information theory.
+
+First results on the expressive power of tensor networks and by extension of non-monotone circuits, were presented in the tensor network literature in the context of tensor decompositions \citep{glasser2019expressive} and complex-valued hidden Markov models \citep{gao2022enhancing}. Recently, the works of \citet{loconte2024subtractive,loconte2025sum} and \citet{wangrelationship} have studied the relationship of different circuit classes more carefully, as well. Additionally, \citet{loconte2025sum} pointed out links between tensor networks and the circuit literature and were able to generalize earlier results from the tensor network literature by~\citet{glasser2019expressive}.
+As the circuits studied by \citet{loconte2025sum} and \citet{wangrelationship} are special cases of \dpuncs their results do also partially apply to \dpuncs.
+
+
+Lastly, we point out theoretical results in the statistical relational AI literature. Specifically, \citet{buchman2017rules}, and \citet{kuzelka2020complex} noted that using only real-valued parametrizations (including negatives~\citep{buchman2017negative}), does not allow for fully expressive models.
+
+
+
+% From a practical perspective, the (sub-complete) distributions encoded with \puncs and \noisepuncs tackle one of the main shortcoming of sum of squares type circuits: we do not need to compute a normalization constant to ensure that event probabilities are bounded. This especially useful during training, as it means that updating the parameters of the model still guarantees the event probability to be bounded. Otherwise one would have to compute a normalization constant and differentiate through it at every iteration of the parameter updates. This potentially hinder scaling up non-monotone models as computing the normalization constant cannot be done in the vector representation (quadratic cost) but requires matrix-matrix multiplications with cubic cost. For \puncs computing this normalization is not necessary at all and for \noisepunc we only need to compute the normalization constant once training has finished as post-processing step.
+
+% \subsection{Tensor Networks}
+
+
+
+% Using our POVM formulation for \puncs is, however, not only theoretically elegant but has also practical benefits: using this formalism leads to circuits that are normalized by construction, and we can perform learning simply by optimizing the likelihood. We contrast this to the sweeping algorithms that are usually deployed in the tensor network literature, where blocks of variables are optimized one at the time while the remaining variables are held constant. It appears that this approach is inspired by the variational ansatz taken in the density-matrix renormalization group algorithm~\citep{white1992density}, which is the original algorithm for tensor networks.
+% Alternatives to this sweeping approach have also been proposed, such as an intricate Riemannian gradient descent optimization scheme that conserves unitarity of matrices, but are rather costly to run.
+
+% We would also like to point out a theoretical result from the tensor network literature stating that picking a complex-valued parametrization instead of a real-valued one can lead to an arbitrarily large reduction in the number of parameters~\citep{glasser2019expressive}. While this result is formulated with respect to (exact) low rank tensor decomposition and does not apply directly to the problem of learning parameters via gradient descent, we consider this observation to be a strong theoretical indicator for the superiority of complex numbers over real numbers when parametrizing probabilistic circuits. A similar argument has also been made by \citet{gao2022enhancing} in the context of hidden Markov models.
+
+% \subsection{Theoretical Studies}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% \section{Experimental Evaluation}
+% \label{sec:experiments}
+
+
+% \textbf{Experimental Setup}
+
+
+% For our experimental evaluation we used the MNIST family of datasets. That is, the original MNIST~\citep{deng2012mnist}, FashionMNIST~\citep{xiao2017fashion}, and also EMNIST~\citep{cohen2017emnist}.
+% For the implementation we used PyTorch together with the Einops library~\citep{rogozhnikov2022einops}. We set up our experiments in Lightning\footnote{\url{https://lightning.ai/}} and ran them on a DGX-2 machine with V100 Nvidia cards.
+
+% We compare different methods using the \textit{bits per dimension} metric, which is calculated from the average negative log-likelihood ($\overline{NLL}$) as follows: $bpd {=} \nicefrac{\overline{NLL}}{(\log{2} \times D)}$ ($D{=}28^2$ for MNIST datasets).
+
+
+
+% \textbf{Training Positive Operator Circuits}
+
+% In our experiments we estimate the density of the different MNIST datasets by maximizing a parametrized likelihood function. We construct this  function using a positive vector circuit.
+% In order to build the underlying partition circuit,
+% we follow the approach described by \citet{zuidberg2024probabilistic}: we start with a grid of $28\times 28$ pixels and merge, in an alternating fashion, rows and columns of the image.
+% We also allow for merging three partitions into  a single partition, thereby breaking the binary character of the partition trees used so far.
+% Having three instead of two partitions being merged can easily be accommodated for by using a Hadamard product with three factors instead of two in the internal units of a \pvc. Ultimately, this allows us to handle layers with an uneven number of partitions.
+% At the leaves we encode pixel values by associating each value to one of $256$ standard basis vector of $\mathbb{R}^{256}$.
+
+% We performed training by minimizing the negative log-likelihood using Adam~\citep{kingma2014adam} with default hyperparameters, batch size of $50$, over $100$ epochs.
+% The best model was selected using a $90-10$ train-validation data split where we monitored the negative log-likelihood on the validation set.
+% We did not perform any hyperparameter search.
+% Further details can be found in the configuration files of the experiments.
+
+
+
+% \textbf{State-of-the-Art Baselines}
+
+% We compare \pvcs to three state-of-the-art tractable density estimators from the literature: quadrature of probabilistic circuits (QPCs)~\citep{gala2024probabilistic}, hidden Chow-Liu trees (HCLTs)~\citep{liu2021tractable}, and sparse HCLTs (SHCLTs)~\citep{dang2022sparse}.
+% All three methods are probabilistic circuits and they all use hidden Chow-Liu trees as their underlying structure. This tree is learned and dataset specific. The difference between QPCs and HCLTs is that the former is obtained by approximating a continuous latent variable extension of probabilistic circuits using numerical quadrature. The difference between HCLTs and SHCLTs is that the latter allows for dynamically adapting the number of components per partition during parameter learning. This means that SHCLTs can focus their computational budget on information-rich parts of the circuit.
+
+
+
+% \textbf{Q1: How Do the Different \pvc Parametrizations Fair Against Each Other?}
+
+% We construct \pvcs following the prescription of \cite{zuidberg2024probabilistic}, as described above. Furthermore, we use $B=128$ components per partition.
+% As for the parametrization we study four different variants:
+% $\mathrm{PVX}_{0}^{FR}$,
+% $\mathrm{PVX}_{2\pi}^{FR}$,
+% $\mathrm{PVX}_{0}^{R1}$, and
+% $\mathrm{PVX}_{2\pi}^{R1}$.
+% The subscripts ($0$ or $2\pi$) indicate whether we limit the phase to be zero or whether we allow the phase to be a learnable parameter. Note that having a tunable phase doubles the number of (real-valued) parameters. The superscript indicates whether the parametrization uses a full-rank ($FR$) density matrix in the root or a rank-one ($R1$) density matrix.
+% As such, $\mathrm{PVX}_{0}^{R1}$ is equivalent to the  squared monotonic probabilistic circuits (\smpcs) used in ~\cite{loconte2024subtractive}, and $\mathrm{PVX}_{2\pi}^{R1}$ generalizes their \snpcs from the real domain to the entire complex domain. Concretely, \smpcs are rank-one \pvcs with the phase fixed to zero and \snpcs are rank-one \pvcs with the phase fixed to values in the set $\{0, \pi \}$. We do not experiment on the latter.
+
+% We report the obtained bpds for the different \pvc parametrizations in the first four columns of Table~\ref{tab:mnist}. In general, we see that the complex-valued parametrizations are either on par or outperform the corresponding zero-phase parametrizations.
+% The notable exception is the FashionMNIST benchmark where the two parametrizations with no phase ($\mathrm{PVX}_{0}^{FR}$ and $\mathrm{PVX}_{0}^{R1}$) perform best.
+% Comparing full-rank to rank-one parametrizations we see a more important impact for the zero-phase parametrization than for the complex-valued parametrization.
+
+
+% Overall, $\mathrm{PVX}_{2\pi}^{FR}$ constitutes the best performing parametrization being best-in-class on all benchmarks but FashionMNIST.
+
+
+% \input{tex_input/mnist_table}
+
+
+
+
+
+
+
+
+
+% \textbf{Q2: How Do \pvcs Fair Against the State of the Art?}
+
+% In order to compare \pvcs to state-of-the-art circuits all methods (\pvc, QPC, HCLT, SHCLT) were given a computational budget of $B=128$ components per partition (on average for SHCLT).
+% The results for the competing methods were taken from the respective papers -- except for HCLTs. For HCLTs we took the bpds reported by \citet{gala2024probabilistic} as they achieved stronger results with their implementation compared to the originally reported performance~\citep{liu2021tractable}.
+
+% We see in Table~\ref{tab:mnist} that QPCs and HCLTs are in general outperformed by \pvc -- in particular $\mathrm{PVX}_{2\pi}^{FR}$. The FashionMNIST benchmark constitutes again an outlier in this regard.
+% The only methods outperforming \pvcs are the SHCLTs, which is due to them being able to dynamically allocate compute budget to informative parts of the circuit.
+% It is noteworthy that for the EMNIST-BYCLASS benchmark all four  \pvc parametrization exhibit strong performance with  $\mathrm{PVX}_{2\pi}^{FR}$ and $\mathrm{PVX}_{2\pi}^{R1}$ even outcompeting SHCLTs.
+
+
+% \textbf{Discussion}
+
+% In our experimental evaluation we did not perform an explicit comparison to the method of \citet{loconte2024subtractive} as they were not able to find any improvements of allowing non-negative parameters in probabilistic circuit for discrete data. They stipulated that
+% \say{simple categorical distribution can already capture any discrete distribution with finite support and a (subtractive) mixture thereof might not yield additional benefits}.
+% In our experimental evaluation we refute this conjecture, and show that using complex-valued parameters leads to noticeable gains when performing density estimation on discrete data.
+% The exception being of course the FashionMNIST benchmark. We believe that this is due to our optimization method that was not tuned in any way.
+% In this regard we believe that developing tailor-made optimization algorithms for \pvcs might further boost their performance.
+% Furthermore, one can envisage, similar to SHCLTs, dynamically adapting the compute budget per partition, which should again improve the density estimation capacities of \pvcs.
+
+
+
+
+
+
+
+
+
+
+
+\section{Conclusions \& Future Work}
+\label{sec:conclusions}
+
+Based on first principles from quantum information theory, we constructed positive unital circuits -- a novel class of probabilistic tractable models (Section~\ref{sec:puncs}).
+In a first instance, we then showed how structured decomposable \puncs encompass all existing non-monotone circuit classes by enforcing certain constraints on the functional form of the quantum operations (Section ~\ref{sec:special_cases}).
+Then we continued in Section~\ref{sec:nsdnmcircuit} with showing how the formalism of
+positive unital circuits is effortlessly relaxed to (non-structured) decomposable \puncs -- thereby creating a new circuit class.
+
+In future work we would like to investigate in detail the expressive power of \dpuncs compared to \sdpuncs and (non-structured) decomposable probabilistic circuits. Specifically, we make the following conjecture.
+
+\begin{conjecture}
+	There is an exponential separation in expressive efficiency between \dpuncs and \sdpuncs.
+\end{conjecture}
+
+Effectively, this would expand the research initiated by \citet{loconte2024subtractive} for mapping out the relationships between the different structured decomposable circuits. Ideally, one would like to create an analogue to \citeauthor{darwiche2002knowledge}' knowledge compilation map \citep{darwiche2002knowledge} but for positive operator circuits and relate it to the framework of algebraic model counting \citep{kimmig2017algebraic}.
+This would also allow for establishing possible separations between sum-of-squares PCs~\citep{loconte2024subtractive}, product of monotonic by SOCS~\citep[Definition 5]{loconte2024subtractive}, and inception networks~\citep{wangrelationship}.
+A first discussion on these issues can also be fund in \citep[Appendix A]{wangrelationship}.
+
+
+
+% The big challenge to overcome in this regard will be to generalize algebraic model counting with commutative semirings (\eg using scalar probabilities) to non-commutative semirings with PSD matrices as their elements.
+% This non-commutativity is inherent to quantum information theory as changing the order in which quantities are measured changes the measurement outcome. This is also the reason why sampling in monotone circuits can be parallelized but for non-monotone circuit one needs to sample in an autoregressive fashion \citep{loconte2024subtractive} (at least on a classical computer).
+
+A more audacious goal would then be to investigate whether \puncs can be run efficiently on quantum computers and whether there are speed-ups to be had. We can formulate this question more directly as a conjecture,
+
+\begin{conjecture}
+	There are circuit-query pairs that are tractable on a quantum computer but not on a classical computer.
+\end{conjecture}
+
+
+We stipulate that a positive answer to this question would involve Fourier transforms as they are the key mechanism underlying Shor's algorithm \citep{shor1994algorithms} leading to exponential quantum speed-up.
+% -- the only known algorithm (modulo derivatives) providing an exponential quantum speed-up.
+Note that this question seems also related to the work of \citet{riguzzi2024quantum}. Although the question in that work is on performing a computationally hard weighted model count using Grover's algorithm \citep{grover1996fast}, which does not provide an exponential speed-up.
+
+Finally, a more practical research avenue consists of finding parametrizations of \puncs that sidestep the expensive dense matrix-matrix multiplications and replace them with structured sparse matrices. Monarch matrices seem to hold promise \citep{dao2022monarch,ZhangCoLoRAI25b}.
+
+
+% A main hurdle to overcome to make \puncs practical machine learning models is to find expressive yet efficient functional forms of the bilinear forms and their parametrizations. A key challenge to overcome in this respect is the efficient parametrization of (expressive) unitary matrices as this is a notoriously difficult feat~\citep{kiani2022projunn,jing2017tunable,lezcano2019cheap,mhammedi2017efficient,wisdom2016full}.
+% Furthermore, we have only presented a specific functional form for the bilinear forms.
+
+
+
+
+% \todo{cite Chiara Marletto?}
+
+
+% Their construction as partition circuits allows for layer-wise parallelization and execution on modern machine learning hardware.
+% Using unconstrained gradient-descent we showed that \pocs, and \pvcs specifically, constitute a promising addition to the zoo of tractable probabilistic models.
+
+% In future work we would like to investigate in more detail theoretical properties of \pocs and how they differ from other tractable models. Ideally one would find an exponential separation between real-valued and complex-valued circuits. On the practical side it remains, however, to be seen whether such a separation has an equally important impact on real-world datasets.
+
+% This relates to another open question,  that of learning in \pocs. We presented a rather simple learning approach for parameters tailored towards neural architecture. It might be the case that more sophisticated techniques have to be deployed for large-scale \pocs, as they might exhibit the problem of barren plateaus~\citep{ragone2023unified} -- a well known issue in quantum machine learning~\citep{biamonte2017quantum,huggins2019towards}.
+% Furthermore, and as already pointed out by~\citet{loconte2024subtractive}, computing the normalization constant $Z$ requires the evaluation of the circuit in the \poc representation. This gives rise to a rather expensive cubic computation cost during learning (when compared to the quadratic cost of \pvc evaluations). Avoiding this issue would allow to drastically scale \pvcs. In order, to scale \pvcs it might also be necessary to use more sophisticated structures than binary trees with every partition having the same number of components $B$ per partition, \cf SHCLTs.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

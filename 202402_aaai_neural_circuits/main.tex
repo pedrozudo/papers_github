@@ -18,6 +18,7 @@
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 
+
 %
 % These are are recommended to typeset listings but not required. See the subsubsection on listing. Remove this block if you don't have listings in your paper.
 \usepackage{newfloat}
@@ -35,7 +36,7 @@
 % Keep the \pdfinfo as shown here. There's no need
 % for you to add the /Title and /Author tags.
 \pdfinfo{
-/TemplateVersion (2024.1)
+	/TemplateVersion (2024.1)
 }
 
 % DISALLOWED PACKAGES
@@ -92,10 +93,10 @@
 
 %Example, Single Author, ->> remove \iffalse,\fi and place them surrounding AAAI title to use it
 \author {
-    Pedro Zuidberg Dos Martires
+	Pedro Zuidberg Dos Martires
 }
 \affiliations{
-    Centre for Applied Autonomous Sensor Systems (AASS), Örebro University, Sweden
+	Centre for Applied Autonomous Sensor Systems (AASS), Örebro University, Sweden
 }
 
 % \author{}
@@ -261,15 +262,15 @@
 % Redefine the proof environment to modify margins
 \makeatletter
 \renewenvironment{proof}[1][\proofname]{\par
-    \pushQED{\qed}%
-    \normalfont\topsep0pt \partopsep0pt % Adjust the vertical spacing above
-    \trivlist
-    \item[\hskip\labelsep
-                \itshape
-                #1\@addpunct{.}]\ignorespaces
+	\pushQED{\qed}%
+	\normalfont\topsep0pt \partopsep0pt % Adjust the vertical spacing above
+	\trivlist
+	\item[\hskip\labelsep
+	            \itshape
+	            #1\@addpunct{.}]\ignorespaces
 }{%
-    \popQED\endtrivlist\@endpefalse
-    \vskip 1ex  % Add some flexible glue for the bottom margin
+	\popQED\endtrivlist\@endpefalse
+	\vskip 1ex  % Add some flexible glue for the bottom margin
 }
 \makeatother
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -279,8 +280,8 @@
 
 
 %Commands definitions
-\newcommand{\setbackgroundcolour}{\pagecolor[rgb]{0.19,0.19,0.19}}  
-\newcommand{\settextcolour}{\color[rgb]{0.77,0.77,0.77}}    
+\newcommand{\setbackgroundcolour}{\pagecolor[rgb]{0.19,0.19,0.19}}
+\newcommand{\settextcolour}{\color[rgb]{0.77,0.77,0.77}}
 \newcommand{\invertbackgroundtext}{\setbackgroundcolour\settextcolour}
 
 %Command execution. 
@@ -303,10 +304,10 @@
 \maketitle
 
 \begin{abstract}
-    Probabilistic circuits (PCs) have gained prominence in recent years as a versatile framework for discussing probabilistic models that support tractable queries and are yet expressive enough to model complex probability distributions.
-    Nevertheless, tractability comes at a cost: PCs are less expressive than neural networks.
-    In this paper we introduce probabilistic neural circuits (PNCs), which strike a balance between PCs and neural nets in terms of tractability and expressive power. Theoretically, we show that PNCs can be interpreted as deep mixtures of Bayesian networks. Experimentally, we demonstrate that PNCs constitute powerful function approximators.
-    % In this paper we explore This paper explores the interplay between PCs and neural networks, presenting the concept of Probabilistic Neural Circuits (PNCs) as an intermediary model. PNCs are introduced as deep mixtures of Bayesian networks, offering a structured approach to capturing complex dependencies in data.
+	Probabilistic circuits (PCs) have gained prominence in recent years as a versatile framework for discussing probabilistic models that support tractable queries and are yet expressive enough to model complex probability distributions.
+	Nevertheless, tractability comes at a cost: PCs are less expressive than neural networks.
+	In this paper we introduce probabilistic neural circuits (PNCs), which strike a balance between PCs and neural nets in terms of tractability and expressive power. Theoretically, we show that PNCs can be interpreted as deep mixtures of Bayesian networks. Experimentally, we demonstrate that PNCs constitute powerful function approximators.
+	% In this paper we explore This paper explores the interplay between PCs and neural networks, presenting the concept of Probabilistic Neural Circuits (PNCs) as an intermediary model. PNCs are introduced as deep mixtures of Bayesian networks, offering a structured approach to capturing complex dependencies in data.
 \end{abstract}
 
 
@@ -321,123 +322,123 @@ Most of the recent advances in the field adhere to the second perspective: use a
 
 
 \begin{figure}[t]
-    \centering
-    \resizebox{0.85\columnwidth}{!}{
-        \tikzset{point/.style={circle,inner sep=0pt,minimum size=3pt,fill=red}}
+	\centering
+	\resizebox{0.85\columnwidth}{!}{
+		\tikzset{point/.style={circle,inner sep=0pt,minimum size=3pt,fill=red}}
 
-    \begin{tikzpicture}
+	\begin{tikzpicture}
 
-        \varnode[line width=\midlinewidth]{v11}{$X_1$};
-        \varnode[line width=\midlinewidth, right=\middist of v11]{v12}{$X_1$};
-        \varnode[line width=\midlinewidth, right=\middist of v12]{v21}{$X_2$};
-        \varnode[line width=\midlinewidth, right=\middist of v21]{v22}{$X_2$};
+		\varnode[line width=\midlinewidth]{v11}{$X_1$};
+		\varnode[line width=\midlinewidth, right=\middist of v11]{v12}{$X_1$};
+		\varnode[line width=\midlinewidth, right=\middist of v12]{v21}{$X_2$};
+		\varnode[line width=\midlinewidth, right=\middist of v21]{v22}{$X_2$};
 
-        \sumnode[line width=\midlinewidth, above=\smalldist of v11]{s11};
-        \sumnode[line width=\midlinewidth, right=\halfdist of s11]{s12};
-        \sumnode[line width=\midlinewidth, above=\smalldist of v12]{s1k};
+		\sumnode[line width=\midlinewidth, above=\smalldist of v11]{s11};
+		\sumnode[line width=\midlinewidth, right=\halfdist of s11]{s12};
+		\sumnode[line width=\midlinewidth, above=\smalldist of v12]{s1k};
 
-        \sumnode[line width=\midlinewidth, above=\smalldist of v21]{s21};
-        \sumnode[line width=\midlinewidth, right=\halfdist of s21]{s22};
-        \sumnode[line width=\midlinewidth, above=\smalldist of v22]{s2k};
+		\sumnode[line width=\midlinewidth, above=\smalldist of v21]{s21};
+		\sumnode[line width=\midlinewidth, right=\halfdist of s21]{s22};
+		\sumnode[line width=\midlinewidth, above=\smalldist of v22]{s2k};
 
-        \prodnode[line width=\midlinewidth, above=\smalldist of s1k]{p121};
-        \prodnode[line width=\midlinewidth, right=\halfdist of p121]{p122};
-        \prodnode[line width=\midlinewidth, above=\smalldist of s21]{p12k};
+		\prodnode[line width=\midlinewidth, above=\smalldist of s1k]{p121};
+		\prodnode[line width=\midlinewidth, right=\halfdist of p121]{p122};
+		\prodnode[line width=\midlinewidth, above=\smalldist of s21]{p12k};
 
-        \sumnode[line width=\midlinewidth, above=\smalldist of p121]{s121};
-        \sumnode[line width=\midlinewidth, above=\smalldist of p122]{s122};
-        \sumnode[line width=\midlinewidth, above=\smalldist of p12k]{s12k};
+		\sumnode[line width=\midlinewidth, above=\smalldist of p121]{s121};
+		\sumnode[line width=\midlinewidth, above=\smalldist of p122]{s122};
+		\sumnode[line width=\midlinewidth, above=\smalldist of p12k]{s12k};
 
-        % edges
-        \edge[line width=\midlinewidth,left] {s11, s12, s1k} {v11, v12};
-        \edge[line width=\midlinewidth,left] {s21, s22, s2k} {v21, v22};
+		% edges
+		\edge[line width=\midlinewidth,left] {s11, s12, s1k} {v11, v12};
+		\edge[line width=\midlinewidth,left] {s21, s22, s2k} {v21, v22};
 
-        \edge[line width=\midlinewidth,dashed] {p121} {s11, s21};
-        \edge[line width=\midlinewidth,dashed] {p122} {s12, s22};
-        \edge[line width=\midlinewidth,dashed] {p12k} {s1k, s2k};
+		\edge[line width=\midlinewidth,dashed] {p121} {s11, s21};
+		\edge[line width=\midlinewidth,dashed] {p122} {s12, s22};
+		\edge[line width=\midlinewidth,dashed] {p12k} {s1k, s2k};
 
-        \edge[line width=\midlinewidth,left] {s121, s122, s12k} {p121, p122, p12k};
+		\edge[line width=\midlinewidth,left] {s121, s122, s12k} {p121, p122, p12k};
 
-        %%%%% V3 and V4
-        \varnode[line width=\midlinewidth, right=\middist of v22]{v31}{$X_3$};
-        \varnode[line width=\midlinewidth, right=\middist of v31]{v32}{$X_3$};
-        \varnode[line width=\midlinewidth, right=\middist of v32]{v41}{$X_4$};
-        \varnode[line width=\midlinewidth, right=\middist of v41]{v42}{$X_4$};
+		%%%%% V3 and V4
+		\varnode[line width=\midlinewidth, right=\middist of v22]{v31}{$X_3$};
+		\varnode[line width=\midlinewidth, right=\middist of v31]{v32}{$X_3$};
+		\varnode[line width=\midlinewidth, right=\middist of v32]{v41}{$X_4$};
+		\varnode[line width=\midlinewidth, right=\middist of v41]{v42}{$X_4$};
 
-        \sumnode[line width=\midlinewidth, above=\smalldist of v31]{s31};
-        \sumnode[line width=\midlinewidth, right=\halfdist of s31]{s32};
-        \sumnode[line width=\midlinewidth, above=\smalldist of v32]{s3k};
+		\sumnode[line width=\midlinewidth, above=\smalldist of v31]{s31};
+		\sumnode[line width=\midlinewidth, right=\halfdist of s31]{s32};
+		\sumnode[line width=\midlinewidth, above=\smalldist of v32]{s3k};
 
-        \sumnode[line width=\midlinewidth, above=\smalldist of v41]{s41};
-        \sumnode[line width=\midlinewidth, right=\halfdist of s41]{s42};
-        \sumnode[line width=\midlinewidth, above=\smalldist of v42]{s4k};
+		\sumnode[line width=\midlinewidth, above=\smalldist of v41]{s41};
+		\sumnode[line width=\midlinewidth, right=\halfdist of s41]{s42};
+		\sumnode[line width=\midlinewidth, above=\smalldist of v42]{s4k};
 
-        \prodnode[line width=\midlinewidth, above=\smalldist of s3k]{p341};
-        \prodnode[line width=\midlinewidth, right=\halfdist of p341]{p342};
-        \prodnode[line width=\midlinewidth, above=\smalldist of s41]{p34k};
+		\prodnode[line width=\midlinewidth, above=\smalldist of s3k]{p341};
+		\prodnode[line width=\midlinewidth, right=\halfdist of p341]{p342};
+		\prodnode[line width=\midlinewidth, above=\smalldist of s41]{p34k};
 
-        \sumnode[line width=\midlinewidth, above=\smalldist of p341]{s341};
-        \sumnode[line width=\midlinewidth, above=\smalldist of p342]{s342};
-        \sumnode[line width=\midlinewidth, above=\smalldist of p34k]{s34k};
-
-
-
-        % edges
-        \edge[line width=\midlinewidth,left] {s31, s32, s3k} {v31, v32};
-        \edge[line width=\midlinewidth,left] {s41, s42, s4k} {v41, v42};
-
-        \edge[line width=\midlinewidth,dashed] {p341} {s31, s41};
-        \edge[line width=\midlinewidth,dashed] {p342} {s32, s42};
-        \edge[line width=\midlinewidth,dashed] {p34k} {s3k, s4k};
-
-        \edge[line width=\midlinewidth,left] {s341, s342, s34k} {p341, p342, p34k};
-
-
-        %%%% final root
-        \prodnode[line width=\midlinewidth, above=90pt of s2k]{p12341};
-        \prodnode[line width=\midlinewidth, right=\halfdist of p12341]{p12342};
-        \prodnode[line width=\midlinewidth, above=90pt of s31]{p1234k};
-
-        \sumnode[line width=\midlinewidth, above=\smalldist of p12342]{s12341};
-
-        \edge[line width=\midlinewidth,dashed] {p12341} {s121, s341};
-        \edge[line width=\midlinewidth,dashed] {p12342} {s122, s342};
-        \edge[line width=\midlinewidth,dashed] {p1234k} {s12k, s34k};
-
-        \edge[line width=\midlinewidth,left] {s12341} {p12341, p12342, p1234k};
-
-        \draw [decorate, decoration = {brace, mirror, amplitude=10pt}, ultra thick] (6.2,4.7) --  (6.2,6.8) node[pos=0.5,right=10pt]{ \begin{tabular}{c}
-                root layer \\(Layer 3)
-            \end{tabular} };
-        \draw [decorate, decoration = {brace, mirror, amplitude=10pt}, ultra thick] (9.1,2.2) --  (9.1,4.3) node[pos=0.5,right=10pt]{\begin{tabular}{c}
-                sum-product layer \\(Layer 2)
-            \end{tabular} };
-        \draw [decorate, decoration = {brace, mirror, amplitude=10pt}, ultra thick] (10.5,-0.4) --  (10.5,1.7) node[pos=0.5,right=10pt]{\begin{tabular}{c}
-                leaf layer \\(Layer 1)
-            \end{tabular} };
-
-        \node[draw=red, circle,dashed,ultra thick, minimum width=0.7cm] at (p121.center) (c1) {};
-        \node[draw=red, circle,dashed,ultra thick, minimum width=0.7cm] at (p122.center) (c2) {};
-        \node[draw=red, circle,dashed,ultra thick, minimum width=0.7cm] at (p12k.center) (c3) {};
-
-        \node[draw=red, circle,dashed, ultra thick, minimum width=0.7cm, below=1.2 of p12342, inner sep=0pt]  (mid) {};
-
-        \path (c1) edge[-, red,dashed, ultra thick, in=160, out=35] (mid);
-        \path (c2) edge[-, red,dashed, ultra thick, in=175, out=45] (mid);
-        \path (c3) edge[-, red,dashed, ultra thick, in=220, out=-20] (mid);
-
-        \path (mid) edge[->, red,dashed, ultra thick, in=190, out=25] (s341);
-        \path (mid) edge[->, red,dashed, ultra thick, in=220, out=10] (s342);
-        \path (mid) edge[->, red,dashed, ultra thick, in=230, out=-10] (s34k);
+		\sumnode[line width=\midlinewidth, above=\smalldist of p341]{s341};
+		\sumnode[line width=\midlinewidth, above=\smalldist of p342]{s342};
+		\sumnode[line width=\midlinewidth, above=\smalldist of p34k]{s34k};
 
 
 
+		% edges
+		\edge[line width=\midlinewidth,left] {s31, s32, s3k} {v31, v32};
+		\edge[line width=\midlinewidth,left] {s41, s42, s4k} {v41, v42};
+
+		\edge[line width=\midlinewidth,dashed] {p341} {s31, s41};
+		\edge[line width=\midlinewidth,dashed] {p342} {s32, s42};
+		\edge[line width=\midlinewidth,dashed] {p34k} {s3k, s4k};
+
+		\edge[line width=\midlinewidth,left] {s341, s342, s34k} {p341, p342, p34k};
 
 
-    \end{tikzpicture}
-    }
-    \caption{Layered probabilistic circuit following the construction of~\citep{shih2021hyperspns}. Data (modeled as random variables) is first fed into the leaf layer at the bottom. The output of the leaf layer is a mixture of distributions produced by the sum units. In the sum-product layer (Layer 2)  mixtures of random variables are combined by taking pairwise products, these are then again mixed using sum units. Finally, the root layer (at the top) gives us the joint probability distribution. The red edges indicate functional dependencies not present in traditional probabilistic circuits but present in probabilistic neural circuits.}
-    \label{fig:circuit}
+		%%%% final root
+		\prodnode[line width=\midlinewidth, above=90pt of s2k]{p12341};
+		\prodnode[line width=\midlinewidth, right=\halfdist of p12341]{p12342};
+		\prodnode[line width=\midlinewidth, above=90pt of s31]{p1234k};
+
+		\sumnode[line width=\midlinewidth, above=\smalldist of p12342]{s12341};
+
+		\edge[line width=\midlinewidth,dashed] {p12341} {s121, s341};
+		\edge[line width=\midlinewidth,dashed] {p12342} {s122, s342};
+		\edge[line width=\midlinewidth,dashed] {p1234k} {s12k, s34k};
+
+		\edge[line width=\midlinewidth,left] {s12341} {p12341, p12342, p1234k};
+
+		\draw [decorate, decoration = {brace, mirror, amplitude=10pt}, ultra thick] (6.2,4.7) --  (6.2,6.8) node[pos=0.5,right=10pt]{ \begin{tabular}{c}
+				root layer \\(Layer 3)
+			\end{tabular} };
+		\draw [decorate, decoration = {brace, mirror, amplitude=10pt}, ultra thick] (9.1,2.2) --  (9.1,4.3) node[pos=0.5,right=10pt]{\begin{tabular}{c}
+				sum-product layer \\(Layer 2)
+			\end{tabular} };
+		\draw [decorate, decoration = {brace, mirror, amplitude=10pt}, ultra thick] (10.5,-0.4) --  (10.5,1.7) node[pos=0.5,right=10pt]{\begin{tabular}{c}
+				leaf layer \\(Layer 1)
+			\end{tabular} };
+
+		\node[draw=red, circle,dashed,ultra thick, minimum width=0.7cm] at (p121.center) (c1) {};
+		\node[draw=red, circle,dashed,ultra thick, minimum width=0.7cm] at (p122.center) (c2) {};
+		\node[draw=red, circle,dashed,ultra thick, minimum width=0.7cm] at (p12k.center) (c3) {};
+
+		\node[draw=red, circle,dashed, ultra thick, minimum width=0.7cm, below=1.2 of p12342, inner sep=0pt]  (mid) {};
+
+		\path (c1) edge[-, red,dashed, ultra thick, in=160, out=35] (mid);
+		\path (c2) edge[-, red,dashed, ultra thick, in=175, out=45] (mid);
+		\path (c3) edge[-, red,dashed, ultra thick, in=220, out=-20] (mid);
+
+		\path (mid) edge[->, red,dashed, ultra thick, in=190, out=25] (s341);
+		\path (mid) edge[->, red,dashed, ultra thick, in=220, out=10] (s342);
+		\path (mid) edge[->, red,dashed, ultra thick, in=230, out=-10] (s34k);
+
+
+
+
+
+	\end{tikzpicture}
+	}
+	\caption{Layered probabilistic circuit following the construction of~\citep{shih2021hyperspns}. Data (modeled as random variables) is first fed into the leaf layer at the bottom. The output of the leaf layer is a mixture of distributions produced by the sum units. In the sum-product layer (Layer 2)  mixtures of random variables are combined by taking pairwise products, these are then again mixed using sum units. Finally, the root layer (at the top) gives us the joint probability distribution. The red edges indicate functional dependencies not present in traditional probabilistic circuits but present in probabilistic neural circuits.}
+	\label{fig:circuit}
 \end{figure}
 
 
@@ -449,9 +450,9 @@ This is in contrast to general neural networks and even sum-product networks wit
 Nevertheless, using the concepts of \textit{conditional smoothness} and \textit{conditional decomposability}~\citep{sharir2018sum}, we study in this paper the space of models that lie in between probabilistic circuits and neural networks.
 Concretely, we make the following contributions:
 \begin{enumerate}
-    \item We introduce conditional probabilistic circuits, from which we construct  probabilistic neural circuits (PNCs), which we interpret as deep mixtures of Bayesian nets.
-    \item  We provide a prescription to construct layered PNCs.
-    \item We provide an implementation of layered PNCs and experimentally study their expressive power.
+	\item We introduce conditional probabilistic circuits, from which we construct  probabilistic neural circuits (PNCs), which we interpret as deep mixtures of Bayesian nets.
+	\item  We provide a prescription to construct layered PNCs.
+	\item We provide an implementation of layered PNCs and experimentally study their expressive power.
 \end{enumerate}
 
 Our work is influenced by that of \citet{sharir2018sum}. We discuss the relationship to their approach (dubbed sum-product-quotient networks) in Section~\ref{sec:related}.
@@ -466,46 +467,46 @@ In the remainder of the paper we will denote random variables by uppercase $\Xva
 The definitions and notions we introduce in this section are loosely based on the work of~\citet{vergari2021compositional}.
 
 \begin{definition}[Probabilistic Circuit]
-    \label{def:circuit}
-    A probabilistic circuit over random variables $\Xvars$ is a parametrized computational graph encoding a probability density function $\circuit(\Xvars{=}\xvars)$.
-    The circuit consists of three kinds of computational units:
-    \textit{leaf}, \textit{product}, and \textit{sum}.
-    Each product or sum unit receives inputs from a set of input units denoted by $\inputs(n)$.
-    Each unit $k$ encodes a function $\circuit_{k}(\cdot)$ as follows:
-    \begin{align*}
-        {\circuit}_k(\xvars_n)=
-        \begin{cases}
-            f_k({\xvars_n})                                             & \text{if $k$ leaf unit}    \\
-            \circuit_{k_l}(\xvars_{n_l})  \circuit_{k_r} (\xvars_{n_r}) & \text{if $k$ product unit} \\
-            \sum_{j\in\inputs(k)} \weight_{kj} \circuit_j(\xvars_n)     & \text{if $k$ sum unit}
-        \end{cases}
-        % \label{eq:def:circuit}
-    \end{align*}
-    where $f_k(\xvars_n)$  denotes a parametrized probability distribution having as support the sample space of the random variables in $\Xvars_n$.
+	\label{def:circuit}
+	A probabilistic circuit over random variables $\Xvars$ is a parametrized computational graph encoding a probability density function $\circuit(\Xvars{=}\xvars)$.
+	The circuit consists of three kinds of computational units:
+	\textit{leaf}, \textit{product}, and \textit{sum}.
+	Each product or sum unit receives inputs from a set of input units denoted by $\inputs(n)$.
+	Each unit $k$ encodes a function $\circuit_{k}(\cdot)$ as follows:
+	\begin{align*}
+		{\circuit}_k(\xvars_n)=
+		\begin{cases}
+			f_k({\xvars_n})                                             & \text{if $k$ leaf unit}    \\
+			\circuit_{k_l}(\xvars_{n_l})  \circuit_{k_r} (\xvars_{n_r}) & \text{if $k$ product unit} \\
+			\sum_{j\in\inputs(k)} \weight_{kj} \circuit_j(\xvars_n)     & \text{if $k$ sum unit}
+		\end{cases}
+		% \label{eq:def:circuit}
+	\end{align*}
+	where $f_k(\xvars_n)$  denotes a parametrized probability distribution having as support the sample space of the random variables in $\Xvars_n$.
 \end{definition}
 
 
 
 \begin{definition}[Scope]
-    \label{def:scope:cond}
-    The scope of a unit $k$, denoted by $\scope(k)$, is the set of random variables $\Xvars_n$ for which the function $\circuit_k (\cdot)$ encodes a probability distribution.
+	\label{def:scope:cond}
+	The scope of a unit $k$, denoted by $\scope(k)$, is the set of random variables $\Xvars_n$ for which the function $\circuit_k (\cdot)$ encodes a probability distribution.
 \end{definition}
 
 Two important properties that are usually imposed on probabilistic circuits are smoothness and decomposability as they allow for tractable queries, \eg computing marginals~\citep{darwiche2001decomposable,darwiche2003differential}.
 \begin{definition}[Smoothness]
-    A circuit is smooth if for every sum unit $k$ its inputs encode distributions over the same random variables:
-    $\forall j_1, j_2 {\in} \inputs(k)$ it holds that $\scope(j_1){=}\scope(j_2) $.
+	A circuit is smooth if for every sum unit $k$ its inputs encode distributions over the same random variables:
+	$\forall j_1, j_2 {\in} \inputs(k)$ it holds that $\scope(j_1){=}\scope(j_2) $.
 \end{definition}
 
 \begin{definition}[Decomposability]
-    A circuit is decomposable if the inputs of every product unit
-    $k$ encode distributions over disjoint sets of random variables:
-    $\scope (k_l) \cap \scope (k_r) = \emptyset$ with $\{k_l, k_r\}= \inputs (k)$.
+	A circuit is decomposable if the inputs of every product unit
+	$k$ encode distributions over disjoint sets of random variables:
+	$\scope (k_l) \cap \scope (k_r) = \emptyset$ with $\{k_l, k_r\}= \inputs (k)$.
 \end{definition}
 
 
 \begin{definition}[Valid Probabilsitic Circuit]
-    We call a probabilistic circuit valid if for every unit $k$ we have that $p_k(\xvars_n){\geq} 0$ and $\int p_k(\xvars_n) \differential \xvars_n{=}1$.\footnote{Note that our notion of validity is slightly stricter than in its original definition, \cf \citep{poon2011sum}}
+	We call a probabilistic circuit valid if for every unit $k$ we have that $p_k(\xvars_n){\geq} 0$ and $\int p_k(\xvars_n) \differential \xvars_n{=}1$.\footnote{Note that our notion of validity is slightly stricter than in its original definition, \cf \citep{poon2011sum}}
 \end{definition}
 
 As discussed by \citet{peharz2015theoretical}, probabilistic circuits are valid if they are smooth, decomposable, and that for the weights in the sum units we have $\weight_{kj} \in \mathbb{R}^+$ and $\sum_{j\in\inputs(k)} \weight_{kj} = 1$ for every $k$. Note that the notation in Definition~\ref{def:circuit} already suggests that the circuit is smooth as the inputs to the sum units are functions over the same set of variables $\Xvars_n$.
@@ -540,7 +541,7 @@ This gives us a partial ordering of the variables $\Xvars$.
 We also define the ancestor relationship $\ancestors(\cdot)$ to be the transitive closure of $\parents(\cdot)$. That is, the ancestors of a random variable are its direct parents and recursively their parents.
 Furthermore, we denote the poset for the random variables $\Xvars$ by $\mathcal{O}(\Xvars)$. We say that the relationship $\Xvars_i {\sqsubset} \Xvars_j$ between two sets holds if
 $
-    \forall \Xvar_r {\in} \Xvars_i, \Xvar_q {\in} \Xvars_j : \Xvar_q {\notin}  \ancestors(\Xvars_r)
+	\forall \Xvar_r {\in} \Xvars_i, \Xvar_q {\in} \Xvars_j : \Xvar_q {\notin}  \ancestors(\Xvars_r)
 $.
 We also define the relation $\Xvar_i\sqsubset \Xvar_j$ on random variables as $\{\Xvar_i \}{\sqsubset} \{\Xvar_j \}$.
 
@@ -548,47 +549,47 @@ We also define the relation $\Xvar_i\sqsubset \Xvar_j$ on random variables as $\
 
 
 \begin{example}[Bayesian Network]
-    Partially ordered random variables induce a factorization of a joint probability distribution. A prominent example of such a factorization are Bayesian networks (\cf Figure ~\ref{fig:bn}) where we have:
-    \begin{talign}
-        \label{eq:bn}
-        p(\Xvars{=}\xvars) = \prod_{n:\Xvar_n \in \Xvars} p_n(X_n{=}x_n \mid \Xvars_{\parents(n)}{=}\xvars_{\parents(n)}).
-    \end{talign}
+	Partially ordered random variables induce a factorization of a joint probability distribution. A prominent example of such a factorization are Bayesian networks (\cf Figure ~\ref{fig:bn}) where we have:
+	\begin{talign}
+		\label{eq:bn}
+		p(\Xvars{=}\xvars) = \prod_{n:\Xvar_n \in \Xvars} p_n(X_n{=}x_n \mid \Xvars_{\parents(n)}{=}\xvars_{\parents(n)}).
+	\end{talign}
 \end{example}
 
 \begin{figure}
 
 
-    \begin{minipage}{0.50\linewidth}
-        \begin{align*}
-            X_1 \sqsubset X_2 &  & X_1 \sqsubset X_4 \\
-            X_1 \sqsubset X_3 &  & X_3 \sqsubset X_1 \\
-            X_3 \sqsubset X_2 &  & X_3 \sqsubset X_4 \\
-            X_2 \sqsubset X_3 &  & X_2 \sqsubset X_4 \\
-        \end{align*}
+	\begin{minipage}{0.50\linewidth}
+		\begin{align*}
+			X_1 \sqsubset X_2 &  & X_1 \sqsubset X_4 \\
+			X_1 \sqsubset X_3 &  & X_3 \sqsubset X_1 \\
+			X_3 \sqsubset X_2 &  & X_3 \sqsubset X_4 \\
+			X_2 \sqsubset X_3 &  & X_2 \sqsubset X_4 \\
+		\end{align*}
 
 
-    \end{minipage}%
-    \begin{minipage}{0.49\linewidth}
-        \resizebox{0.9\linewidth}{!}{
+	\end{minipage}%
+	\begin{minipage}{0.49\linewidth}
+		\resizebox{0.9\linewidth}{!}{
 
-            \centering
+			\centering
 
-            \begin{tikzpicture}
-                % Nodes
-                \node[draw, circle,ultra thick] (x3) {$X_3$};
-                \node[draw, circle, below=of x3,ultra thick] (x2) {$X_2$};
-                \node[draw, circle,  right=2cm of $(x3)!0.5!(x2)$3,ultra thick] (x4) {$X_4$};
-                \node[draw, circle, left=of x2,ultra thick] (x1) {$X_1$};
+			\begin{tikzpicture}
+				% Nodes
+				\node[draw, circle,ultra thick] (x3) {$X_3$};
+				\node[draw, circle, below=of x3,ultra thick] (x2) {$X_2$};
+				\node[draw, circle,  right=2cm of $(x3)!0.5!(x2)$3,ultra thick] (x4) {$X_4$};
+				\node[draw, circle, left=of x2,ultra thick] (x1) {$X_1$};
 
-                % Edges
-                \draw[->, ultra thick] (x1) -- (x2);
-                \draw[->,ultra thick] (x2) -- (x4);
-                \draw[->, ultra thick] (x3) -- (x4);
-            \end{tikzpicture}
-        }
-    \end{minipage}
-    \caption{Right: Bayesian network. Left: partial order relations that hold.}
-    \label{fig:bn}
+				% Edges
+				\draw[->, ultra thick] (x1) -- (x2);
+				\draw[->,ultra thick] (x2) -- (x4);
+				\draw[->, ultra thick] (x3) -- (x4);
+			\end{tikzpicture}
+		}
+	\end{minipage}
+	\caption{Right: Bayesian network. Left: partial order relations that hold.}
+	\label{fig:bn}
 \end{figure}
 
 
@@ -603,90 +604,90 @@ In the example above we denote $\parents(X_n)$ by $\Xvars_{\parents(n)}$. This w
 \label{sec:dmbn}
 
 \begin{definition}[Conditinal Probabilsitic Circuit (CPC)]
-    \label{def:con:circuit}
-    A CPC $\circuit_k$ over a poset $\poset(\Xvars)$ is a parametrized computational graph encoding a probability density function $\circuit(\Xvars{=}\xvars)$.
-    The  CPC consists of
-    \textit{leaf}, \textit{product}, and \textit{sum} units.
-    Each unit $k$ encodes a function $\circuit_{k}$ as follows:
-    \begin{align}
-        \label{eq:con:circuit}
-         & {\circuit}_k(\xvars_n \mid  \xvars_{\parents(n)})
-        \\
-         & =
-        \begin{cases}
-            f_k({\xvars_n}\mid   \xvars_{\parents(n)})                                          & \text{if leaf}    \\
-            \circuit_{k_l}(\xvars_{n_l}\mid   \xvars_{\parents(n_l)})
-            \circuit_{k_r} (\xvars_{n_r}\mid \xvars_{\parents(n_r)})                            & \text{if product} \\
-            \sum_{j\in\inputs(k)} \weight_{kj} \circuit_j(\xvars_n  \mid  \xvars_{\parents(n)}) & \text{if sum}
-        \end{cases}
-        \nonumber
-        % \label{eq:def:circuitconditional}
-    \end{align}
-    where $f_k(\xvars_n)$ denotes a parametrized probability distribution having as support the sample space of the random variables in $\Xvars_n$.
-    % Furthermore, we necessitate that $p_n(\xvars_n){\geq} 0$ and $\int p_n(\xvars_n) \differential \xvars_n{=}1$ for every unit $n$.
+	\label{def:con:circuit}
+	A CPC $\circuit_k$ over a poset $\poset(\Xvars)$ is a parametrized computational graph encoding a probability density function $\circuit(\Xvars{=}\xvars)$.
+	The  CPC consists of
+	\textit{leaf}, \textit{product}, and \textit{sum} units.
+	Each unit $k$ encodes a function $\circuit_{k}$ as follows:
+	\begin{align}
+		\label{eq:con:circuit}
+		 & {\circuit}_k(\xvars_n \mid  \xvars_{\parents(n)})
+		\\
+		 & =
+		\begin{cases}
+			f_k({\xvars_n}\mid   \xvars_{\parents(n)})                                          & \text{if leaf}    \\
+			\circuit_{k_l}(\xvars_{n_l}\mid   \xvars_{\parents(n_l)})
+			\circuit_{k_r} (\xvars_{n_r}\mid \xvars_{\parents(n_r)})                            & \text{if product} \\
+			\sum_{j\in\inputs(k)} \weight_{kj} \circuit_j(\xvars_n  \mid  \xvars_{\parents(n)}) & \text{if sum}
+		\end{cases}
+		\nonumber
+		% \label{eq:def:circuitconditional}
+	\end{align}
+	where $f_k(\xvars_n)$ denotes a parametrized probability distribution having as support the sample space of the random variables in $\Xvars_n$.
+	% Furthermore, we necessitate that $p_n(\xvars_n){\geq} 0$ and $\int p_n(\xvars_n) \differential \xvars_n{=}1$ for every unit $n$.
 \end{definition}
 
 \begin{definition}[Scope (CPC)]
-    \label{def:scope}
-    The scope  $\scope(k)$ of a unit $k$ encoding the probability distribution $\circuit_k(\xvars_n\mid \xvars_{\parents(n)} )$ is the set of random variables $\Xvars_n$.
+	\label{def:scope}
+	The scope  $\scope(k)$ of a unit $k$ encoding the probability distribution $\circuit_k(\xvars_n\mid \xvars_{\parents(n)} )$ is the set of random variables $\Xvars_n$.
 \end{definition}
 
 
 \begin{corollary} A conditional probabilistic circuit over an unordered set of random variables is a (non-conditional) probability circuit.
 \end{corollary}
 \begin{proof}
-    Having no order means that $\parents(\Xvars)=\emptyset$ for every $\Xvar \in \Xvars$. This then means that the conditioning sets in Definition~\ref{def:con:circuit} are all empty and that we recover a (non-conditional) probabilistic circuit.
+	Having no order means that $\parents(\Xvars)=\emptyset$ for every $\Xvar \in \Xvars$. This then means that the conditioning sets in Definition~\ref{def:con:circuit} are all empty and that we recover a (non-conditional) probabilistic circuit.
 \end{proof}
 
 
 
 We can now also introduce the notions of \textit{conditional smoothness} and \textit{conditional decomposability}:
 \begin{definition}[Conditional Smoothness]
-    A CPC is conditionally smooth if for every sum unit $k$ it holds that
-    $\forall j_1, j_2 {\in} \inputs(k):  \scope(j_1){=}\scope(j_2) $
+	A CPC is conditionally smooth if for every sum unit $k$ it holds that
+	$\forall j_1, j_2 {\in} \inputs(k):  \scope(j_1){=}\scope(j_2) $
 \end{definition}
 
 \begin{definition}[Conditional Decomposability]
-    A CPC is conditionally decomposable if for every product unit
-    $k$ it holds that $\scope (k_l) \cap \scope (k_r) = \emptyset$ with $\{k_l, k_r\}= \inputs (k)$.
+	A CPC is conditionally decomposable if for every product unit
+	$k$ it holds that $\scope (k_l) \cap \scope (k_r) = \emptyset$ with $\{k_l, k_r\}= \inputs (k)$.
 \end{definition}
 
 
 
 \begin{corollary}
-    A conditionally smooth and conditionally decomposable CPC is smooth and decomposable if its random variables $\Xvars$ are unordered.
+	A conditionally smooth and conditionally decomposable CPC is smooth and decomposable if its random variables $\Xvars$ are unordered.
 \end{corollary}
 
 \begin{definition}[Valid CPC]
-    \label{def:valid_cpc}
-    We call a CPC valid if for every unit $k$ we have that $p_k(\xvars_n {\mid} \xvars_{\parents(n)}){\geq} 0$ and $\int p_k(\xvars_n {\mid} \xvars_{\parents(n)}) \differential \xvars_n{=}1$.
+	\label{def:valid_cpc}
+	We call a CPC valid if for every unit $k$ we have that $p_k(\xvars_n {\mid} \xvars_{\parents(n)}){\geq} 0$ and $\int p_k(\xvars_n {\mid} \xvars_{\parents(n)}) \differential \xvars_n{=}1$.
 \end{definition}
 
 
 
 \begin{theorem}[Validity for CPCs]
-    A CPC is valid if it is conditionally smooth, conditionally decomposable, and for every sum unit $n$ it holds that $\weight_{nm}{\geq} 0$ and $\sum_{m\in\inputs(n)} \weight_{nm}{=}1$.
+	A CPC is valid if it is conditionally smooth, conditionally decomposable, and for every sum unit $n$ it holds that $\weight_{nm}{\geq} 0$ and $\sum_{m\in\inputs(n)} \weight_{nm}{=}1$.
 \end{theorem}
 
 \begin{proof}
-    We start by rewriting the alternating sums and products of a CPC in its flat representation using the fact that products distribute over summations:
-    \begin{align}
-        \circuit_k(\xvars_n)
-         & =  \sum_{\tau \in \mathcal{T}} \weight_\tau  \prod_{\rho \in \tau} \rho (\xvars_\rho)
-        \label{eq:tree_decomp_PCP}
-    \end{align}
-    Here, $\mathcal{T}$ denotes the set of all products of leaf distributions in the CPC and $\rho \in \tau$ denotes a factor in one of these products
-    (we refer to \citep{zhao2016unified} for a more detailed account).
+	We start by rewriting the alternating sums and products of a CPC in its flat representation using the fact that products distribute over summations:
+	\begin{align}
+		\circuit_k(\xvars_n)
+		 & =  \sum_{\tau \in \mathcal{T}} \weight_\tau  \prod_{\rho \in \tau} \rho (\xvars_\rho)
+		\label{eq:tree_decomp_PCP}
+	\end{align}
+	Here, $\mathcal{T}$ denotes the set of all products of leaf distributions in the CPC and $\rho \in \tau$ denotes a factor in one of these products
+	(we refer to \citep{zhao2016unified} for a more detailed account).
 
-    Invoking decomposability of the product units we have that each random variable $X_n$ only picks up a single factor $\rho (\xvar_\rho)$, which means that we can identify each $\rho (\xvar_\rho)$ with a specific $f_k(\xvar_n\mid \xvars_{\parents(n)} )$. This lets us rewrite Equation~\ref{eq:tree_decomp_PCP} as:
-    \begin{align}
-        \circuit_k(\xvars_n)
-         & =  \sum_{\tau \in \mathcal{T}} \weight_\tau  \prod_{k: f_k \in \tau} f_k (\xvars_n \mid \xvars_{\parents(n)})
-        \label{eq:f_tree_decomp_PCP}
-    \end{align}
-    Given that the $f_k$ are by definition (conditional) probability distributions their product forms a joint probability distribution as well. Next, we exploit smoothness, which states that the inputs to sum units have identical scope. This means that all the terms in the flat representation of $\circuit (\Xvars_n)$ mention the identical set of random variables and each term in the flat representation forms indeed a joint probability over the random variables $\Xvars_n$.
+	Invoking decomposability of the product units we have that each random variable $X_n$ only picks up a single factor $\rho (\xvar_\rho)$, which means that we can identify each $\rho (\xvar_\rho)$ with a specific $f_k(\xvar_n\mid \xvars_{\parents(n)} )$. This lets us rewrite Equation~\ref{eq:tree_decomp_PCP} as:
+	\begin{align}
+		\circuit_k(\xvars_n)
+		 & =  \sum_{\tau \in \mathcal{T}} \weight_\tau  \prod_{k: f_k \in \tau} f_k (\xvars_n \mid \xvars_{\parents(n)})
+		\label{eq:f_tree_decomp_PCP}
+	\end{align}
+	Given that the $f_k$ are by definition (conditional) probability distributions their product forms a joint probability distribution as well. Next, we exploit smoothness, which states that the inputs to sum units have identical scope. This means that all the terms in the flat representation of $\circuit (\Xvars_n)$ mention the identical set of random variables and each term in the flat representation forms indeed a joint probability over the random variables $\Xvars_n$.
 
-    Lastly, \citet{peharz2015theoretical} have shown that having normalized weights in the sum units of a circuit results in normalized weights $\weight_\tau$ in the flat representation. This lets us conclude that the circuit $p_k(\xvars_n)$ is a probability distribution. Note that we did not make any reference in our reasoning to any specific unit in the circuit. This means that our argument holds for all units in a conditionally smooth and conditionally decomposable circuit with normalized weights, which means in turn that such a circuit is valid.
+	Lastly, \citet{peharz2015theoretical} have shown that having normalized weights in the sum units of a circuit results in normalized weights $\weight_\tau$ in the flat representation. This lets us conclude that the circuit $p_k(\xvars_n)$ is a probability distribution. Note that we did not make any reference in our reasoning to any specific unit in the circuit. This means that our argument holds for all units in a conditionally smooth and conditionally decomposable circuit with normalized weights, which means in turn that such a circuit is valid.
 \end{proof}
 
 
@@ -707,120 +708,120 @@ each term in the sum over $j$ requires a separate conditional probability for ea
 This means that we would need (assuming binary random variables) $2^{|\Xvars_{\parents(n)}|}$ functions to encode the conditional probabilities.
 We alleviate this issue as follows. First, we rewrite the functional form of the sum units using Bayes' rule:
 \begin{align}
-    \sum_{j\in\inputs(k)}
-    \weight_{kj}
-    \frac{
-        \circuit_j(  \xvars_{\parents(n)} \mid \xvars_n  )
-    }{
-        \circuit_j(  \xvars_{\parents(n)  })
-    }
-    \circuit_j(  \xvars_n)
+	\sum_{j\in\inputs(k)}
+	\weight_{kj}
+	\frac{
+		\circuit_j(  \xvars_{\parents(n)} \mid \xvars_n  )
+	}{
+		\circuit_j(  \xvars_{\parents(n)  })
+	}
+	\circuit_j(  \xvars_n)
 \end{align}
 Second, we make the following approximation:
 \begin{align}
-    \weight_{kj}
-    \frac{
-        \circuit_j(  \xvars_{\parents(n)} \mid \xvars_n  )
-    }{
-        \circuit_j(  \xvars_{\parents(n)  })
-    }
-    \approx
-    \nweight_{kj}(\xvars_{\ancestors(n)}),
+	\weight_{kj}
+	\frac{
+		\circuit_j(  \xvars_{\parents(n)} \mid \xvars_n  )
+	}{
+		\circuit_j(  \xvars_{\parents(n)  })
+	}
+	\approx
+	\nweight_{kj}(\xvars_{\ancestors(n)}),
 \end{align}
 where $\nweight_{kj}(\cdot)$ is a neural network depending on the set of ancestors $\ancestors(\xvar_n)$. This now allows us to formally introduce probabilistic neural circuits.
 \begin{definition}[Probabilistic Neural Circuit (PNC)]
-    \label{def:pnc}
-    A PNC is a conditionally smooth and conditionally decomposable  CPC where sum units take the following functional form:
-    \begin{align}
-        {\circuit}_k(\xvars_n \mid  \xvars_{\parents(n)})
-        =
-        \sum_{j\in\inputs(k)} \nweight_{kj} ( \xvars_{\ancestors(n)}) \circuit_j(\xvars_n),
-        \label{eq:pnc}
-    \end{align}
-    with $\nweight_{kj}: \Omega( \ancestors(\xvar_n)) \rightarrow [0,1 ]$ being a neural network mapping from the sample space of the random variables $\ancestors(\xvar_n)$ to a real  between zero and one, and where it holds that $\sum_{j\in\inputs(k)} \nweight_{kj} = 1$.
+	\label{def:pnc}
+	A PNC is a conditionally smooth and conditionally decomposable  CPC where sum units take the following functional form:
+	\begin{align}
+		{\circuit}_k(\xvars_n \mid  \xvars_{\parents(n)})
+		=
+		\sum_{j\in\inputs(k)} \nweight_{kj} ( \xvars_{\ancestors(n)}) \circuit_j(\xvars_n),
+		\label{eq:pnc}
+	\end{align}
+	with $\nweight_{kj}: \Omega( \ancestors(\xvar_n)) \rightarrow [0,1 ]$ being a neural network mapping from the sample space of the random variables $\ancestors(\xvar_n)$ to a real  between zero and one, and where it holds that $\sum_{j\in\inputs(k)} \nweight_{kj} = 1$.
 \end{definition}
 It can easily be seen that PNCs, already encode valid circuits (\cf. Definition~\ref{def:valid_cpc}) by construction.
 Intuitively, we interpret PNCs as neural approximations of CPCs.
 Note that it is this approximation that makes PNCs tractable: PNCs only need a single circuits for each $j$ while CPCs need a circuit for every $j$ and every instantiation of $\xvars_{\parents(n)}$.
 
 \begin{proposition}
-    Probabilistic circuits are PNCs.
+	Probabilistic circuits are PNCs.
 \end{proposition}
 \begin{proof}
-    If the values $\nweight(\xvars_{\ancestors(n)})$ do not depend on $\xvars_{\ancestors(n)}$ we have $|\inputs(k)|$ constants that sum up to $1$. This means that the weights in the sum units do not depend on the conditioning sets from the antecedent product layer, and we can omit any conditioning sets. The definition of a PNC in this case is then equivalent to the definition of a probabilistic circuit.
+	If the values $\nweight(\xvars_{\ancestors(n)})$ do not depend on $\xvars_{\ancestors(n)}$ we have $|\inputs(k)|$ constants that sum up to $1$. This means that the weights in the sum units do not depend on the conditioning sets from the antecedent product layer, and we can omit any conditioning sets. The definition of a PNC in this case is then equivalent to the definition of a probabilistic circuit.
 \end{proof}
 
 Given the definition of PNCs we can now determine tractable queries that we can perform.
 
 \begin{proposition}[Density Evaluation]
-    Given a probabilistic circuit $p_k$ over the random variables $\Xvars$. We can evaluate the circuit  at the instantiation $\xvars$ in linear time with respect to the size of the circuit.
+	Given a probabilistic circuit $p_k$ over the random variables $\Xvars$. We can evaluate the circuit  at the instantiation $\xvars$ in linear time with respect to the size of the circuit.
 \end{proposition}
 \begin{proof}
-    This follows simply from the fact that a circuit is a (non-recurrent) computation graph and that we can simply evaluate it by computing input units before output units.
+	This follows simply from the fact that a circuit is a (non-recurrent) computation graph and that we can simply evaluate it by computing input units before output units.
 \end{proof}
 
 \begin{proposition}[Ordered Marginals]
-    \label{prop:ord_marg}
-    Consider a PNC $\circuit_k(\xvars_m, \xvars_e)$  we can then compute the marginal $\circuit_k(\xvars_e)$ in polynomial time if $\Xvars_e {\sqsubset} \Xvars_m$.
+	\label{prop:ord_marg}
+	Consider a PNC $\circuit_k(\xvars_m, \xvars_e)$  we can then compute the marginal $\circuit_k(\xvars_e)$ in polynomial time if $\Xvars_e {\sqsubset} \Xvars_m$.
 \end{proposition}
 \begin{proof}
-    We start by writing out explicitly the single elements in the set $\xvars_m$:
-    \begin{align}
-        \circuit_k(\xvars_m, \xvars_e) = \circuit_k(\xvar_\mu, \dots, \xvar_1, \xvars_e)
-    \end{align}
-    where the order of $\{ \xvar_\mu, \dots, \xvar_1\}= \xvars_m$ is arbitrary but respects the partial order $\poset(\Xvars_m \cup \Xvars_e )$.
-    Given that the circuit is conditionally smooth and conditionally decomposable, we know that it encodes a proper probability distribution over its variables.
-    We can hence obtain the marginal $\circuit(\xvars_e)$ by integrating over the possible values $\xvars_m$:
-    \begin{align}
-        \circuit_k(\xvars_e)
-        =
-        \int \cdots \int p_k(\xvar_\mu, \dots, \xvar_1,\xvars_e)  \differential  \xvar_\mu \cdots \differential \xvar_1
-    \end{align}
-    As $\xvar_\mu$ does not appear in any of the conditioning sets and as any product unit $q$ is decomposable we can simply push the summation to the input unit $r$ of $q$ for which we have  $\Xvar_\mu \in \scope (r)$.
-    For summation units we exploit the linearity of the integral and distribute the integral over the terms in the sum.
-    Performing this recursively brings the integral to the leaves where we have  $ \int f_i(x_\mu \mid x_{\parents(\mu)} ) \differential \xvar_\mu =1$.
+	We start by writing out explicitly the single elements in the set $\xvars_m$:
+	\begin{align}
+		\circuit_k(\xvars_m, \xvars_e) = \circuit_k(\xvar_\mu, \dots, \xvar_1, \xvars_e)
+	\end{align}
+	where the order of $\{ \xvar_\mu, \dots, \xvar_1\}= \xvars_m$ is arbitrary but respects the partial order $\poset(\Xvars_m \cup \Xvars_e )$.
+	Given that the circuit is conditionally smooth and conditionally decomposable, we know that it encodes a proper probability distribution over its variables.
+	We can hence obtain the marginal $\circuit(\xvars_e)$ by integrating over the possible values $\xvars_m$:
+	\begin{align}
+		\circuit_k(\xvars_e)
+		=
+		\int \cdots \int p_k(\xvar_\mu, \dots, \xvar_1,\xvars_e)  \differential  \xvar_\mu \cdots \differential \xvar_1
+	\end{align}
+	As $\xvar_\mu$ does not appear in any of the conditioning sets and as any product unit $q$ is decomposable we can simply push the summation to the input unit $r$ of $q$ for which we have  $\Xvar_\mu \in \scope (r)$.
+	For summation units we exploit the linearity of the integral and distribute the integral over the terms in the sum.
+	Performing this recursively brings the integral to the leaves where we have  $ \int f_i(x_\mu \mid x_{\parents(\mu)} ) \differential \xvar_\mu =1$.
 
-    Up to this point the marginalization in CPC is identical to marginalization in probabilistic circuits. Contrary, to probabilistic circuits, however, we now need to propagate back up the result of the marginalization. Assuming, without loss of generality that leaf units feed into sum units, we then have
-    \begin{align*}
-         & \sum_{g\in\inputs(h)} \nweight_{hg} (\xvars_{\ancestors( \mu)})
-        \int \circuit_g (\xvar_\mu  ) \differential \xvar_\mu
-        % 
-        {=} \sum_{g\in\inputs(h)} \nweight_{hg} (\xvars_{\ancestors( \mu)})
-        {=}1
-    \end{align*}
-    The next product node that we encounter on our way up through the circuit is of the form:
-    \begin{align}
-         & \circuit_{l}(\xvars_{\mu-1}\mid   \xvars_{\parents(\mu-1)})
-        \int  \circuit_{r} (\xvars_{\mu}\mid \xvars_{\parents(\mu)}) \differential \xvars_\mu
-        \nonumber
-        \\
-         & =\circuit_{l}(\xvars_{\mu-1}\mid  \xvars_{\parents(\mu-1)})
-        \nonumber
-    \end{align}
-    At this point we have integrated out the variable $\xvar_\mu$ from the circuit by traversing a number of units linear in the size of the circuit (assuming proper caching~\citep{vergari2021compositional}). Repeating this procedure for the remaining set of ordered random variables $\{\Xvar_{\mu-1},\dots,\Xvar_1 \}$ gives us the distribution $\circuit_k(\xvars_e)$ in polynomial time.
+	Up to this point the marginalization in CPC is identical to marginalization in probabilistic circuits. Contrary, to probabilistic circuits, however, we now need to propagate back up the result of the marginalization. Assuming, without loss of generality that leaf units feed into sum units, we then have
+	\begin{align*}
+		 & \sum_{g\in\inputs(h)} \nweight_{hg} (\xvars_{\ancestors( \mu)})
+		\int \circuit_g (\xvar_\mu  ) \differential \xvar_\mu
+		% 
+		{=} \sum_{g\in\inputs(h)} \nweight_{hg} (\xvars_{\ancestors( \mu)})
+		{=}1
+	\end{align*}
+	The next product node that we encounter on our way up through the circuit is of the form:
+	\begin{align}
+		 & \circuit_{l}(\xvars_{\mu-1}\mid   \xvars_{\parents(\mu-1)})
+		\int  \circuit_{r} (\xvars_{\mu}\mid \xvars_{\parents(\mu)}) \differential \xvars_\mu
+		\nonumber
+		\\
+		 & =\circuit_{l}(\xvars_{\mu-1}\mid  \xvars_{\parents(\mu-1)})
+		\nonumber
+	\end{align}
+	At this point we have integrated out the variable $\xvar_\mu$ from the circuit by traversing a number of units linear in the size of the circuit (assuming proper caching~\citep{vergari2021compositional}). Repeating this procedure for the remaining set of ordered random variables $\{\Xvar_{\mu-1},\dots,\Xvar_1 \}$ gives us the distribution $\circuit_k(\xvars_e)$ in polynomial time.
 \end{proof}
 The proof follows a similar reasoning to the case of probabilistic circuits. The delicate point was to show that in the product unit one of the factors drops out. This is important as $\Xvar_{\parents(\mu)}$ might include $\Xvar_{\mu-1}$. Retaining such a dependency would prevent us from performing tractable ordered marginalization.
 
 
 \begin{corollary}[Ordered Conditionals]
-    Assuming a PNC $\circuit_k (\xvars_m, \xvars_o, \xvars_e)$ where $\Xvars_e \sqsubset \Xvars_o \sqsubset \Xvars_m$ holds lets us compute the conditional $p(\xvars_o \mid \xvars_e)$ in polynomial time.
+	Assuming a PNC $\circuit_k (\xvars_m, \xvars_o, \xvars_e)$ where $\Xvars_e \sqsubset \Xvars_o \sqsubset \Xvars_m$ holds lets us compute the conditional $p(\xvars_o \mid \xvars_e)$ in polynomial time.
 \end{corollary}
 \begin{proof}
-    We first apply the definition of the conditional probability:
-    $p(\xvars_o \mid \xvars_e)=\nicefrac{p(\xvars_o , \xvars_e)}{p( \xvars_e)}$.
-    Using the law of total probability we rewrite the ratio as
-    $$
-        p(\xvars_o \mid \xvars_e)
-        =
-        \frac
-        {
-            \int p(\xvars_m , \xvars_o, \xvars_e) \differential \xvars_m
-        }
-        {
-            \int p(\xvars_m , \xvars_o, \xvars_e) \differential \xvars_m \differential \xvars_o
-        }
-    $$
-    and Proposition~\ref{prop:ord_marg} tells us that we can perform both marginalizations in polytime.
+	We first apply the definition of the conditional probability:
+	$p(\xvars_o \mid \xvars_e)=\nicefrac{p(\xvars_o , \xvars_e)}{p( \xvars_e)}$.
+	Using the law of total probability we rewrite the ratio as
+	$$
+		p(\xvars_o \mid \xvars_e)
+		=
+		\frac
+		{
+			\int p(\xvars_m , \xvars_o, \xvars_e) \differential \xvars_m
+		}
+		{
+			\int p(\xvars_m , \xvars_o, \xvars_e) \differential \xvars_m \differential \xvars_o
+		}
+	$$
+	and Proposition~\ref{prop:ord_marg} tells us that we can perform both marginalizations in polytime.
 \end{proof}
 
 
@@ -855,77 +856,77 @@ In order to study PNC structures, we introduce the concept of a partition graph,
 
 
 \begin{figure}[t]
-    \begin{minipage}[c]{\linewidth}
-        \centering
+	\begin{minipage}[c]{\linewidth}
+		\centering
 
-        \begin{tikzpicture}[
-                dot/.style = {circle, draw, fill, minimum size=4pt, inner sep=0pt},
-                level distance=1cm,
-                level 1/.style={sibling distance=3cm},
-                level 2/.style={sibling distance=1.5cm},
-                level 3/.style={sibling distance=0.75cm},
-                scale=1
-            ]
+		\begin{tikzpicture}[
+				dot/.style = {circle, draw, fill, minimum size=4pt, inner sep=0pt},
+				level distance=1cm,
+				level 1/.style={sibling distance=3cm},
+				level 2/.style={sibling distance=1.5cm},
+				level 3/.style={sibling distance=0.75cm},
+				scale=1
+			]
 
-            \node[dot] (00) {}
-            child {node[dot] (10) {}
-                    child {node[dot] (20) {}
-                            child {node[dot] (30) {}}
-                            child {node[dot] (31) {}}
-                        }
-                    child {node[dot] (21) {}
-                            child {node[dot] (32) {}}
-                            child {node[dot] (33) {}}
-                        }
-                }
-            child {node[dot] (11) {}
-                    child {node[dot] (22) {}
-                            child {node[dot] (34) {}}
-                            child {node[dot] (35) {}}
-                        }
-                    child {node[dot] (23) {}
-                            child {node[dot] (36) {}}
-                            child {node[dot] (37) {}}
-                        }
-                };
+			\node[dot] (00) {}
+			child {node[dot] (10) {}
+					child {node[dot] (20) {}
+							child {node[dot] (30) {}}
+							child {node[dot] (31) {}}
+						}
+					child {node[dot] (21) {}
+							child {node[dot] (32) {}}
+							child {node[dot] (33) {}}
+						}
+				}
+			child {node[dot] (11) {}
+					child {node[dot] (22) {}
+							child {node[dot] (34) {}}
+							child {node[dot] (35) {}}
+						}
+					child {node[dot] (23) {}
+							child {node[dot] (36) {}}
+							child {node[dot] (37) {}}
+						}
+				};
 
-            \node[below= 0.1 of 30, inner sep=0pt] (X1) {\tiny{$X_1$}};
-            \node[below= 0.1 of 31, inner sep=0pt] (x2) {\tiny{$X_2$}};
-            \node[below= 0.1 of 32, inner sep=0pt] (x3) {\tiny{$X_3$}};
-            \node[below= 0.1 of 33, inner sep=0pt] (x4) {\tiny{$X_4$}};
-            \node[below= 0.1 of 34, inner sep=0pt] (X5) {\tiny{$X_5$}};
-            \node[below= 0.1 of 35, inner sep=0pt] (X6) {\tiny{$X_6$}};
-            \node[below= 0.1 of 36, inner sep=0pt] (X7) {\tiny{$X_7$}};
-            \node[below= 0.1 of 37, inner sep=0pt] (X8) {\tiny{$X_8$}};
+			\node[below= 0.1 of 30, inner sep=0pt] (X1) {\tiny{$X_1$}};
+			\node[below= 0.1 of 31, inner sep=0pt] (x2) {\tiny{$X_2$}};
+			\node[below= 0.1 of 32, inner sep=0pt] (x3) {\tiny{$X_3$}};
+			\node[below= 0.1 of 33, inner sep=0pt] (x4) {\tiny{$X_4$}};
+			\node[below= 0.1 of 34, inner sep=0pt] (X5) {\tiny{$X_5$}};
+			\node[below= 0.1 of 35, inner sep=0pt] (X6) {\tiny{$X_6$}};
+			\node[below= 0.1 of 36, inner sep=0pt] (X7) {\tiny{$X_7$}};
+			\node[below= 0.1 of 37, inner sep=0pt] (X8) {\tiny{$X_8$}};
 
-            \draw[<-, dashed, red] (11) -- (10);
-            \draw[<-, dashed, red] (23) -- (22);
-            \draw[<-, dashed, red] (22) -- (21);
-            \draw[<-, dashed, red] (21) -- (20);
-            \draw[<-, dashed, red, out=135] (23) to[out=150,in=30]  (21);
-            \draw[<-, dashed, red, out=135] (22) to[out=-150,in=-30]  (20);
+			\draw[<-, dashed, red] (11) -- (10);
+			\draw[<-, dashed, red] (23) -- (22);
+			\draw[<-, dashed, red] (22) -- (21);
+			\draw[<-, dashed, red] (21) -- (20);
+			\draw[<-, dashed, red, out=135] (23) to[out=150,in=30]  (21);
+			\draw[<-, dashed, red, out=135] (22) to[out=-150,in=-30]  (20);
 
-            % \draw[->, dashed, red] (37) -- (36);
-            % \draw[->, dashed, red] (36) -- (35);
-            % \draw[->, dashed, red] (35) -- (34);
-            % \draw[->, dashed, red] (34) -- (33);
-            % \draw[->, dashed, red] (33) -- (32);
-            % \draw[->, dashed, red] (32) -- (31);
-            % \draw[->, dashed, red] (31) -- (30);
+			% \draw[->, dashed, red] (37) -- (36);
+			% \draw[->, dashed, red] (36) -- (35);
+			% \draw[->, dashed, red] (35) -- (34);
+			% \draw[->, dashed, red] (34) -- (33);
+			% \draw[->, dashed, red] (33) -- (32);
+			% \draw[->, dashed, red] (32) -- (31);
+			% \draw[->, dashed, red] (31) -- (30);
 
-            % \draw[->, dashed, red] (37) to[out=150,in=30] (35);
-            % \draw[->, dashed, red] (36) to[out=-150,in=-30] (34);
+			% \draw[->, dashed, red] (37) to[out=150,in=30] (35);
+			% \draw[->, dashed, red] (36) to[out=-150,in=-30] (34);
 
-            % \draw[->, dashed, red] (35) to[out=150,in=30] (33);
-            % \draw[->, dashed, red] (34) to[out=-150,in=-30] (32);
+			% \draw[->, dashed, red] (35) to[out=150,in=30] (33);
+			% \draw[->, dashed, red] (34) to[out=-150,in=-30] (32);
 
-            % \draw[->, dashed, red] (33) to[out=150,in=30] (31);
-            % \draw[->, dashed, red] (32) to[out=-150,in=-30] (30);
+			% \draw[->, dashed, red] (33) to[out=150,in=30] (31);
+			% \draw[->, dashed, red] (32) to[out=-150,in=-30] (30);
 
-        \end{tikzpicture}
-    \end{minipage}
-    \caption{A balanced partition tree of a probabilistic neural circuit with eight variables. The partition tree (in black) describes how the variables decompose (in terms of the scope function). The edges in red indicate functional (neural) dependencies between partitions.}
-    \label{fig:partition_graph}
+		\end{tikzpicture}
+	\end{minipage}
+	\caption{A balanced partition tree of a probabilistic neural circuit with eight variables. The partition tree (in black) describes how the variables decompose (in terms of the scope function). The edges in red indicate functional (neural) dependencies between partitions.}
+	\label{fig:partition_graph}
 \end{figure}
 
 
@@ -933,21 +934,21 @@ In order to study PNC structures, we introduce the concept of a partition graph,
 
 Ignoring for now neural dependencies in PNCs (\ie the red edges in the partition tree in Figure~\ref{fig:partition_graph}) we describe the layer-wise operations. Let us assume, for the sake of simplicity, that the number of variables $N$ is a power of $2$. For instance, the circuits in Figure~\ref{fig:circuit} has $N=4$ and the partition diagram in Figure~\ref{fig:partition_graph} has $N=8$. Given that we merge partitions pairwise at each layer via multiplication, we obtain for the number of layers in a circuit $N_L= \log_2 N+1$. Formally, we express the layer-wise product units as follows:
 \begin{align}
-    \component_{l,p,1,c} = \component_{l-1,2(p-1)+1,2,c} \times \component_{l-1,2(p-1)+2,2,c},
-    \tag{ProductLayer}
+	\component_{l,p,1,c} = \component_{l-1,2(p-1)+1,2,c} \times \component_{l-1,2(p-1)+2,2,c},
+	\tag{ProductLayer}
 \end{align}
 which describes how to compute the value of a component given the components of the previous layer.
 The meaning of the indices is described in Section~\ref{sec:prelim}. Using this notation we can also express the sum units at the leaves and at the root:
 \begin{align}
-    \component_{1,p,2,c}
-     & =
-    \sum_{c'=1}^{N_D} \weight_{1,p,c,c'} \times \component_{1,p,1,c'}
-    \tag{SumLeaf}
-    \\
-    \component_{N_L,1,2,1}
-     & =
-    \sum_{c'=1}^{N_C} \weight_{N_L,1,1,c'} \times \component_{N_L,1,1,c'}
-    \tag{SumRoot}
+	\component_{1,p,2,c}
+	 & =
+	\sum_{c'=1}^{N_D} \weight_{1,p,c,c'} \times \component_{1,p,1,c'}
+	\tag{SumLeaf}
+	\\
+	\component_{N_L,1,2,1}
+	 & =
+	\sum_{c'=1}^{N_C} \weight_{N_L,1,1,c'} \times \component_{N_L,1,1,c'}
+	\tag{SumRoot}
 \end{align}
 In the equations above, $N_D$ denotes the number of initial components in the leaves and $N_C$ is the number of components throughout the circuits.
 For the circuit in Figure~\ref{fig:circuit} we have $N_D{=}2$ and $N_C{=}3$.
@@ -961,83 +962,83 @@ Observe also that the root layer has only a single component. Hence, the $1$ as 
 
 Next, we describe the neural sum units in layered PNCs. To gain some intuition, consider the partial computation graph in Figure~\ref{fig:neural_dependencies}, where we show in more detail, compared to Figures ~\ref{fig:circuit} and~\ref{fig:partition_graph}, the neural dependencies present at the sum units. Formally, we express the values of neural sum units as follows:
 \begin{align}
-     & \component_{l,p,2,c}     \tag{NeuralSumLayer}
-    \\
-     & =
-    \sum_{c'=1}^{N_C} \nweight_{l,p,c,c'}(\component_{l, p-\nu_{l,p}:p-1, 1, 1:N_C})
-    \times
-    \component_{l,p,1,c'}
-    \nonumber
+	 & \component_{l,p,2,c}     \tag{NeuralSumLayer}
+	\\
+	 & =
+	\sum_{c'=1}^{N_C} \nweight_{l,p,c,c'}(\component_{l, p-\nu_{l,p}:p-1, 1, 1:N_C})
+	\times
+	\component_{l,p,1,c'}
+	\nonumber
 \end{align}
 \begin{figure}[t]
-    \begin{minipage}[c]{\linewidth}
-        \centering
-        \resizebox{0.9\columnwidth}{!}{
-            \begin{tikzpicture}
+	\begin{minipage}[c]{\linewidth}
+		\centering
+		\resizebox{0.9\columnwidth}{!}{
+			\begin{tikzpicture}
 
 
 
-                \prodnode[line width=\midlinewidth]{p21};
-                \prodnode[line width=\midlinewidth, right=\halfdist of p21]{p22};
-                \prodnode[line width=\midlinewidth, right=\halfdist of p22]{p23};
+				\prodnode[line width=\midlinewidth]{p21};
+				\prodnode[line width=\midlinewidth, right=\halfdist of p21]{p22};
+				\prodnode[line width=\midlinewidth, right=\halfdist of p22]{p23};
 
-                \prodnode[line width=\midlinewidth, right=2\halfdist of p23]{p31};
-                \prodnode[line width=\midlinewidth, right=\halfdist of p31]{p32};
-                \prodnode[line width=\midlinewidth, right=\halfdist of p32]{p33};
+				\prodnode[line width=\midlinewidth, right=2\halfdist of p23]{p31};
+				\prodnode[line width=\midlinewidth, right=\halfdist of p31]{p32};
+				\prodnode[line width=\midlinewidth, right=\halfdist of p32]{p33};
 
-                \node[draw, dashed, draw=red, circle, above right=0.875 and 0.35 of p23, inner sep=1pt,line width=\midlinewidth, minimum width=0.5cm] (w2){};
-                \node[draw, dashed, draw=red,circle, left= \halfdist of w2, inner sep=1pt,line width=\midlinewidth,minimum width=0.5cm] (w1) {};
-                \node[draw, dashed, draw=red,circle, right= \halfdist of w2, inner sep=1pt,line width=\midlinewidth,minimum width=0.5cm] (w3) {};
-
-
+				\node[draw, dashed, draw=red, circle, above right=0.875 and 0.35 of p23, inner sep=1pt,line width=\midlinewidth, minimum width=0.5cm] (w2){};
+				\node[draw, dashed, draw=red,circle, left= \halfdist of w2, inner sep=1pt,line width=\midlinewidth,minimum width=0.5cm] (w1) {};
+				\node[draw, dashed, draw=red,circle, right= \halfdist of w2, inner sep=1pt,line width=\midlinewidth,minimum width=0.5cm] (w3) {};
 
 
-                \draw[-,red,dashed,line width=\midlinewidth] (p21) to (w1);
-                \draw[-,red,dashed,line width=\midlinewidth] (p21) to (w2);
-                \draw[-,red,dashed,line width=\midlinewidth] (p21) to (w3);
-                \draw[-,red,dashed,line width=\midlinewidth] (p22) to (w1);
-                \draw[-,red,dashed,line width=\midlinewidth] (p22) to (w2);
-                \draw[-,red,dashed,line width=\midlinewidth] (p22) to (w3);
-                \draw[-,red,dashed,line width=\midlinewidth] (p23) to (w1);
-                \draw[-,red,dashed,line width=\midlinewidth] (p23) to (w2);
-                \draw[-,red,dashed,line width=\midlinewidth] (p23) to (w3);
-
-                \draw[-,red,dashed,line width=\midlinewidth] (p31) to (w1);
-                \draw[-,red,dashed,line width=\midlinewidth] (p31) to (w2);
-                \draw[-,red,dashed,line width=\midlinewidth] (p31) to (w3);
-                \draw[-,red,dashed,line width=\midlinewidth] (p32) to (w1);
-                \draw[-,red,dashed,line width=\midlinewidth] (p32) to (w2);
-                \draw[-,red,dashed,line width=\midlinewidth] (p32) to (w3);
-                \draw[-,red,dashed,line width=\midlinewidth] (p33) to (w1);
-                \draw[-,red,dashed,line width=\midlinewidth] (p33) to (w2);
-                \draw[-,red,dashed,line width=\midlinewidth] (p33) to (w3);
 
 
-                \prodnode[line width=\midlinewidth, right=2\halfdist of p33]{p11};
-                \prodnode[line width=\midlinewidth, right=0.5 of p11]{p12};
-                \prodnode[line width=\midlinewidth, right=0.5 of p12]{p13};
+				\draw[-,red,dashed,line width=\midlinewidth] (p21) to (w1);
+				\draw[-,red,dashed,line width=\midlinewidth] (p21) to (w2);
+				\draw[-,red,dashed,line width=\midlinewidth] (p21) to (w3);
+				\draw[-,red,dashed,line width=\midlinewidth] (p22) to (w1);
+				\draw[-,red,dashed,line width=\midlinewidth] (p22) to (w2);
+				\draw[-,red,dashed,line width=\midlinewidth] (p22) to (w3);
+				\draw[-,red,dashed,line width=\midlinewidth] (p23) to (w1);
+				\draw[-,red,dashed,line width=\midlinewidth] (p23) to (w2);
+				\draw[-,red,dashed,line width=\midlinewidth] (p23) to (w3);
 
-                \sumnode[line width=\midlinewidth, above=1.75 of p11]{s13};
-
-                \draw[-,line width=\midlinewidth] (p12) to (s13);
-                \draw[-,line width=\midlinewidth] (p11) to (s13);
-                \draw[-,line width=\midlinewidth] (p13) to (s13);
-
-                \node[circle,inner sep=0pt,dashed,red] (lw1) at ($(p11)!0.5!(s13)+(-0.3,0.2)$) {$\nweight_1$};
-                \node[circle,inner sep=0pt,dashed,red] (lw2) at ($(p12)!0.5!(s13)+(-0.15,-0.3)$) {$\nweight_2$};
-                \node[circle,inner sep=0pt,dashed,red] (lw3) at ($(p13)!0.5!(s13)+(0.3,0.2)$) {$\nweight_3$};
-
-
-                \draw[->,red,dashed,line width=\midlinewidth] (w1) to[out=45,in=150] (lw1);
-                \draw[->,red,dashed,line width=\midlinewidth] (w2) to[out=45,in=-180] (lw2);
-                \draw[->,red,dashed,line width=\midlinewidth] (w3) to[out=-15,in=-110] (lw3);
+				\draw[-,red,dashed,line width=\midlinewidth] (p31) to (w1);
+				\draw[-,red,dashed,line width=\midlinewidth] (p31) to (w2);
+				\draw[-,red,dashed,line width=\midlinewidth] (p31) to (w3);
+				\draw[-,red,dashed,line width=\midlinewidth] (p32) to (w1);
+				\draw[-,red,dashed,line width=\midlinewidth] (p32) to (w2);
+				\draw[-,red,dashed,line width=\midlinewidth] (p32) to (w3);
+				\draw[-,red,dashed,line width=\midlinewidth] (p33) to (w1);
+				\draw[-,red,dashed,line width=\midlinewidth] (p33) to (w2);
+				\draw[-,red,dashed,line width=\midlinewidth] (p33) to (w3);
 
 
-            \end{tikzpicture}
-        }
-    \end{minipage}
-    \caption{Detailed graphical representation of neural dependencies in a PNC. The sum unit at the top outputs the weighted sum of the three product units at the bottom right. The weights for the sum are the outputs of a neural network for which it holds that $\sum_{i=1}^3=1$. They are computed using a neural network that takes as input the values of the six product units at the bottom left.}
-    \label{fig:neural_dependencies}
+				\prodnode[line width=\midlinewidth, right=2\halfdist of p33]{p11};
+				\prodnode[line width=\midlinewidth, right=0.5 of p11]{p12};
+				\prodnode[line width=\midlinewidth, right=0.5 of p12]{p13};
+
+				\sumnode[line width=\midlinewidth, above=1.75 of p11]{s13};
+
+				\draw[-,line width=\midlinewidth] (p12) to (s13);
+				\draw[-,line width=\midlinewidth] (p11) to (s13);
+				\draw[-,line width=\midlinewidth] (p13) to (s13);
+
+				\node[circle,inner sep=0pt,dashed,red] (lw1) at ($(p11)!0.5!(s13)+(-0.3,0.2)$) {$\nweight_1$};
+				\node[circle,inner sep=0pt,dashed,red] (lw2) at ($(p12)!0.5!(s13)+(-0.15,-0.3)$) {$\nweight_2$};
+				\node[circle,inner sep=0pt,dashed,red] (lw3) at ($(p13)!0.5!(s13)+(0.3,0.2)$) {$\nweight_3$};
+
+
+				\draw[->,red,dashed,line width=\midlinewidth] (w1) to[out=45,in=150] (lw1);
+				\draw[->,red,dashed,line width=\midlinewidth] (w2) to[out=45,in=-180] (lw2);
+				\draw[->,red,dashed,line width=\midlinewidth] (w3) to[out=-15,in=-110] (lw3);
+
+
+			\end{tikzpicture}
+		}
+	\end{minipage}
+	\caption{Detailed graphical representation of neural dependencies in a PNC. The sum unit at the top outputs the weighted sum of the three product units at the bottom right. The weights for the sum are the outputs of a neural network for which it holds that $\sum_{i=1}^3=1$. They are computed using a neural network that takes as input the values of the six product units at the bottom left.}
+	\label{fig:neural_dependencies}
 
 \end{figure}
 
@@ -1047,31 +1048,31 @@ Next, we describe the neural sum units in layered PNCs. To gain some intuition, 
 
 
 \begin{algorithm}[t]
-    \caption{Layer-wise circuit evaluation}
-    \label{alg:layer}
-    \hspace*{\algorithmicindent} \textbf{Input:} $\xvars_o$. $\Xvars_m$ \\
-    \hspace*{\algorithmicindent} \textbf{Output:} $p(\xvars_o)$ \\
-    \hspace*{\algorithmicindent} \textbf{Require:} $\Xvars_o {\cup} \Xvars_m {=} \Xvars$,  $\Xvars_o {\sqsubset} \Xvars_m$
-    \begin{algorithmic}[1]
-        \State $\component_{p,c} \gets init(p,c,\xvars_o)$
-        \State $\component_{p,c} \gets
-            \sum_{c'=1}^{N_D} \weight_{1,p,c,c'} \times \component_{p,c'}$ \Comment{LeafLayer}
-        \State $l \gets 2$
-        \While {$l< N_L$}
-        \State $\component_{p,c} \gets \component_{2p,c} \times \component_{2p+1,c} $ \Comment{ProductLayer}
-        \State
-        $ \component_{p,c}
-            \gets
-            \sum_{c'=1}^{N_C} \nweight_{l,p,c,c'}
-            \times
-            \component_{p,c'}
-        $ \Comment{NeuralSumLayer}
-        \State $l \gets l+1$
-        \EndWhile
-        \State $\component_{p,c} \gets \component_{2p,c} \times \component_{2p+1,c} $ \Comment{ProductLayer}
-        \State $\component_{1,1} \gets \sum_{c'=1}^{N_C} \weight_{N_L,1,c,c'} \times \component_{1,c'}$ \Comment{RootSum}
-        \State \Return $\component_{1,1}$
-    \end{algorithmic}
+	\caption{Layer-wise circuit evaluation}
+	\label{alg:layer}
+	\hspace*{\algorithmicindent} \textbf{Input:} $\xvars_o$. $\Xvars_m$ \\
+	\hspace*{\algorithmicindent} \textbf{Output:} $p(\xvars_o)$ \\
+	\hspace*{\algorithmicindent} \textbf{Require:} $\Xvars_o {\cup} \Xvars_m {=} \Xvars$,  $\Xvars_o {\sqsubset} \Xvars_m$
+	\begin{algorithmic}[1]
+		\State $\component_{p,c} \gets init(p,c,\xvars_o)$
+		\State $\component_{p,c} \gets
+			\sum_{c'=1}^{N_D} \weight_{1,p,c,c'} \times \component_{p,c'}$ \Comment{LeafLayer}
+		\State $l \gets 2$
+		\While {$l< N_L$}
+		\State $\component_{p,c} \gets \component_{2p,c} \times \component_{2p+1,c} $ \Comment{ProductLayer}
+		\State
+		$ \component_{p,c}
+			\gets
+			\sum_{c'=1}^{N_C} \nweight_{l,p,c,c'}
+			\times
+			\component_{p,c'}
+		$ \Comment{NeuralSumLayer}
+		\State $l \gets l+1$
+		\EndWhile
+		\State $\component_{p,c} \gets \component_{2p,c} \times \component_{2p+1,c} $ \Comment{ProductLayer}
+		\State $\component_{1,1} \gets \sum_{c'=1}^{N_C} \weight_{N_L,1,c,c'} \times \component_{1,c'}$ \Comment{RootSum}
+		\State \Return $\component_{1,1}$
+	\end{algorithmic}
 \end{algorithm}
 
 
@@ -1086,7 +1087,7 @@ Here, $\nweight_{l,p,c,c'}(\cdot)$ denotes a neural network and $N_C$ denotes ag
 
 Observe that it is those \textit{intra-layer} neural dependencies that induce an order on the random variables: we can only perform the computations of the units in the right branch of a partition tree if the values in the left branch are known. This holds recursively.
 \begin{definition}
-    Given a poset of random variables $\poset (\Xvars)$, we call a neural sum layer valid if the (partial) variable order it induces respects $\poset(\Xvars)$.
+	Given a poset of random variables $\poset (\Xvars)$, we call a neural sum layer valid if the (partial) variable order it induces respects $\poset(\Xvars)$.
 \end{definition}
 
 
@@ -1106,12 +1107,12 @@ The algorithm takes as input a set of random variable instantiation $\xvars_o$ a
 
 The first step is to initialize the $\component_{p,c}$, which we do with the following function:
 \begin{align}
-    init(p,c,\xvars_o)
-    =
-    \begin{cases}
-        f_{p.c}(\xvar) & \text{if $\xvar \in \xvars_o$  } \\
-        1              & \text{otherwise}
-    \end{cases}
+	init(p,c,\xvars_o)
+	=
+	\begin{cases}
+		f_{p.c}(\xvar) & \text{if $\xvar \in \xvars_o$  } \\
+		1              & \text{otherwise}
+	\end{cases}
 \end{align}
 Each combination of $p$ and $c$ corresponds to an index $k$ in Equation~\ref{eq:con:circuit}. Note that we forego in Algorithm~\ref{alg:layer} the possibility of introducing conditional dependencies in the leaves. The $1$'s in the second case result from marginalizing out the probability distributions in the leaves for the variables in $\Xvars_m$.
 
@@ -1131,40 +1132,40 @@ In contrast to the $4$-index notation introduced in Section~\ref{sec:prelim} we 
 
 
 \begin{figure}[t]
-    \begin{minipage}[c]{0.49\columnwidth}
-        \centering
-        % \resizebox{0.7\columnwidth}{!}{
+	\begin{minipage}[c]{0.49\columnwidth}
+		\centering
+		% \resizebox{0.7\columnwidth}{!}{
 
-        \begin{tikzpicture}[scale=0.4]
-            % Grid lines
-            \draw[step=1cm, gray, thin] (0,0) grid (5,1);
+		\begin{tikzpicture}[scale=0.4]
+			% Grid lines
+			\draw[step=1cm, gray, thin] (0,0) grid (5,1);
 
-            \fill[gray!50] (0,0) rectangle (1,1);
-            \fill[gray!80] (1,0) rectangle (2,1);
-            \path (0, -0.5) -- (0, -1.5);
+			\fill[gray!50] (0,0) rectangle (1,1);
+			\fill[gray!80] (1,0) rectangle (2,1);
+			\path (0, -0.5) -- (0, -1.5);
 
-        \end{tikzpicture}
-        % }
-    \end{minipage}
-    \begin{minipage}[c]{0.49\columnwidth}
-        \centering
-        \begin{tikzpicture}[scale=0.4]
-            % Grid lines
-            \draw[step=1cm, gray, thin] (0,0) grid (3,3);
+		\end{tikzpicture}
+		% }
+	\end{minipage}
+	\begin{minipage}[c]{0.49\columnwidth}
+		\centering
+		\begin{tikzpicture}[scale=0.4]
+			% Grid lines
+			\draw[step=1cm, gray, thin] (0,0) grid (3,3);
 
-            % Color specific cells
-            \fill[gray!30] (0,2) rectangle (1,3);
-            \fill[gray!50] (0 ,1) rectangle (1,2);
-            \fill[gray!80] (1,2) rectangle (2,3);
+			% Color specific cells
+			\fill[gray!30] (0,2) rectangle (1,3);
+			\fill[gray!50] (0 ,1) rectangle (1,2);
+			\fill[gray!80] (1,2) rectangle (2,3);
 
-        \end{tikzpicture}
+		\end{tikzpicture}
 
-    \end{minipage}
+	\end{minipage}
 
 
 
-    \caption{Graphical representation of \textit{half kernels} used for neural sum layers in layered PNCs. On the left we see a kernel used for one-dimensional data while on the right we have a $3\times3$ kernel for two-dimensional data. The gray blocks indicate the learnable parameters of the \textit{half kernels}, while a white square indicates a parameter fixed to zero. Effectively, the convolutional layer is blind with regard to the inputs for these zero elements of the kernel.}
-    \label{fig:kernel}
+	\caption{Graphical representation of \textit{half kernels} used for neural sum layers in layered PNCs. On the left we see a kernel used for one-dimensional data while on the right we have a $3\times3$ kernel for two-dimensional data. The gray blocks indicate the learnable parameters of the \textit{half kernels}, while a white square indicates a parameter fixed to zero. Effectively, the convolutional layer is blind with regard to the inputs for these zero elements of the kernel.}
+	\label{fig:kernel}
 
 \end{figure}
 
@@ -1211,29 +1212,29 @@ On a theoretical level this allows us to forego the introduction of expendable c
 On the practical side we will show in Section~\ref{sec:experiments} that neural sum layers outperform the \textit{conditional mixing operator} (CMO) proposed as a building block for SPQNs~\citep[Definition 6]{sharir2018sum}. As a matter of fact, PNCs strictly generalize SPQNs constructed with CMOs.
 
 \begin{corollary} CMO-SPQNs are PNCs.
-    \label{cor:spq_worse}
+	\label{cor:spq_worse}
 \end{corollary}
 \begin{proof}
-    This can trivially be shown by picking $\nweight(\cdot)$ such that
-    \begin{align}
-         & \component_{l,p,2,c}     \tag{QuotientSumLayer}
-        \\
-         & =
-        \frac{
-            \sum_{c'=1}^{N_C} \weight_{l,p,c,c'}
-            \times
-            (\prod_{\component' \in  \component_{l, p-\nu_{l,p}:p-1, 1, c'}}\kappa' )
-            \times
-            \component_{l,p,1,c'}}
-        {
-            \sum_{c'=1}^{N_C}
-            \weight_{l,p,c,c'}
-            \times
-            (\prod_{\component' \in  \component_{l, p-\nu_{l,p}:p-1, 1, c'}}\kappa' )
-        }
-        \nonumber
-    \end{align}
-    where we use our notation from Section~\ref{sec:pnc} to write down the CMO of~\citet{sharir2018sum}.
+	This can trivially be shown by picking $\nweight(\cdot)$ such that
+	\begin{align}
+		 & \component_{l,p,2,c}     \tag{QuotientSumLayer}
+		\\
+		 & =
+		\frac{
+			\sum_{c'=1}^{N_C} \weight_{l,p,c,c'}
+			\times
+			(\prod_{\component' \in  \component_{l, p-\nu_{l,p}:p-1, 1, c'}}\kappa' )
+			\times
+			\component_{l,p,1,c'}}
+		{
+			\sum_{c'=1}^{N_C}
+			\weight_{l,p,c,c'}
+			\times
+			(\prod_{\component' \in  \component_{l, p-\nu_{l,p}:p-1, 1, c'}}\kappa' )
+		}
+		\nonumber
+	\end{align}
+	where we use our notation from Section~\ref{sec:pnc} to write down the CMO of~\citet{sharir2018sum}.
 \end{proof}
 Guided by Corollary~\ref{cor:spq_worse} we implemented CMO-SPQNs using a convolutional layer by simply fixing the non-zero elements of the kernel (\cf~Figure~\ref{fig:kernel}) to one. Performing the convolution on probabilities in log-space then simply corresponds to multiplying them in linear space. In this fashion we easily obtain the product present in the quotient sum layer.
 An important difference between CMO-SPQNs and PNCs is that for the former components (or channels) must not mix with each other, which hinders their performance in terms of function approximation.
@@ -1274,24 +1275,24 @@ We implemented PNCs (and also SPQNs) in PyTorch and Lightning\footnote{\url{http
 
 
 \begin{table*}[t]
-    \footnotesize
-    \centering
-    \begin{tabular}{lccccccccc}
-                          & PNC             & PQC    & PSC    & SHCLT  & HCLT   & CMC    & RAT-SPN & IDF     & BitSwap \\
-        % \midrule
-        \cmidrule(lr){2-4}
-        \cmidrule(lr){5-10}
-        MNIST             & $\mathbf{0.87}$ & $1.20$ & $1.32$ & $1.14$ & $1.20$ & $1.28$ & $1.67$  & $1.90$  & $1.27$  \\
-        FashionMNIST      & $\mathbf{2.51}$ & $3.47$ & $3.66$ & $3.27$ & $3.34$ & $3.55$ & $4.29$  & $3.47$  & $3.28$  \\
-        EMNIST (mnist)    & $\mathbf{1.36}$ & $1.84$ & $2.07$ & $1.52$ & $1.77$ & --     & $2.56$  & $2.07$  & $1.88$  \\
-        EMNIST (letters)  & $\mathbf{1.33}$ & $1.83$ & $2.07$ & $1.58$ & $1.80$ & --     & $2.73$  & $1.95$  & $1.84$  \\
-        EMNIST (balanced) & $\mathbf{1.35}$ & $1.86$ & $2.16$ & $1.60$ & $1.82$ & --     & $2.78$  & $2.15$  & $1.96$  \\
-        EMNIST (byclass)  & $\mathbf{1.27}$ & $1.76$ & $2.02$ & $1.54$ & $1.85$ & --     & $2.72$  & $1.98$  & $1.87$  \\
-        \midrule
-        {\#} parameters   & $2.8M$          & $2.6M$ & $2.6M$ & $7.0M$ & $7.0M$ & $0.1M$ & $7.0M$  & $24.1M$ & $2.8M$  \\
-    \end{tabular}
-    \caption{Test set bpd for MNIST datasets (lower is better). The last row shows the number of parameters for each model (the symbol $M$ stands for millions).}
-    \label{tab:mnist}
+	\footnotesize
+	\centering
+	\begin{tabular}{lccccccccc}
+		                  & PNC             & PQC    & PSC    & SHCLT  & HCLT   & CMC    & RAT-SPN & IDF     & BitSwap \\
+		% \midrule
+		\cmidrule(lr){2-4}
+		\cmidrule(lr){5-10}
+		MNIST             & $\mathbf{0.87}$ & $1.20$ & $1.32$ & $1.14$ & $1.20$ & $1.28$ & $1.67$  & $1.90$  & $1.27$  \\
+		FashionMNIST      & $\mathbf{2.51}$ & $3.47$ & $3.66$ & $3.27$ & $3.34$ & $3.55$ & $4.29$  & $3.47$  & $3.28$  \\
+		EMNIST (mnist)    & $\mathbf{1.36}$ & $1.84$ & $2.07$ & $1.52$ & $1.77$ & --     & $2.56$  & $2.07$  & $1.88$  \\
+		EMNIST (letters)  & $\mathbf{1.33}$ & $1.83$ & $2.07$ & $1.58$ & $1.80$ & --     & $2.73$  & $1.95$  & $1.84$  \\
+		EMNIST (balanced) & $\mathbf{1.35}$ & $1.86$ & $2.16$ & $1.60$ & $1.82$ & --     & $2.78$  & $2.15$  & $1.96$  \\
+		EMNIST (byclass)  & $\mathbf{1.27}$ & $1.76$ & $2.02$ & $1.54$ & $1.85$ & --     & $2.72$  & $1.98$  & $1.87$  \\
+		\midrule
+		{\#} parameters   & $2.8M$          & $2.6M$ & $2.6M$ & $7.0M$ & $7.0M$ & $0.1M$ & $7.0M$  & $24.1M$ & $2.8M$  \\
+	\end{tabular}
+	\caption{Test set bpd for MNIST datasets (lower is better). The last row shows the number of parameters for each model (the symbol $M$ stands for millions).}
+	\label{tab:mnist}
 \end{table*}
 
 \paragraph*{Setup}
@@ -1329,64 +1330,64 @@ The results are reported in Table~\ref{tab:mnist} in the first three columns. We
 
 \begin{figure}[t]
 
-    % \begin{minipage}[c]{0.49\columnwidth}
-    %     \centering
+	% \begin{minipage}[c]{0.49\columnwidth}
+	%     \centering
 
-    %     \begin{tikzpicture}[scale=0.5] % Adjust the scale factor as needed
-    %         % Define grid dimensions
-    %         \def\gridSize{4}
-    %         \def\cellSize{1} % Adjust the size of each cell
+	%     \begin{tikzpicture}[scale=0.5] % Adjust the scale factor as needed
+	%         % Define grid dimensions
+	%         \def\gridSize{4}
+	%         \def\cellSize{1} % Adjust the size of each cell
 
-    %         % Draw the grid
-    %         \draw[step=\cellSize,gray,very thin] (0,0) grid (\gridSize*\cellSize, \cellSize);
+	%         % Draw the grid
+	%         \draw[step=\cellSize,gray,very thin] (0,0) grid (\gridSize*\cellSize, \cellSize);
 
-    %         % Manually label the cells with centered text
-    %         \foreach \x/\label in {0.5/1,1.5/2,2.5/3,3.5/4} {
-    %                 \node at (\x, 0.5) {\label};
-    %             }
-    %         \path (0, 0) -- (0, -1.1);
-    %     \end{tikzpicture}
-    % \end{minipage}
-    % \begin{minipage}[c]{\columnwidth}
-    %     \centering
-    \centering
-    \begin{tikzpicture}[scale=0.6]
-        % Define grid dimensions
-        \def\gridSize{4}
-        \def\cellSize{1} % Adjust the size of each cell
+	%         % Manually label the cells with centered text
+	%         \foreach \x/\label in {0.5/1,1.5/2,2.5/3,3.5/4} {
+	%                 \node at (\x, 0.5) {\label};
+	%             }
+	%         \path (0, 0) -- (0, -1.1);
+	%     \end{tikzpicture}
+	% \end{minipage}
+	% \begin{minipage}[c]{\columnwidth}
+	%     \centering
+	\centering
+	\begin{tikzpicture}[scale=0.6]
+		% Define grid dimensions
+		\def\gridSize{4}
+		\def\cellSize{1} % Adjust the size of each cell
 
-        % Draw the grid
-        \draw[step=\cellSize,gray,very thin] (0,0) grid (\gridSize*\cellSize, \gridSize*\cellSize);
+		% Draw the grid
+		\draw[step=\cellSize,gray,very thin] (0,0) grid (\gridSize*\cellSize, \gridSize*\cellSize);
 
-        % Manually label the cells
-        \node at (0.5, 3.5) {1};
-        \node at (1.5, 3.5) {2};
-        \node at (2.5, 3.5) {5};
-        \node at (3.5, 3.5) {6};
+		% Manually label the cells
+		\node at (0.5, 3.5) {1};
+		\node at (1.5, 3.5) {2};
+		\node at (2.5, 3.5) {5};
+		\node at (3.5, 3.5) {6};
 
-        \node at (0.5, 2.5) {3};
-        \node at (1.5, 2.5) {4};
-        \node at (2.5, 2.5) {7};
-        \node at (3.5, 2.5) {8};
+		\node at (0.5, 2.5) {3};
+		\node at (1.5, 2.5) {4};
+		\node at (2.5, 2.5) {7};
+		\node at (3.5, 2.5) {8};
 
-        \node at (0.5, 1.5) {9};
-        \node at (1.5, 1.5) {10};
-        \node at (2.5, 1.5) {13};
-        \node at (3.5, 1.5) {14};
+		\node at (0.5, 1.5) {9};
+		\node at (1.5, 1.5) {10};
+		\node at (2.5, 1.5) {13};
+		\node at (3.5, 1.5) {14};
 
-        \node at (0.5, 0.5) {11};
-        \node at (1.5, 0.5) {12};
-        \node at (2.5, 0.5) {15};
-        \node at (3.5, 0.5) {16};
-    \end{tikzpicture}
+		\node at (0.5, 0.5) {11};
+		\node at (1.5, 0.5) {12};
+		\node at (2.5, 0.5) {15};
+		\node at (3.5, 0.5) {16};
+	\end{tikzpicture}
 
-    % \end{minipage}
+	% \end{minipage}
 
 
-    \caption{For simplicity's sake, assume that we have a $4\times4$ grid of pixels (instead of the $28\times 28$ MNIST grid). Recursively merging rows and columns and using the kernel from Figure~\ref{fig:kernel} then gives us the  total pixel order as indicated in the grid. We can then marginalize out pixels with higher numbers before pixels with lower numbers.
-        For the specific case here we could marginalize out the lower half of the $4\times 4$ image, while retaining a probability distribution for the upper half.
-    }
-    \label{fig:2dorder}
+	\caption{For simplicity's sake, assume that we have a $4\times4$ grid of pixels (instead of the $28\times 28$ MNIST grid). Recursively merging rows and columns and using the kernel from Figure~\ref{fig:kernel} then gives us the  total pixel order as indicated in the grid. We can then marginalize out pixels with higher numbers before pixels with lower numbers.
+		For the specific case here we could marginalize out the lower half of the $4\times 4$ image, while retaining a probability distribution for the upper half.
+	}
+	\label{fig:2dorder}
 
 \end{figure}
 
@@ -1404,14 +1405,14 @@ Interestingly our implementation of PCs (PSC) does produce lower bpd than RAT-SP
 \paragraph*{Setup}
 Assume that we have a data point $\xvars$ for the random variables in $\Xvars$ and a label $y$ for this data point. Using Bayes rule we can rewrite the discriminative probability using generative distributions:
 $
-    p(Y{=}y{\mid} \Xvars{=}\xvars )
-    {=}
-    \frac{
-        p(x{\mid} y)
-    }
-    {
-        \sum_{z\in \Omega(Y)} p(x{\mid} y)
-    }
+	p(Y{=}y{\mid} \Xvars{=}\xvars )
+	{=}
+	\frac{
+		p(x{\mid} y)
+	}
+	{
+		\sum_{z\in \Omega(Y)} p(x{\mid} y)
+	}
 $,
 where we assume that the class prior is identical for each of the classes belonging to the sample space $\Omega(Y)$. This means that for every class in $\Omega(Y)$ we have a separate distribution. That is, a separate circuit. In the case of MNIST and FashionMNIST we have ten classes. The resulting ten circuits are jointly optimized using cross-entropy~\citep{peharz2019random}.
 Architecturally, we used again $12$ components per partition and the $10$ different circuits share all parameters but the parameters in the leaf layer and root layer.
@@ -1437,17 +1438,17 @@ While we experimented with various regularization techniques such as weight deca
 
 
 \begin{table}[t]
-    \footnotesize
-    \centering
-    \begin{tabular}{lcccc}
-                     & PNC     & PQC     & LC     & RAT-SPN  \\
-        \cmidrule(lr){2-3}
-        \cmidrule(lr){4-5}
-        MNIST        & $98.04$ & $97.38$ & $99.4$ & $98.29$  \\
-        FashionMNIST & $88.84$ & $87.63$ & $91.3$ & $89.89 $ \\
-    \end{tabular}
-    \caption{Test accuracies for MNIST and FashionMNIST.}
-    \label{tab:discrim}
+	\footnotesize
+	\centering
+	\begin{tabular}{lcccc}
+		             & PNC     & PQC     & LC     & RAT-SPN  \\
+		\cmidrule(lr){2-3}
+		\cmidrule(lr){4-5}
+		MNIST        & $98.04$ & $97.38$ & $99.4$ & $98.29$  \\
+		FashionMNIST & $88.84$ & $87.63$ & $91.3$ & $89.89 $ \\
+	\end{tabular}
+	\caption{Test accuracies for MNIST and FashionMNIST.}
+	\label{tab:discrim}
 \end{table}
 
 

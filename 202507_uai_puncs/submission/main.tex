@@ -1,0 +1,140 @@
+% \documentclass{uai2025} % for initial submission
+\documentclass[accepted]{uai2025} % after acceptance, for a revised version; 
+% also before submission to see how the non-anonymous paper would look like 
+
+%% There is a class option to choose the math font
+% \documentclass[mathfont=ptmx]{uai2025} % ptmx math instead of Computer
+% Modern (has noticeable issues)
+% \documentclass[mathfont=newtx]{uai2025} % newtx fonts (improves upon
+% ptmx; less tested, no support)
+% NOTE: Only keep *one* line above as appropriate, as it will be replaced
+%       automatically for papers to be published. Do not make any other
+%       change above this note for an accepted version.
+
+%% Choose your variant of English; be consistent
+\usepackage[american]{babel}
+% \usepackage[british]{babel}
+
+%% Some suggested packages, as needed:
+\usepackage{natbib} % has a nice set of citation styles and commands
+\bibliographystyle{plainnat}
+\renewcommand{\bibsection}{\subsubsection*{References}}
+\usepackage{mathtools} % amsmath with fixes and additions
+% \usepackage{siunitx} % for proper typesetting of numbers and units
+\usepackage{booktabs} % commands to create good-looking tables
+\usepackage{tikz} % nice language for creating drawings and diagrams
+
+
+%% Provided macros
+% \smaller: Because the class footnote size is essentially LaTeX's \small,
+%           redefining \footnotesize, we provide the original \footnotesize
+%           using this macro.
+%           (Use only sparingly, e.g., in drawings, as it is quite small.)
+
+
+
+
+\title{A Quantum Information Theoretic Approach to Tractable Probabilistic Models}
+
+% The standard author block has changed for UAI 2025 to provide
+% more space for long author lists and allow for complex affiliations
+%
+% All author information is authomatically removed by the class for the
+% anonymous submission version of your paper, so you can already add your
+% information below.
+%
+% Add authors
+\author{Pedro Zuidberg Dos Martires}
+\affil{%
+	Örebro University\\
+	Sweden
+}
+
+
+
+
+
+
+
+% For theorems and such
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{amsthm}
+
+% if you use cleveref..
+\usepackage[capitalize,noabbrev]{cleveref}
+
+\usepackage{thmtools}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\input{macros}
+
+
+%Commands definitions
+\newcommand{\setbackgroundcolour}{\pagecolor[rgb]{0.05,0.05,0.05}}
+\newcommand{\settextcolour}{\color[rgb]{0.77,0.77,0.77}}
+\newcommand{\invertbackgroundtext}{\setbackgroundcolour\settextcolour}
+
+%Command execution. 
+%If this line is commented, then the appearance remains as usual.
+% \invertbackgroundtext
+
+
+\begin{document}
+\maketitle
+
+\input{content}
+
+
+
+
+
+
+% \begin{contributions} % will be removed in pdf for initial submission 
+% 	% (without ‘accepted’ option in \documentclass)
+% 	% so you can already fill it to test with the
+% 	% ‘accepted’ class option
+% 	Briefly list author contributions.
+% 	This is a nice way of making clear who did what and to give proper credit.
+% 	This section is optional.
+
+% 	H.~Q.~Bovik conceived the idea and wrote the paper.
+% 	Coauthor One created the code.
+% 	Coauthor Two created the figures.
+% \end{contributions}
+
+\begin{acknowledgements} % will be removed in pdf for initial submission,
+	% (without ‘accepted’ option in \documentclass)
+	% so you can already fill it to test with the
+	% ‘accepted’ class option
+	The work was supported by the Wallenberg AI, Autonomous Systems and Software Program (WASP) funded by the Knut and
+	Alice Wallenberg Foundation.
+\end{acknowledgements}
+
+% References
+% \clearpage
+\bibliography{references}
+
+\clearpage
+
+
+\onecolumn
+
+
+\title{A Quantum Information Theoretic Approach to Tractable Probabilistic Models\\Appendix}
+\appendix
+\include{appendix}
+
+
+
+\end{document}

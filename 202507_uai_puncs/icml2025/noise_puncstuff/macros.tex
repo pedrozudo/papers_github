@@ -1,0 +1,217 @@
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{xcolor}         % colors
+
+\usepackage{multirow}
+\usepackage{courier}
+\usepackage{listings, lstautogobble,amsfonts}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mdframed}
+\usepackage{mathtools}
+\usepackage{xspace}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{multicol}
+\usepackage{thmtools}
+\usepackage{bm}
+\usepackage{thm-restate}
+\usepackage{todonotes}
+\usepackage[inline]{enumitem}
+\usepackage{soul}
+\usepackage{physics}
+\usepackage{caption}
+\usepackage{dirtytalk}
+\usepackage{enumitem}
+\usepackage{mathrsfs}
+\usepackage{stmaryrd}
+% \usepackage{tikz}
+\usetikzlibrary{decorations.pathreplacing,calligraphy,calc,hobby,intersections,through}
+\usetikzlibrary{spn}
+\pgfplotsset{compat=1.18}
+
+\usepackage{nicefrac}
+\usepackage{bbold}
+\usepackage{wrapfig}
+\usepackage{multicol}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\cf}{cf.\xspace}
+\newcommand{\eg}{e.g.\xspace}
+\newcommand{\ie}{i.e.\xspace}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% \newtheorem{theorem}{Theorem}[section]
+% \theoremstyle{theorem}
+% \newtheorem{definition}[theorem]{Definition}
+% \theoremstyle{theorem}
+% \newtheorem{lemma}[theorem]{Lemma}
+% \theoremstyle{theorem}
+% \newtheorem{corollary}[theorem]{Corollary}
+% \theoremstyle{theorem}
+% \newtheorem{proposition}[theorem]{Proposition}
+% \theoremstyle{theorem}
+\newtheorem{example}[theorem]{Example}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\expect}{\ensuremath{\mathbb{E}}}
+
+\newenvironment{talign}
+{\let\displaystyle\textstyle\align}
+{\endalign}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\newcommand{\Ocircuit}{\ensuremath{O}}
+
+\newcommand{\Qcircuit}{\ensuremath{Q}}
+\newcommand{\tildeQcircuit}{\ensuremath{\widetilde{Q}}}
+
+\newcommand{\qcircuit}{\ensuremath{q}}
+\newcommand{\punccircuit}{\ensuremath{\widehat{O}}}
+
+\newcommand{\vcircuit}{\ensuremath{v}}
+
+\newcommand{\bilinear}{\ensuremath{\mathscr{B}}}
+
+\newcommand{\diag}{\ensuremath{\text{diag}}}
+
+
+
+\newcommand{\circuit}{\ensuremath{p}}
+
+\newcommand{\dual}{\color{red} {\ensuremath{d}}}
+
+
+\newcommand{\Xvars}{\ensuremath{\mathbf{X}}}
+\newcommand{\xvars}{\ensuremath{\mathbf{x}}}
+\newcommand{\Xvar}{\ensuremath{X}}
+\newcommand{\xvar}{\ensuremath{x}}
+
+\newcommand{\Yvars}{\ensuremath{\mathbf{Y}}}
+\newcommand{\yvars}{\ensuremath{\mathbf{y}}}
+\newcommand{\Yvar}{\ensuremath{Y}}
+\newcommand{\yvar}{\ensuremath{y}}
+
+
+\newcommand{\Zvars}{\ensuremath{\mathbf{Z}}}
+\newcommand{\zvars}{\ensuremath{\mathbf{z}}}
+\newcommand{\Zvar}{\ensuremath{Z}}
+\newcommand{\zvar}{\ensuremath{z}}
+
+
+\newcommand{\bigO}{\ensuremath{\mathcal{O}}}
+
+
+\newcommand{\weight}{\ensuremath{w}}
+\newcommand{\nweight}{\ensuremath{\omega}}
+\newcommand{\nparams}{\ensuremath{\mathbf{\theta}}}
+
+
+\newcommand{\iverson}[1]{\llbracket#1\rrbracket}
+
+
+\newcommand{\numevents}{I}
+\newcommand{\numvar}{N}
+\newcommand{\numbond}{B}
+\newcommand{\numcomponents}{C}
+\newcommand{\samplespacesize}{S}
+\newcommand{\subcompletemeasrure}{M}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\smalllinewidth}{0.6pt}
+\newcommand{\midlinewidth}{1.0pt}
+\newcommand{\midlinewidthx}{2.0pt}
+\newcommand{\largelinewidth}{1.7pt}
+\newcommand{\middist}{24pt}
+\newcommand{\middistt}{20pt}
+\newcommand{\middisttt}{28pt}
+\newcommand{\largedist}{30pt}
+\newcommand{\hugedist}{50pt}
+\newcommand{\smalldist}{20pt}
+\newcommand{\smalldistt}{4pt}
+\newcommand{\tinydist}{5pt}
+\newcommand{\intermiddist}{30pt}
+\newcommand{\sqintermiddist}{15.5pt}
+\newcommand{\halfdist}{4pt}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Redefine the proof environment to modify margins
+\makeatletter
+\renewenvironment{proof}[1][\proofname]{\par
+	\pushQED{\qed}%
+	\normalfont\topsep0pt \partopsep0pt % Adjust the vertical spacing above
+	\trivlist
+	\item[\hskip\labelsep
+	            \itshape
+	            #1\@addpunct{.}]\ignorespaces
+}{%
+	\popQED\endtrivlist\@endpefalse
+	\vskip 1ex  % Add some flexible glue for the bottom margin
+}
+\makeatother
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\poc}{{\color{red}POX\xspace}}
+\newcommand{\pocs}{{\color{red}POXs\xspace}}
+\newcommand{\pvc}{{\color{red}PVX\xspace}}
+\newcommand{\pvcs}{{\color{red}PVXs\xspace}}
+\newcommand{\snpc}{NPC\textsuperscript{2}\xspace}
+\newcommand{\snpcs}{NPC\textsuperscript{2}s\xspace}
+\newcommand{\smpc}{MPC\textsuperscript{2}\xspace}
+\newcommand{\smpcs}{MPC\textsuperscript{2}s\xspace}
+
+
+
+\newcommand{\punc}{PUnC\xspace}
+\newcommand{\puncs}{PUnCs\xspace}
+\newcommand{\noisepunc}{NoisePUnC\xspace}
+\newcommand{\noisepuncs}{NoisePUnCs\xspace}
+
+
+
+\newcommand{\icol}[1]{% inline column vector
+	\left(\begin{smallmatrix}#1\end{smallmatrix}\right)%
+}
+
+\newcommand{\irow}[1]{% inline row vector
+	\begin{smallmatrix}(#1)\end{smallmatrix}%
+}

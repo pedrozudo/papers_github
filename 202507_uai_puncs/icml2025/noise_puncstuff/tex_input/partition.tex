@@ -1,0 +1,27 @@
+
+
+\resizebox{0.55\linewidth}{!}{
+	\begin{tikzpicture}[
+			dot/.style = {circle, draw, fill, minimum size=4pt, inner sep=0pt},
+			level distance=1.25cm,
+			level 1/.style={sibling distance=3cm},
+			level 2/.style={sibling distance=1.5cm},
+			scale=1
+		]
+
+		\node[dot] (00) {}
+		child {node[dot] (10) {}
+				child {node[dot] (20) {}}
+				child {node[dot] (21) {}}
+			}
+		child {node[dot] (11) {}
+				child {node[dot] (22) {}}
+				child {node[dot] (23) {}}
+			};
+
+		\node[below= 0.1 of 20, inner sep=0pt] (X1) {\tiny{$x_0$}};
+		\node[below= 0.1 of 21, inner sep=0pt] (x2) {\tiny{$x_1$}};
+		\node[below= 0.1 of 22, inner sep=0pt] (x3) {\tiny{$x_2$}};
+		\node[below= 0.1 of 23, inner sep=0pt] (x4) {\tiny{$x_3$}};
+	\end{tikzpicture}
+}

@@ -1,0 +1,119 @@
+\resizebox{0.8\columnwidth}{!}{
+	\tikzset{point/.style={circle,inner sep=0pt,minimum size=3pt,fill=red}}
+\centering
+
+\begin{tikzpicture}
+
+	\sumnode[line width=\midlinewidth]{v11};
+	\sumnode[line width=\midlinewidth, right=\halfdist of v11]{v12};
+	\sumnode[line width=\midlinewidth, right=\halfdist of v12]{v13};
+	\sumnode[line width=\midlinewidth, right=\halfdist of v13]{v14};
+	\sumnode[line width=\midlinewidth, right=\middist of v14]{v21};
+	\sumnode[line width=\midlinewidth, right=\halfdist of v21]{v22};
+	\sumnode[line width=\midlinewidth, right=\halfdist of v22]{v23};
+	\sumnode[line width=\midlinewidth, right=\halfdist of v23]{v24};
+
+	\prodnode[line width=\midlinewidth, above=\smalldist of v14]{p121};
+	\prodnode[line width=\midlinewidth, right=\halfdist of p121]{p122};
+	\prodnode[line width=\midlinewidth, right=\halfdist of p122]{p123};
+	\prodnode[line width=\midlinewidth, right=\halfdist of p123]{p124};
+
+
+	\sumnode[line width=\midlinewidth, above=\smalldist of p121]{s121};
+	\sumnode[line width=\midlinewidth, above=\smalldist of p122]{s122};
+	\sumnode[line width=\midlinewidth, above=\smalldist of p123]{s123};
+	\sumnode[line width=\midlinewidth, above=\smalldist of p124]{s124};
+
+
+
+
+	% edges
+	\edge[line width=\midlinewidth,dashed] {p121} {v11, v21};
+	\edge[line width=\midlinewidth,dashed] {p122} {v12, v22};
+	\edge[line width=\midlinewidth,dashed] {p123} {v13, v23};
+	\edge[line width=\midlinewidth,dashed] {p124} {v14, v24};
+
+	\edge[line width=\midlinewidth,left] {s121, s122, s123, s124} {p121, p122, p123, p124};
+
+	%%%%% V3 and V4
+	\sumnode[line width=\midlinewidth, right=\middist of v24]{v31};
+	\sumnode[line width=\midlinewidth, right=\halfdist of v31]{v32};
+	\sumnode[line width=\midlinewidth, right=\halfdist of v32]{v33};
+	\sumnode[line width=\midlinewidth, right=\halfdist of v33]{v34};
+	\sumnode[line width=\midlinewidth, right=\middist of v34]{v41};
+	\sumnode[line width=\midlinewidth, right=\halfdist of v41]{v42};
+	\sumnode[line width=\midlinewidth, right=\halfdist of v42]{v43};
+	\sumnode[line width=\midlinewidth, right=\halfdist of v43]{v44};
+
+	\prodnode[line width=\midlinewidth, above=\smalldist of v33]{p341};
+	\prodnode[line width=\midlinewidth, right=\halfdist of p341]{p342};
+	\prodnode[line width=\midlinewidth, right=\halfdist of p342]{p343};
+	\prodnode[line width=\midlinewidth, right=\halfdist of p343]{p344};
+
+	\sumnode[line width=\midlinewidth, above=\smalldist of p341]{s341};
+	\sumnode[line width=\midlinewidth, above=\smalldist of p342]{s342};
+	\sumnode[line width=\midlinewidth, above=\smalldist of p343]{s343};
+	\sumnode[line width=\midlinewidth, above=\smalldist of p344]{s344};
+
+
+
+
+
+	% edges
+	\edge[line width=\midlinewidth,dashed] {p341} {v31, v41};
+	\edge[line width=\midlinewidth,dashed] {p342} {v32, v42};
+	\edge[line width=\midlinewidth,dashed] {p343} {v33, v43};
+	\edge[line width=\midlinewidth,dashed] {p344} {v34, v44};
+
+
+	\edge[line width=\midlinewidth,left] {s341, s342, s343, s344} {p341, p342, p343, p344};
+
+
+	%%%% final root
+	\prodnode[line width=\midlinewidth, above right= 1.5*\middist and 17.5pt of s124]{p12341};
+	\prodnode[line width=\midlinewidth, right=\halfdist of p12341]{p12342};
+	\prodnode[line width=\midlinewidth, right=\halfdist of p12342]{p12343};
+	\prodnode[line width=\midlinewidth, right=\halfdist of p12343]{p12344};
+
+	\sumnode[line width=\midlinewidth, above right=\smalldist and -1.5pt of p12342]{s12341};
+
+	\edge[line width=\midlinewidth,dashed] {p12341} {s121, s341};
+	\edge[line width=\midlinewidth,dashed] {p12342} {s122, s342};
+	\edge[line width=\midlinewidth,dashed] {p12343} {s123, s343};
+	\edge[line width=\midlinewidth,dashed] {p12344} {s124, s344};
+
+
+	\edge[line width=\midlinewidth,left] {s12341} {p12341, p12342, p12343,p12344};
+
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	% inputs
+
+
+	\varnode[line width=\midlinewidth, below=\smalldist of v12]{var11}{$x^0_1$};
+	\varnode[line width=\midlinewidth, below=\smalldist of v13]{var12}{$x^1_1$};
+
+	\edge[line width=\midlinewidth,left] {var11} {v11, v12, v13, v14};
+	\edge[line width=\midlinewidth,left] {var12} {v11, v12, v13, v14};
+
+	\varnode[line width=\midlinewidth, below=\smalldist of v22]{var21}{$x^0_2$};
+	\varnode[line width=\midlinewidth, below=\smalldist of v23]{var22}{$x^1_2$};
+
+	\edge[line width=\midlinewidth,left] {var21} {v21, v22, v23, v24};
+	\edge[line width=\midlinewidth,left] {var22} {v21, v22, v23, v24};
+
+	\varnode[line width=\midlinewidth, below=\smalldist of v32]{var31}{$x^0_3$};
+	\varnode[line width=\midlinewidth, below=\smalldist of v33]{var32}{$x^1_3$};
+
+	\edge[line width=\midlinewidth,left] {var32} {v31, v32, v33, v34};
+	\edge[line width=\midlinewidth,left] {var31} {v31, v32, v33, v34};
+
+
+	\varnode[line width=\midlinewidth, below=\smalldist of v42]{var41}{$x^0_4$};
+	\varnode[line width=\midlinewidth, below=\smalldist of v43]{var42}{$x^1_4$};
+
+	\edge[line width=\midlinewidth,left] {var42} {v41, v42, v43, v44};
+	\edge[line width=\midlinewidth,left] {var41} {v41, v42, v43, v44};
+
+
+\end{tikzpicture}
+}

@@ -1,0 +1,383 @@
+\section*{\LARGE Appendix}
+
+\section{Proofs}
+
+
+\subsection{Proof of Proposition \ref{prop:povmprob}}
+\label{sec:proof:prop:povmprob}
+
+\proppovmprob*
+
+\begin{proof}
+	While this is a well-known result we were not able to identify a concise proof in the literature and provide therefore, for the sake of completeness here. To this end, we
+	first show that $p(i)\geq 1$, for each $i$.
+	\begin{align}
+		p(i)
+		=
+		\Tr [ E(i) \rho ]
+		% \nonumber
+		% \\
+		 &
+		=
+		\Tr [ D(i) D^*(i)  \rho ]
+		% \nonumber
+		\\
+		 &
+		=
+		\Tr [ D(i)^*  \rho D(i) ]. \nonumber
+	\end{align}
+	Here we used the fact that $E(i)$ is PSD and factorized it into the product $D(i) D^*(i)$. Then we used the fact that the trace is invariant under cyclical shifts.
+	Clearly, the matrix $ D(i)^*  \rho D(i)$ is PSD as we have for every vector $x$:
+	\begin{align}
+		x^* D(i)^*  \rho D(i) x = y^* \rho y \geq 0 \quad \text{with } y = Dx.
+		\label{eq:def:psdPOVM}
+	\end{align}
+	As the trace of a PSD matrix is positive we have that $p(i)$ is a positive real number, \ie $p(i){\geq} 0$ for every $i$.
+
+	Secondly, we show that $p(i)$ is normalized:
+	\begin{align}
+		\sum_{i=1}^N p(i)
+		%  &
+		=
+		\sum_{i=1}^N \Tr [ E(i) \rho ]
+		% \nonumber
+		% \\
+		%  &
+		=
+		\Tr [ \sum_{i=1}^N E(i) \rho ]
+		% \nonumber
+		% \\
+		%  &
+		{=}
+		\Tr [  \rho ],
+	\end{align}
+	where we used Equation~\ref{eq:povm_normalized}.
+	Exploiting the fact that the trace of a density matrix is one gives us indeed $\sum_{i=1}^N p(i)=1$, and we can conclude that $p(i)$ is a valid probability distribution.
+\end{proof}
+
+
+
+
+
+
+\subsection{Proof of Proposition \ref{prop:pocpsd}}
+\label{sec:proof:prop:pocpsd}
+
+\proppocpsd*
+
+
+\begin{proof}
+	This can be seen by first inspecting the leaves where we have $A_{k} \times  e_{\xvar_k} \otimes  e^*_{\xvar_k} \times A_{k}^*$. Using a similar argument as made in Equation~\ref{eq:def:psdPOVM} we know that all the leaves carry PSD matrices. Passing these on recursively to the bilinear forms in the internal units retains the positive semi-defiteness (imposed by definition). We conclude that computation units in of positive operator circuit output PSD matrices.
+\end{proof}
+
+
+
+\subsection{Proof of Proposition \ref{prop:puncPOVM}}
+\label{sec:proof:prop:puncPOVM}
+
+\proppuncPOVM*
+
+\begin{proof}
+	Given that positive unitary circuits are by definition positive operator circuits we already have that:
+	\begin{align}
+		\forall \xvars \in \Omega(\Xvars): \punccircuit(\xvars) \text{ is PSD}.
+	\end{align}
+	Next we show that $\sum_{\xvars\in \Omega(\Xvars)} \punccircuit(\xvars)=\mathbb{1}$. Here we observe that in the computation units we have:
+	\begin{align}
+		\sum_{\xvars_k \in \Omega(\Xvars_k)} \punccircuit_k(\xvars_k)
+		 & = \sum_{\xvars_{k_l}} \sum_{\xvars_{k_r}}    \bilinear(\punccircuit_k(\xvars_{k_l}), \punccircuit_k(\xvars_{k_r})  )
+		\\
+		 & =
+		\bilinear \left(
+		\sum_{\xvars_{k_l}}   \punccircuit_k(\xvars_{k_l}),
+		\sum_{\xvars_{k_r}}\punccircuit_k(\xvars_{k_r})
+		\nonumber
+		\right)
+	\end{align}
+	This lets us push down the summation of a specific variable to the corresponding leaf where the variable is given as input, where we then have:
+	\begin{align}
+		\sum_{\xvars_k \in \Omega(\Xvars_k)} \punccircuit_k(\xvars_k)
+		 & = \sum_{x_k\in \Omega(X_k)} A_k e_{x_k} \otimes e^*_{x_k} A_k^*
+		\nonumber
+		\\
+		 & = A_k \left( \sum_{x_k\in \Omega(X_k)}  e_{x_k} \otimes e^*_{x_k} \right) A_k^*
+		\nonumber
+		\\
+		 & = 		A_k \mathbb{1_{\Omega(X_k)}} A_k^* = \mathbb{1_k}
+	\end{align}
+	We now exploit that the bilinear forms in a positive unitary circuit are unit preserving (\cf Definition~\ref{def:bilinear_unitpreserving}), which gives us indeed
+	$
+		\sum_{\xvars\in \Omega(\Xvars)} \punccircuit(\xvars)=\mathbb{1}.
+	$
+\end{proof}
+
+
+
+
+
+
+\subsection{Proof of Proposition \ref{prop:noisypovmdist}}
+\label{sec:proof:prop:noisypovmdist}
+
+\propnoisypovmdist*
+
+\begin{proof}
+	Let $\rho$ be a density matrix and $\{E(i)\}_{i=0}^{I-1} $ be a POVM such that $\sum_{i=0}^{I-1} E(i)=M$. We then have
+	\begin{align}
+		\Tr[(\mathbb{1}-M) \rho]\geq 0,
+	\end{align}
+	holds as $\mathbb{1}-M$ is PSD by definition.
+	Pushing the trace over the subtraction and rearranging terms yields:
+	\begin{align}
+		\Tr[\mathbb{1} \rho]- 	\Tr[M \rho]\geq 0 \Leftrightarrow \Tr[M \rho]\leq 1.
+	\end{align}
+	This means that the induced probability distribution $p(i)= \Tr[E(i)\rho]$ is indeed sub-complete.
+\end{proof}
+
+
+
+
+
+\subsection{Proof of Proposition \ref{prop:noisepunddist}}
+\label{sec:proof:prop:noisepunddist}
+
+\propnoisepunddist*
+
+\begin{proof}
+	Let $\Xvars$ be a set of random variables and  $\Qcircuit(\xvars)= \qcircuit(\xvars)\punccircuit(\xvars)$ with $\xvars\in \Omega(\Xvars)$ be a \noisepunc inducing a probability distribution
+	\begin{align}
+		\pi_\Xvars(\xvars) = \Tr [ \qcircuit(\xvars)\punccircuit(\xvars) \rho].
+	\end{align}
+	As $\qcircuit(\xvars)$ is a scalar we can write
+	\begin{align}
+		\pi_\Xvars(\xvars) = \qcircuit(\xvars) \Tr [ \punccircuit(\xvars) \rho] = \qcircuit(\xvars) p_X(\xvars),
+	\end{align}
+	where $p_X(\xvars)$ is the (complete) probability distribution induced by the set $\{ \punccircuit(\xvars) \}_{\xvars \in \Omega(\Xvars)}$. As $0\leq q(\xvars)\leq 1$ (by definition) and $0\leq p_\Xvars(\xvars)\leq 1$ we have also that $0\leq \pi_\Xvars(\xvars)\leq 1$. This shows that each event $\xvars\in \Omega(\Xvars)$ has a positive probability.
+
+	For the sub-completeness we observe that the sum of positive terms
+	\begin{align}
+		\sum_{\xvars \in \Omega(\Xvars)} p_\Xvars(\xvars)=1.
+	\end{align}
+	If we weigh each term in the sum with a scalar $q(\xvars) \in [0,1]$ we immediately conclude that $\sum_{\xvars \in \Omega(\Xvars)} \pi_\Xvars (\xvars)\leq$ and that we have indeed a sub-complete probability distribution.
+\end{proof}
+
+
+
+
+\subsection{Proof of Proposition \ref{prop:softcountingcondition}}
+\label{sec:proof:prop:softcountingcondition}
+
+\propsoftcountingcondition*
+
+\begin{proof}
+	We consider the two extreme cases where on teh one hand the $W_k$ in the leaves have only zeros as entries and on the other hand only ones. For the first case it is easy to see that multiplying any vector $\text{one\_hot}(\xvar_k)$ with a zero matrix results in a zero vector $\qcircuit_k(\xvar_k)$. Evaluting the circuit with these zero vector from the leaves trivially gives us $\circuit_{root}(\xvars_{root})=0$.
+
+	For the second case we observe that multiplying any vector $\text{one\_hot}(\xvar_k)$ with a matrix having only ones as entries results in a vector $\qcircuit_k(\xvar_k)$ having only ones as entries. As the matrices $W_k$ in the internal nodes and the root node are row-normalized this is preserved throughout the circuit and we have $\circuit_{root}(\xvars_{root})=1$.
+
+	Finally, as soft counting circuits are monotone functions all other cases fall between these two extremes and we conclude that in general $0\leq \qcircuit(\xvars)\leq 1$.
+\end{proof}
+
+
+
+
+\subsection{Proof of Proposition \ref{prop:computationalcomplexity}}
+\label{sec:proof:prop:computationalcomplexity}
+
+\propcomputationalcomplexity*
+
+\begin{proof}
+	We determine the computational cost of evaluating the circuit by determining the cost of the individual computation units. We start at the leaves where we first have a Kronecker product $ e_{\xvar_k} \otimes  e_{\xvar_k}^*$, which can be performed in $\bigO (\samplespacesize^2)$.
+	The matrix products with $A_k$ and $A_k^*$ can then be performed in $\bigO (\numbond^2 \samplespacesize)$, which implies $\bigO(\bigO (\samplespacesize^2))$ if $B\leq N$.
+	In the bilinear form (\cf Equation~\ref{eq:polyadicbilinear}) we perform four matrix-matrix product in $\bigO (\numbond^3)$. This is followed by a Hadamard product in $\bigO (\numbond^2)$,
+	This means that we have for the individual computation units in the partition a circuit a cost of $\bigO (\samplespacesize^3)$.
+
+	It is also easy to show that for binary tree partition circuits we have a total of $\bigO (\numvar)$ computation units. This results in a computational complexity of $\bigO (\numvar  \samplespacesize^3)$.
+
+	We note the computation of trace of the matrix-matrix multiplication between $\punccircuit_{root}(\xvars)$ and the density matrix $\rho$ necessary for obtaining a probability can be done in $\bigO(\numbond^2)$.
+
+	Given that we can evaluate \puncs $\bigO ( \numvar \samplespacesize^3)$ and also that we can marginalize out variables by pushing the summation to the leaves (\cf the proof of Proposition~\ref{prop:puncPOVM}), we can conclude that marginal inference has complexity $\bigO(\numvar \samplespacesize^3)$, as well.
+\end{proof}
+
+
+
+
+\subsection{Proof of Proposition \ref{prop:voequiprob}}
+\label{sec:proof:prop:voequiprob}
+
+\begin{restatable}{lemma}{proppOveq}
+	For the circuits defined in Definition~\ref{def:poc} and Definition~\ref{def:vpoc} it holds that
+	\label{prop:Oveq}
+	\begin{align}
+		\forall k: \Ocircuit_k(\xvars_k) = \vcircuit_{k}(\xvars_{k}) \otimes \vcircuit^*_{k}(\xvars_{k}).
+		\label{eq:def:opvec_equivalent}
+	\end{align}
+\end{restatable}
+
+
+\begin{proof}
+	We start the proof at the leave where we have
+	\begin{align}
+		\Ocircuit_k(\xvar_k)
+		=
+		A_k e_{\xvar_k} \otimes  e_{\xvar_k}^* A_k^*
+	\end{align}
+	and Equation~\ref{eq:def:opvec_equivalent} holds by definition. In the computation untis into which the leaves feed, we then have
+	\begin{align}
+		\Ocircuit_k
+		 & = L_k \Ocircuit_{k_l} L_k^* \odot R_k \Ocircuit_{k_r} R_k^*
+		\nonumber
+		\\
+		 & = L_k (\vcircuit_{k_l} \otimes \vcircuit^*_{k_l} ) L_k^*
+		\odot
+		R_k (\vcircuit_{k_r} \otimes \vcircuit^*_{k_r} ) R_k^*,
+	\end{align}
+	where we omited the explicit dependencies on the variables $\xvar_k$, $\xvar_{k_l}$, and $\xvar_{k_r}$. Next we use the mixed-product property of the Hadamard product and Kronecker product to get
+	\begin{align}
+		\Ocircuit_k
+		 & =
+		L_k \vcircuit_{k_l} \odot  R_k \vcircuit_{k_r}
+		\otimes
+		\vcircuit^*_{k_l} L_k^* \odot \vcircuit^*_{k_r} R_k^*
+		\nonumber
+		\\
+		 & = v_k \otimes v_k^*.
+	\end{align}
+	Repeating this argument recursively until the root of the circuit concludes the proof.
+\end{proof}
+
+
+
+
+
+
+\propvoequiprob*
+
+
+\begin{proof}
+	The proof starts by simply plugging in the vector representation of $\Ocircuit_{\text{root}}$ into the expression $\Tr [\Ocircuit_{\text{root}} \rho]$ and rather straightforward.
+	\begin{align}
+		\Tr [\Ocircuit_{\text{root}} \rho]
+		 &
+		=
+		\Tr \left[
+			\Bigl(\vcircuit_{\text{root}} \otimes \vcircuit^*_{\text{root}}   \Bigr) \times \rho
+			\right]
+		\\
+		 & = \vcircuit^*_{\text{root}} \times  \rho \times\vcircuit_{\text{root}}
+		\nonumber
+		\\
+		 & = \vcircuit^*_{\text{root}} \times  \gamma^* \times \gamma \times \vcircuit_{\text{root}}
+		\nonumber
+		% \\
+		% \nonumber
+		%  & 
+		= \lVert \gamma \times \vcircuit_{\text{root}}\rVert^2
+	\end{align}
+
+\end{proof}
+
+
+
+
+
+\subsection{Proof of Proposition \ref{prop:computationalcomplexityvec}}
+\label{sec:proof:prop:computationalcomplexityvec}
+
+
+\propcomputationalcomplexityvec*
+
+\begin{proof}
+	Following a similar train of thought as the proof in Section~\ref{sec:proof:prop:computationalcomplexity} we can derive the computational cost of evaluating a positive vector circuit to be $\bigO (\numvar \numbond \samplespacesize)$ implying
+	$\bigO (\numvar  \samplespacesize^2)$
+	when $\numbond \leq \samplespacesize$.
+	The major difference between matrix representation of operator circuits and their vector representation is that for the former the internal computation units output matrices ($\Ocircuit_k(\xvars_k)\in \mathbb{C}^{\numbond \times \numbond}$) while for the latter vectors are outputted ($\vcircuit_k(\xvars_k)\in \mathbb{C}^{\numbond}$).
+
+
+
+	As $\vcircuit_{root}(\Xvar_{rooot})$ is computable in $\bigO (\numvar \numbond \samplespacesize)$ and $\lVert \gamma \times \vcircuit_{\text{root}}\rVert^2$ is computable in $\bigO(\numbond^2)$, we can conclude that the probability $p_\Xvars(\xvars)$ can be computed in $\bigO (\numvar \samplespacesize^2)$.
+\end{proof}
+
+
+
+
+
+\section{Computing the Normalization for \noisepuncs}
+\label{sec:noisepuncnormalization}
+
+
+
+
+As we dscribe in Equation~\ref{eq:deepoperatirmix} multiplying a soft counting circuit $\qcircuit(\xvars)$ with a \punc $\punccircuit(\xvars)$ gives us in the internal nodes a mixture of operator:
+
+\begin{align}
+	\Qcircuit_{ki}(\xvars) = \sum_j w_{kij}  \tildeQcircuit_{kj},
+\end{align}
+with $ \tildeQcircuit_{kj} = \bilinear_k(  \qcircuit_{k_l j} \punccircuit_{k_l},  \qcircuit_{k_r j} \punccircuit_{k_r} )$. For the specific case of polyadic decompositions in the bilinear form we get:
+\begin{align}
+	\tildeQcircuit_{kj}
+	=
+	\Bigl(
+	D_k^{\nicefrac{1}{2}} U_{k} \times  \qcircuit_{k_l j} \punccircuit_{k_l} \times U_{k}^* D_k^{\nicefrac{1}{2}}
+	\Bigr)
+	\odot
+	\Bigl(
+	D_k^{-\nicefrac{1}{2}} V_{k} \times \qcircuit_{k_r j} \punccircuit_{k_r} \times  V_{k}^* D_k^{-\nicefrac{1}{2}}
+	\Bigr).
+\end{align}
+If we now apply Equation~\ref{eq:deepoperatirmix} recursively, we end up in the leaves. Here we first write the matrix vector multiplications in the leaves of the soft counting circuit element-wise:
+\begin{align}
+	                & \
+	\qcircuit_{k}(\xvar_k) = W_k \times  \text{one\_hot}(\xvar_k)
+	\nonumber
+	\\
+	\Leftrightarrow & \
+	\qcircuit_{ki}(\xvar_k) = \sum_j w_{kij} \iverson{\xvar_k=j}
+\end{align}
+where we write the dependency on the $\xvar_k$ variable again explicitly. This gives us for the leaves of a \noisepunc:
+\begin{align}
+	\Qcircuit_{ki}(\xvar_k)
+	 & = \qcircuit_{ki}(\xvar_k)  \punccircuit_{k}(\xvar_k),
+	\nonumber
+	\\
+	 & = \left( \sum_j w_{kij} \iverson{\xvar_k=j} \right)
+	A_k \left( e_{x_k} \otimes e_{x_k}^* \right) A_k^*
+	\nonumber
+	\\
+	 & = w_{ki x_k} A_k \left( e_{x_k} \otimes e_{x_k}^* \right) A_k^*
+\end{align}
+As taking the product of two circuit with the identical partition tree results again in a circuit with the same partition tree, we can again push the summation over the variables $\xvars\in \Omega(\Xvars)$ to the respective leaves, analogous to the proof in Appendix~\ref{sec:proof:prop:puncPOVM}.
+
+
+\begin{align}
+	\sum_{\xvar_k \in \Omega(\Xvar_k)}\Qcircuit_{ki}(\xvar_k)
+	=
+	\sum_{\xvar_k \in \Omega(\Xvar_k)} \qcircuit_{ki}(\xvar_k) \punccircuit_k(\xvar_k)
+	 & =
+	\sum_{\xvar_k \in \Omega(\Xvar_k) }w_{ki x_k} A_k \left( e_{x_k} \otimes e_{x_k}^* \right)A_k^*
+	\nonumber
+	\\
+	 & =
+	A_k \left( \sum_{\xvar_k \in \Omega(\Xvar_k) }w_{ki x_k}  \left( e_{x_k} \otimes e_{x_k}^* \right) \right) A_k^*
+	\nonumber
+	\\
+	 & =
+	A_k \times
+	\begin{pmatrix}
+		w_{ki0} & 0       & \cdots & 0                          \\
+		0       & w_{ki1} & \cdots & 0                          \\
+		\vdots  & \vdots  & \ddots & \vdots                     \\
+		0       & 0       & \cdots & w_{ki(\samplespacesize-1)} \\
+	\end{pmatrix}
+	\times  A_k^*
+	\nonumber
+	\\
+	 & =
+	A_k \times  \diag(w_{ki}) \times  A_k^*
+\end{align}
+We can now also see that when we have in the leaves that $W_{kij}=1$ for every $k$, $i$, and $j$ that we recover the (non-noisy) \puncs as a special case.
+
+For computing the normalization constant of a \noisepunc this means that we first compute in the leaves the prouct of $ \diag(w_{ki})$ sandwidched between $A_k$ and $A_k^*$. For each of the leaves we have $\numcomponents$ of these products. Hence, the computation of a single leaf can be done in $\bigO (\numcomponents \numbond^2 \samplespacesize)$. Using agina that $\numbond\leq \samplespacesize$ we get $\bigO (\numcomponents \samplespacesize^3)$.
+
+In the computation units we then compute $C$ times a bilinear form giving us $\bigO(\numcomponents \samplespacesize^3)$. This is followed by the computation of a mixture of operators for which we need $ \bigO(\numcomponents^2 \samplespacesize^2)$.
+Given that there are $\bigO(\numvar)$ computation units we get that the computation of the normalization constant takes $\big(\numvar \numcomponents \samplespacesize^3 + \numcomponents^2 \samplespacesize^2)$. The advantage of \noisepuncs over other circuit architectures~\cite{loconte2024sum,wangrelationship} is that this normalization constant had to be computed once training has finished and does not need to be differentiated through.
+

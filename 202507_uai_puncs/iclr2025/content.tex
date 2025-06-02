@@ -1,0 +1,1279 @@
+
+
+
+
+
+\maketitle
+
+
+
+
+\begin{abstract}
+	By recursively nesting sums and products, probabilistic circuits (PCs) have emerged in recent years as an attractive class of generative models as they enjoy, for instance, polytime marginalization of random variables.
+	However, as these PCs form monotone functions, specifically the parameters are constrained to positive real values, their expressive power is limited.
+	Drawing inspiration from the PC literature and quantum information theory we introduce a novel class of probabilistic models, which we dub \textit{positive operator circuits} (\pocs).
+	Contrary to the parametrization of PCs (constrained to positive real values), \pocs use complex valued parameters.
+	By leveraging concepts from quantum information theory, we show that \pocs encode proper probability distributions, while retaining the tractable marginalization property of PCs.
+	We also give a  prescription for constructing
+	an efficient parametrization of \pocs that enables us to perform parameter learning on hardware accelerators using standard gradient-based optimization.
+	Lastly, we provide an implementation and experimental evaluation for \pocs, which establishes \pocs as an attractive class of tractable probabilistic models.
+\end{abstract}
+
+
+
+\section{Introduction}
+
+
+Probabilistic circuits (PCs)~\citep{darwiche2003differential,poon2011sum} belong to an unusual class of probabilistic models: they are highly expressive but at the same time also tractable.
+For instance, so-called decomposable probabilistic circuits~\citep{darwiche2001decomposable} allow for the computation of marginals in time polynomial in the size of the circuit.
+From an abstract algebra perspective, PCs constitute computation graphs that perform their computations within the probability semiring. That is, they sum and multiply elements from the $[0,1]$ interval with each other.
+
+
+\citet{zhang2020relationship} noted that it is exactly this restriction to positive values that limits the expressive efficiency (or succinctness) of PCs~\citep{martens2014expressive,decolnet2021compilation}. In particular, the positivity constraint on the set of elements that PCs operate on prevents them from modelling negative correlations between variables.
+Circuits that are incapable of modelling negative correlations, \ie circuits that can only combine probabilities in an additive fashion, are also called monotone circuits~\citep{shpilka2010arithmetic}.
+This restricted expressiveness can be combatted by the use of so-called \textit{non-monotone} circuits, where subtractions are allowed as a third operation (besides sums and products). Interestingly, \citet{valiant1979negation} showed that a mere single subtraction can render non-monotone circuits exponentially more expressive than monotone circuits.
+
+As shown by \citet{harviainen2023inference}, non-monotone circuits do, however, introduce an important complication: if non-monotone circuits are not designed carefully, verifying whether a circuit encodes a valid probability distribution or not is an NP-hard problem. This does also render learning the parameters of a circuit practically infeasible.
+
+
+
+
+We will formulate, in a first instance, the class of layered probabilistic circuits (\cf \citet{peharz2019random,peharz2020einsum}) in terms of, what we call, partition circuits (Section~\ref{sec:pc}).
+This will allow us, Together with a slight generalization of concepts from quantum information theory (Section~\ref{sec:qit}),
+to concisely introduce \textit{positive operator circuits} (\pocs) --
+a novel non-monotone circuit class that uses complex valued parameters (instead of positive real ones) and that forms by construction valid probability distributions (Section~\ref{sec:pocs}).
+Lastly, we demonstrate the benefit of modelling probability distributions using positive operator circuits (Section~\ref{sec:experiments}), in which \pocs outperform competing (tractable) density estimators on datasets from the MNIST family but where we also point out important open questions.
+In Section~\ref{sec:related} we study the related work, and we give concluding remarks in Section~\ref{sec:conclusions}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Partition Circuits}
+\label{sec:pc}
+
+\begin{figure}[t]
+
+	\centering
+	\input{tex_input/partition}
+
+	\caption{Left: Layered PC over four binary variables $X_i$ with $i \in \{0,1,2,3\}$ taking values $x_i^0$ or $x_i^1$.
+		Within each partition in the bottom layer three mixtures for each of the four $X_i$'s are constructed using weighted sums (weights are not shown in the graphical representation but are present on the edges feeding into sum units).
+		The sum and product units in the circuit are the elemental constitute the elemental computing units and make the partitions.
+		The circuit in Figure~\ref{fig:circuit} has, except at the very top and bottom, three components in each partition.
+		As increasing the number of components per partition increases the number of parameters (weights on edges feeding into sum units), the number of components per partition controls the capacity of a circuit.
+		Right: partition tree abstracting the layered PC on the right.}
+	\label{fig:circuit}
+\end{figure}
+
+
+
+
+
+
+
+Inspired by simple feed-forward neural networks, \citet{peharz2019random,peharz2020einsum} introduced the concept of layered probabilistic circuits.
+These layered circuits are amenable to trivial parallelization and can be run on modern discrete GPUs. In Figure~\ref{fig:circuit} we give a graphical representation of such a layered circuit where we follow the construction introduced by \citet{shih2021hyperspns}. For the sake of conciseness we describe here only so-called \textit{structured decomposable and smooth} PCs. For a broader overview we refer the reader to the excellent work of \citet{vergari2021compositional}.
+
+Layers within a layered PC constitute blocks of computational units that are processed sequentially in a bottom-up fashion. Layers consist themselves of so-called partitions. The circuit in Figure~\ref{fig:circuit} has four partitions in the leaf layer (very bottom), two in the subsequent sum and product layers, and a single partition in the last product layer and in the final root node (top most sum). By construction, partitions in the same layer have disjoint scopes. That is, they are functions over disjoint sets of variables. This property is called structured decomposability in the PC literature~\citep{darwiche2011sdd}. Note also that layered PCs are by construction smooth~\citep{darwiche2001tractable}: the union of the scopes of the partitions within a layer is exhaustive. That is, the union of the scopes equals the set of variables given as input to the circuit.
+
+A (layered) PC is then parametrized by weighing the inputs to the sum units with positive real numbers -- giving rise to an unnormalized probability distribution over the input variables. Due to the properties of (structured) decomposability and smoothness the distribution can be normalized in time polynomial in the size of the circuit~\citep{peharz2015theoretical}.
+Thanks to the properties of smoothness and (structured) decomposability we can also marginalize out single variables from a PC. Again in time polynomial in the size of the circuit.
+
+
+
+
+
+
+
+
+
+Recently, \citet{zuidberg2024probabilistic} introduced the concept of \textit{partition trees} to abstract away certain aspects of smooth and structured decomposable probabilistic circuits. We give such a partition tree on the right side of Figure~\ref{fig:circuit}. We now take this abstraction a step further and define the computations performed by the probabilistic circuit not on the atomic computation units of the circuit itself (\ie sum and product units) but use the nodes in the partition tree as the elemental computation units. In other words, we regard the partition tree as a computation graph. To make this distinction explicit we dub these computation graphs \textit{partition circuits}. For the sake of conciseness, we will limit ourselves in this paper to balanced binary partition trees and will assume that the number of input variables is a power of two (unless indicated otherwise). Consequently, we will study partition circuits of depth $\log_2 M+1$ where $M$ is the number of input variables.
+
+
+
+\begin{definition}[Partition Circuit]
+	\label{def:partition_circuit}
+	A partition circuit over a set of variables is a parametrized computation graph taking the form of a binary tree. The partition circuit consists of three kinds of computation units:
+	\textit{leaf} and \textit{internal} units, as well as a single \textit{root}.
+	Units at the same distance from the root form a layer.
+	Furthermore, let $\circuit_n$ denote the root unit or an internal unit. The unit $\circuit_n$ then receives its inputs from two units in the previous layer, which we denote by $\circuit_{n_l}$ and $\circuit_{n_r}$. Each computation unit is input to exactly one other unit, except the root unit, which is the input to no other unit.
+\end{definition}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+\section{Adapting Quantum Information Theory for Probabilistic Modelling}
+\label{sec:qit}
+
+
+A widely used and elegant framework to describe measurements of quantum systems is the so-called \textit{positive operator-valued measure} (POVM) formalism. While POVMs have physical interpretations in terms of quantum information and quantum statistics, we will only be interested in their mathematical properties as we will use them to show that positive operator circuits (defined in Section~\ref{sec:pocs}) form valid probability distributions.
+We refer the reader to \citep{nielsen2001quantum} for an in-depth exposition on the topic, as well as quantum computing and quantum information theory in general.
+
+\begin{definition}[Positive Semidefinite]
+	An $N {\times} N$ Hermitian matrix $H$ is called positive semidefinite (PSD) if and only if $\forall \mathbf {x} {\in}  \mathbb {C} ^{N}: \mathbf{x}^{*} H \mathbf{x} {\geq} 0$, where $\mathbf{x}^{*}$ denotes the conjugate transpose and $\mathbb {C}^{N}$ the N-dimensional space of complex numbers.
+\end{definition}
+% We will refer to Hermitian PSD matrices as HPSD in the remainder of the paper.
+\begin{definition}[{POVM~\citep[Page 90]{nielsen2001quantum}}]
+	\label{def:povm}
+	A positive operator-valued measure
+	% with a finite number of elements acting on a finite-dimensional Hilbert space $\mathcal{H}$,
+	is a set of PSD  matrices $\{E(i)\}_{i=0}^{V-1}$ ($V\in \mathbb{N}$ being the number of possible measurement outcomes) that sum to the identity:
+	\begin{talign}
+		\sum_{i=0}^{V-1} E(i) = \mathbb{1},
+		\label{eq:povm_normalized}
+	\end{talign}
+\end{definition}
+Before defining the probability of a specific $i$ occurring, we need the notion of a density matrix~\citep{neumann1927wahrscheinlich}:
+\begin{definition}[{Density Matrix~\citep[Page 102]{nielsen2001quantum}}]
+	\label{def:density_matrix}
+	A density matrix $\rho$ is a PSD matrix of trace one, \ie $\Tr [\rho]=1$.
+\end{definition}
+\begin{definition}[{Event Probability~\citep[Page 102]{nielsen2001quantum}}]
+	\label{def:eventprob}
+	Let $\rho$ be a density matrix and let $i$ denote an event with $E(i)$ being the corresponding element from the POVM. The probability of the event $i$ happening, i.e. measuring the outcome $i$, is given by
+	\begin{talign}
+		p(i) = \Tr [ \rho E(i)   ]
+		\label{eq:povm_prob}
+	\end{talign}
+\end{definition}
+
+
+
+
+
+
+
+
+
+\begin{restatable}{proposition}{proppovmprob}
+	\label{prop:povmprob}
+	The expression in Equation~\ref{eq:povm_prob} defines a valid probability distribution.
+\end{restatable}
+
+
+\begin{proof}
+	While this is a well-known result we were not able to identify a concise proof in the literature and provide therefore, for the sake of completeness, a proof in Appendix~\ref{sec:proof:prop:povmprob}
+\end{proof}
+
+From a formal perspective, POVMs constitute an elegant way of defining probability distributions. However, from a computational perspective the constraint that $\sum_i E(i)=  \mathbb{1}$ causes some issues. While one could enforce the constraint using eigenvalue or singular value decompositions, performing these within a learning loop we would need to differentiate through the decomposition algorithms, which could lead to numerical stability issues. Especially, when computing gradients.\footnote{For instance, the PyTorch documentation mentions some of these concerns for singular value decompostions
+	\href{https://pytorch.org/docs/stable/generated/torch.linalg.svd.html}{(link)} and for eigenvalue value decompositions \href{https://pytorch.org/docs/stable/generated/torch.linalg.eig.html}{(link)}.
+}
+To circumvent these issues we (slightly) generalize Definition~\ref{def:eventprob}.
+
+
+\begin{definition}[Z-Normalized Event Probability]
+	\label{def:Zeventprob}
+	Let $\rho$ be a PSD matrix and let $i$ denote an event with $E(i)$ being the associated PSD matrix. The probability of the event $i$ happening, i.e. measuring the outcome $i$, is given by
+	\begin{talign}
+		\Trace \left[ \rho E(i)   \right] \big/ Z , \qquad \text{where } Z = \sum_{i=0}^{V-1} \Trace \left[ \rho E(i)  \right].
+		\label{eq:Zeventprob:def}
+	\end{talign}
+\end{definition}
+
+In comparison to Definition~\ref{def:eventprob}, Definition~\ref{def:Zeventprob} does not only drop the requirement that $\sum_i E(i)=  \mathbb{1}$ but also that $\Trace [\rho] =1$.
+
+
+
+\begin{restatable}{proposition}{propZpovmprob}
+	\label{prop:Zpovmprob}
+	The expression in Equation~\ref{eq:Zeventprob:def} defines a valid probability distribution.
+\end{restatable}
+
+
+\begin{proof}
+	In order to prove this we need to show that $\forall: \Trace [E(i) \rho ]\geq 0$. This then implies that $Z>0$ (assuming that at least one event has non-zero probability). Note also that the constraint $ \sum_i \Trace [E(i) \rho ] \big/ Z  =1$ is trivially satisfied by construction.
+	Showing that  $\forall: \Trace [E(i) \rho ]\geq 0$ amounts to showing that the trace of a matrix-matrix product of two PSD matrices is positive real-valued. We already prove this as a sub-step in the proof for Proposition~\ref{prop:povmprob} (\cf Equation~\ref{eq:proof:trpsdprod} in the appendix). This finishes the proof.
+\end{proof}
+
+
+
+
+
+
+
+
+
+
+\section{Positive Operator Circuits}
+\label{sec:pocs}
+With the slightly generalized definition of an event probability at hand we are now ready to define positive operator circuits (using partition circuits).
+\begin{definition}[Positive Operator Circuit]
+	\label{def:poc}
+	Let $\Xvars=\{\Xvar_0,\dots ,\Xvar_{M-1}  \}$ (taking values  $\xvars=\{\xvar_0,\dots ,\xvar_{M-1}  \}$) be a set of categorical random variables of sample space size $N$. Furthermore, let $B$ be a positive integer and let $\rho \in \mathbb{C}^{B\times B}$ be a PSD matrix.
+	We define a positive operator circuit as a partition circuit whose computation units take the following functional form:
+	\begin{align}
+		{\circuit}_k(\xvars_k)=
+		\begin{cases}
+			F_{k} \times  e_{\xvar_k} \otimes  e^*_{\xvar_k} \times F_{k}^*,
+			\quad e_{\xvar_k} \in  \mathbb{C}^{N},  F_{k} \in \mathbb{C}^{B\times N}
+			 & \text{if $k$ leaf unit}
+			\\
+			G_k \times \Bigl( \circuit_{k_l}(\xvars_{k_l}) \odot  \circuit_{k_r} (\xvars_{k_r}) \Bigr) \times G_{k}^*,
+			\quad G_k \in \mathbb{C}^{B\times B}
+			 & \text{if $k$ internal unit}
+			\\
+			\Trace \Bigl[  \rho \times \Bigl( \circuit_{k_l}(\xvars_{k_l}) \odot  \circuit_{k_r} (\xvars_{k_r}) \Bigr)  \Bigr] \Big/ Z  ,
+			\quad \rho \in \mathbb{C}^{B\times B},Z \in \mathbb{R}_{>0}
+			 & \text{if $k$ root unit.}
+		\end{cases}
+		\label{eq:poc:def}
+	\end{align}
+	Here we use the symbols $\times$, $\otimes$, $\odot$ and $\cdot$ to denote the matrix product, Kronecker product, Hadamard product, respectively.
+	Furthermore, $\{e_{\xvar_n} \}_{n=0}^{N-1}$ is a set of $N$-dimensinoal orthonormal basis vectors associating each outcome of the random variable $\Xvar_k$ to a specific basis vector.
+	The symbol $Z$ denotes the normalization constant for which we require:
+	\begin{align}
+		Z
+		=
+		\sum_{\xvars \in \Omega(\Xvars)}
+		\Trace \Bigl[  \rho \times \Bigl( \circuit_{root_l}(\xvars_{root_l}) \odot  \circuit_{root_r} (\xvars_{root_r}) \Bigr)  \Bigr]
+	\end{align}
+
+
+	% \begin{align}
+	% 	\forall \Xvar_n: \sum_{\xvar\in\Omega(\Xvar_n)} f_n(\xvar) \otimes  f^*_n(\xvar) =\mathbb{1}_{B\times B},
+	% 	\qquad
+	% 	\forall n: U_n \times U_n^* =\mathbb{1}_{B\times B},
+	% 	\label{eq:def:punc:con}
+	% \end{align}
+	% where $\mathbb{1}_{B\times B}$ denotes the $B\times B$ identity matrix.
+\end{definition}
+% Note that the second normalization condition ensures that the $U_n$ matrices are unitary. From which we derive the eponymous probabilistic circuits' name. Using the POVM formalism we can also show that \puncs form probability distributions.
+
+
+
+
+\begin{restatable}{theorem}{theopocvalid}
+	\label{theo:pocvalid}
+	\pocs are valid probability distributions.
+\end{restatable}
+
+\begin{proof}
+	We need to prove that at the root we have $\circuit_{root}(\xvars)\geq 0$, for every $\xvars \in \Omega(\Xvars)$ and that $\sum_{\xvars \in \Omega(\Xvars_{root})} \circuit_{root}(\xvars)=1$.
+	The latter requirement is satisfied by construction via the normalization constant $Z$. For the former, let us first define:
+	\begin{align}
+		\mu_{root}(\xvars) \coloneqq \circuit_{root_l}(\xvars_{l}) \odot  \circuit_{root_r}(\xvars_{r}).
+	\end{align}
+	By identifying each element $\xvars \in \Omega(\Xvars)$ with an event $i$ from Definition~\ref{def:Zeventprob}, consequently $\mu_{root}(\xvars)$ with $E(i)$, we observe that the root of a \poc has the functional form of the probability of an element from a (generalized) POVM.
+	In order to prove that $\forall \xvars \in \Omega(\Xvars): \Trace[\mu_{root}(\xvars) \rho]{>}0$,
+	we now only need to show that $\mu_{root}(\xvars)$ is PSD,
+	as $\rho$ is already PSD by assumption.
+	We show this in Appendix~\ref{sec:proof:pocvalid}.
+\end{proof}
+
+
+
+\subsection{Discussion on Computational Complexity}
+\label{sec:complexity}
+
+In order to determine the computational complexity of evaluating a positive operator circuit, we simply study the cost of the individual computation units. We start at the leaves where we first have a Kronecker product $ e_{\xvar_k} \otimes  e_{\xvar_k}^*$, which can be performed in $\bigO (N^2)$. The matrix products with $F_k$ and $F_k^*$ can then be performed in $\bigO (B N^2)$. In the internal layers we perform the Hadamard product in $\bigO (B^2)$, followed again by two matrix-matrix products in $\bigO (B^3)$. In the root we compute the numerator of the fraction with a Hadamard product ($\bigO(B^2)$). The trace of the resulting matrix-matrix product can then be obtained in $\bigO (B)$. This means that evaluating a circuit (ignoring the normalization constant for now) has a cost of $\bigO (BN^2)$ per computation unit (assuming $B<N$). Furthermore, it is easy to show that partition circuits, where computation units have two inputs, have a total of $\bigO (M)$ computation units, with $M$ being the number of input variables. We conclude that the computational complexity of evaluating a positive operator circuit is $\bigO (MBN^2)$.
+
+
+In the discussion above we assumed that the normalization constant $Z$ was given. Usually, this is a strong assumption as computing the normalization constant is in general computationally hard. However, for \pocs we can, similarly to probabilistic circuits, exploit the decomposability property and compute $Z$ in polytime via tractable marginalization.
+
+
+\begin{restatable}{proposition}{proppocmargtract}
+	\label{prop:pocmargtract}
+	\pocs allow for tractable marginalization.
+\end{restatable}
+
+\begin{proof}
+	The proof is trivial, as marginalizing out a variable $\Xvar_m$ from a \poc simply amounts to pushing down the summation to the corresponding leaf. This is possible as we can exchange at the root the summation and the trace, and exploit that the internal computation units are multilinear functions in terms of the input variables. At the leaf $\circuit_m (\xvar)$ we then have:
+	\begin{align}
+		\sum_{\xvar\in \Omega(\Xvar_m)} F_{m} \times  e_{\xvar} \otimes  e^*_{\xvar} \times F_{m}^*
+		=
+		F_{m} \times  \left( \sum_{\xvar\in \Omega(\Xvar_m)}  e_{\xvar} \otimes  e^*_{\xvar} \right) \times F_{m}^*
+		 &
+		=
+		F_{m} \times  \mathbb{1} \times F_{m}^*
+		\nonumber
+		\\
+		 &
+		=
+		F_{m} \times  F_{m}^*,
+	\end{align}
+	where we exploit the fact that the $e_n$'s are orthonormal basis vectors, which allows us to replace the sum with the identity matrix.
+\end{proof}
+
+If we marginalize out all variables $\Xvars$ using the prescription described in the proof of Proposition~\ref{prop:pocmargtract}, we obtain a circuit that does not dependent anymore on any inputs but which is still evaluable in time $\bigO (MBN^2)$ (using identical reasoning to the argument for the input dependent case).
+We conclude that we can compute $Z$ in time polynomial in the size of the circuit and that positive operator circuits can be evaluated in $\bigO (MBN^2)$ time. We show next how to bring this down to $\bigO (MBN)$.
+
+
+
+
+
+
+
+\subsection{The Vector Representation of Positive Operator Circuits}
+\label{sec:vpoc}
+
+The cubic computational dependency of the computation cost per computation unit $bigO (BN^2)$ is due to the presence of matrix-matrix multiplications. By rearranging the operations performed in the positive operator circuit we can avoid these matrix-matrix multiplications entirely and obtain matrix-vector multiplications instead. We call these alternative representation of \pocs \textit{positive vector circuits}.
+
+\begin{definition}[Positive Vector Circuit]
+	\label{def:vpox}
+	Let $\Xvars=\{\Xvar_0,\dots ,\Xvar_{M-1}  \}$ (taking values  $\xvars=\{\xvar_0,\dots ,\xvar_{M-1}  \}$) be a set of categorical random variables of sample space size $N$ and let $\{e_{\xvar_n} \}_{n=0}^{N-1}$ be a set of orthonormal basis vectors with elements from the sample space being bijectively associated to basis vectors. Furthermore, let $B$ be a positive integer and let $\rho \in \mathbb{C}^{B\times B}$ be a PSD matrix.
+	We define a positive vector circuit as a partition circuit whose computation units take the following functional form:
+	\begin{align}
+		{\xircuit}_k(\xvars_k)=
+		\begin{cases}
+			F_{k} \times  e_{\xvar_k},
+			 & \text{if $n$ leaf unit}
+			\\
+			G_k \times \Bigl( \xircuit_{n_l}(\xvars_{k_l}) \odot  \xircuit_{k_r} (\xvars_{k_r}) \Bigr),
+			 & \text{if $k$ internal unit}
+			\\
+			\nu_{k}(\xvars_k)  \cdot \nu^*_k(\xvars_k),
+			 & \text{if $k$ root unit,}
+		\end{cases}
+		\label{eq:vector_units}
+	\end{align}
+	where we have $\odot$, $\times$, and $\cdot$ denoting the Hadamard product, the matrix-vector product, and the dot product, respectively. Furthermore, we used:
+	\begin{align}
+		\nu_{root}(\xvars_{root})
+		\coloneqq
+		\gamma
+		\times
+		\Bigl(
+		\xircuit_{k_l}(\xvars_{root_l})
+		\odot
+		\xircuit_{k_r}(\xvars_{root_r})
+		\Bigr)
+		\big/ \sqrt{Z},
+		\label{eq:pvc:def}
+	\end{align}
+	with $\gamma \in \mathbb{C}^{B\times B}$ such that $\rho = \gamma \times \gamma^*$. The matrices $F_k$ and $G_k$ are defined as in Definition~\ref{def:poc}.
+\end{definition}
+Following a similar train of thought as in Section~\ref{sec:complexity} we can derive the computational cost of evaluating a positive vector circuit to be $\bigO (M B N)$ (assuming that the normalization constant has been pre-computed and which is a one-time cost).
+The major difference between positive operator circuits and positive vector circuits is that for the former the internal computation units output matrices ($\circuit_k(\xvars_k)\in \mathbb{C}^{B\times B}$) while for the latter vectors are outputted ($\xircuit_k(\xvars_k)\in \mathbb{C}^{B}$).
+
+
+\begin{restatable}{proposition}{proppqequ}
+	\label{prop:pqequ}
+	The root nodes of positive operator circuits and positive vector circuits compute the same probability. That is,
+	$\circuit_{root}(\xvars)=\xircuit_{root}(\xvars)$ if both circuits use the same $F_k$'s, $G_k$'s, and $\rho$.
+\end{restatable}
+\begin{proof}
+	We show this in Appendix~\ref{sec:proof:pqequ}.
+\end{proof}
+
+A similar observation and ensuing proof has been given by \citet{loconte2024subtractive}, although for a more restricted setting. We describe the relationship to their work in more detail in Section~\ref{sec:related}.
+
+
+
+
+
+
+
+
+
+
+\subsection{Parametrizing Positive Operator Circuits}
+
+So far we have only given the computational structure of \pocs and constraints that have to be satisfied for \pocs to form valid probability distributions, \eg positive semidefiniteness. A parametrization can be constructed as follows: at the root unit we need an (unnormalized) density matrix $\rho$, \ie we need to construct a PSD matrix. As already hinted at in Definition~\ref{def:vpox} this is easily achieved by setting
+\begin{align}
+	\rho = \gamma \times  \gamma^* ,
+\end{align}
+where $\gamma \in \mathbb{C}^{B\times B}$ is an arbitrary $B\times B$ complex valued matrix.
+
+For the parameter matrices $F_k$ and $G_k$ in the leaf and internal units we can simply pick arbitrary complex valued matrices with adequate dimensions.
+For the set of  basis vectors $\{e_{\xvar_n} \}_{n=0}^{N-1}$ in the leaves we simply choose the set of standard basis vectors, \ie one-hot unit vectors, with each basis vector $e_n$ corresponding to a random outcome. Although different choices of basis vectors would be valid as well, \eg the columns of the orthonormalized discrete Fourier transform matrix.
+
+
+% For the internal computation units of a \punc we need to ensure unitarity of the $U_n$ matrices. We take a rather simple approach and pick the following matrix-matrix product:
+% \begin{align}
+% 	U_n = \frac{1}{\sqrt{B}} F_B \times D_{n}.
+% \end{align}
+% Here $F_B$ denotes the $B$-point discrete Fourier transform (DFT) matrix. The factor $\frac{1}{\sqrt{B}}$ orthonormalizes it, thereby giving us a unitary matrix. Note that the DFT matrix has no learnable parameters and all learnable parameters are present in the second matrix of the product. The second matrix is a diagonal matrix having as entries complex numbers of the form $D_{njj}=e^{i \phi_{nj}}$, where $i$ denotes the imaginary unit. The $\phi_{nj}$'s constitute our parameters and off-diagonal entries of $D_n$ are zero.
+% Using the fact that $D_n$ is a unitary matrix for any value of the $\phi_{nj}$'s and the fact that the product of two unitary matrices is again unitary,  we do not have to constrain the $\phi_{nj}$'s in any way in order to guarantee unitarity of $U_n$.
+% This mean we can optimize the $\phi_{nj}$'s using unconstrained gradient methods.
+
+% What remains is to parametrize the leaf units. For the sake of conciseness, we assume that the categorical random variable $X_n$ present in each of the leaves has a sample space size of $|\Omega(\Xvar_n)| =D$.
+% We propose the following functional form for $f_n(\xvar)$:
+% \begin{align}
+% 	f_n(\xvar) =  A_n \times \xvar
+% \end{align}
+% We restrict $A_n$ to be a real-valued $B\times D$ matrix. Furthermore, as $\xvar_n$ is categorical we can encode its sample space using the set of standard basis vectors $\{\epsilon_0, \epsilon_1, \dots, \epsilon_{D-1} \}$,\ie one-hot unit vectors, with each basis vector $\epsilon_i$ corresponding to a random outcome. This choice of encoding the sample space immediately gives us:
+% \begin{align}
+% 	\sum_{\xvar\in \Omega(\Xvar_n)}  \xvar \otimes  \xvar^{*}
+% 	=
+% 	\sum_{d=0}^{D} \epsilon_d \otimes  \epsilon_d^{T}
+% 	=
+% 	\mathbb{1}_{D\times D}
+% \end{align}
+% Consequently, we have:
+% $
+% 	\sum_{\xvar\in \Xvar_n} f_n(\xvar)\otimes f_n^*(\xvar)
+% 	=
+% 	A_n \left( \sum_{\xvar\in \Xvar_n} \xvar \otimes \xvar^* \right) A_n^*
+% 	=
+% 	A_n  \times A_n^*
+% $. This means that $A_n$ has to be an \textit{isometric} matrix if we want to satisfy the condition $\sum_{\xvar\in \Xvar_n} f_n(\xvar)\otimes f_n^*(\xvar) =\mathbb{1}_{B\times B}$ from Equation~\ref{eq:def:punc:con}, \ie $A_n A_n^* = \mathbb{1}_{B\times B}$.
+% Isometry of $A_n$ can be achieved by assuming the following factorization:
+% \begin{align}
+% 	A_n = L_n^{-1} B_n, \qquad \text{with  $B_n B_n^* = L_n  L_n^*$ and $L_n$ being a lower triangular matrix.}
+% \end{align}
+% In other words, we pick $B_n\in \mathbb{R}_{B\times D}$ to be an arbitrary matrix and $L_n \mathbb{R}_{B\times B}$ such that $L_n L_n^*$ is the Cholesky decomposition of $B_n B_n^*$, which is a differentiable operation. With this we now have completely parametrized \puncs using unconstrained parameters and can use off-the-shelf optimizers for learning the parameters.
+
+Even though complex numbers are well-supported in modern deep learning libraries and the gradients can be computed with automated differentiation using Wirtinger calculus~\cite{kreutz2009complex,wirtinger1927formalen}, the issue of numerical stability with complex numbers has to be handled more carefully.
+Similar to computations with classic probabilities, computations with positive operator and vector circuits have to be performed in log-space.
+
+
+A naive implementation of complex numbers would, similar to probabilities, quickly result in the absolute value $r$ of a complex number $r e^{i \phi}$ either under- or overflowing when performing repeated multiplications.
+Therefore, we represent complex-valued parameters using the polar form $r e^{i \phi}$ in the log domain using a tuple of real parameters: $(\log{r},  \phi)$.
+In this representation $\phi$ and $\log r$ are both unconstrained and real-valued.
+Multiplications of two number can now be computed in a straightforward fashion by adding up the elements of the tuples:
+$(\log{r_1},  \phi_1) \times (\log{r_2},  \phi_2) = (\log{r_1}+\log{r_2},  \phi_1+ \phi_2) $.
+
+In order to perform complex-valued matrix-matrix and matrix-vector multiplications in the log-domain, we adapt the \textit{LogEinsumExp-trick} (a generalization of the LogSumExp trick) introduced by \citet{peharz2020einsum} for positive real-valued PCs to the setting of complex numbers. This generalizes log-domain circuit evaluations with only positive reals, as well as circuit evaluations that allow for negative reals~\citep{correia2019towards,maua2018robustifying}.
+The main idea is to perform the LogSumExp trick on the magnitude of the complex number (in log-space) $\log r$ only, and leave the phase $\phi$ alone.
+We refer the reader to our implementation of \pocs/\pvcs for further details.
+
+
+
+% At this point we would like to note that computations in probabilsitic unitary circuits have to be, for reasons of numerical stability, performed in log-space. This is similar to the use of the log-probability semiring when dealing with standard probabilities.
+% To this end we we represent complex-valued parameters using the polar form in the log domain: $\log z=\log{ r e^{i\phi} } = \log {r }+ i\phi$. In this representation $\phi$ can be chosen freely between $0$ and $2\pi$ and $\log r$ is unconstrained and real-valued. Similar to probabilities, the absolute value $r$ can become small fast when multiplying complex numbers. Using the log-domain prevents numerical instabilities. In order to perform complex-valued matrix-matrix and matrix-vector multiplications in the log-domain, we adapt the \textit{logeinsumexp-trick} introduced by \citet{peharz2020einsum} for positive real-valued PCs to the setting of complex numbers. This generalizes log-domain circuit evaluations with only positive reals, as well as circuit evaluations that allow for negative reals~\citep{correia2019towards,maua2018robustifying}.
+
+
+
+
+% So far we have only given the computational structure of \puncs and constraints that have to be satisfied for \puncs to form valid probability distributions, \eg unitarity of th $U_n$ matrices. Starting at the root unit we need to find a parametrization of the density matrix, \ie we need to construct a PSD matrix with unit trace. This can easily be achieved as follows:
+% \begin{align}
+% 	\rho =  \nicefrac{\sigma^* \sigma }{\Tr (\sigma^*  \sigma   )},
+% \end{align}
+% where $\sigma$ is an arbitrary $B\times B$ complex valued matrix.
+
+% For the internal computation units of a \punc we need to ensure unitarity of the $U_n$ matrices. We take a rather simple approach and pick the following matrix-matrix product:
+% \begin{align}
+% 	U_n = \frac{1}{\sqrt{B}} F_B \times D_{n}.
+% \end{align}
+% Here $F_B$ denotes the $B$-point discrete Fourier transform (DFT) matrix. The factor $\frac{1}{\sqrt{B}}$ orthonormalizes it, thereby giving us a unitary matrix. Note that the DFT matrix has no learnable parameters and all learnable parameters are present in the second matrix of the product. The second matrix is a diagonal matrix having as entries complex numbers of the form $D_{njj}=e^{i \phi_{nj}}$, where $i$ denotes the imaginary unit. The $\phi_{nj}$'s constitute our parameters and off-diagonal entries of $D_n$ are zero.
+% Using the fact that $D_n$ is a unitary matrix for any value of the $\phi_{nj}$'s and the fact that the product of two unitary matrices is again unitary,  we do not have to constrain the $\phi_{nj}$'s in any way in order to guarantee unitarity of $U_n$.
+% This mean we can optimize the $\phi_{nj}$'s using unconstrained gradient methods.
+
+% What remains is to parametrize the leaf units. For the sake of conciseness, we assume that the categorical random variable $X_n$ present in each of the leaves has a sample space size of $|\Omega(\Xvar_n)| =D$.
+% We propose the following functional form for $f_n(\xvar)$:
+% \begin{align}
+% 	f_n(\xvar) =  A_n \times \xvar
+% \end{align}
+% We restrict $A_n$ to be a real-valued $B\times D$ matrix. Furthermore, as $\xvar_n$ is categorical we can encode its sample space using the set of standard basis vectors $\{\epsilon_0, \epsilon_1, \dots, \epsilon_{D-1} \}$,\ie one-hot unit vectors, with each basis vector $\epsilon_i$ corresponding to a random outcome. This choice of encoding the sample space immediately gives us:
+% \begin{align}
+% 	\sum_{\xvar\in \Omega(\Xvar_n)}  \xvar \otimes  \xvar^{*}
+% 	=
+% 	\sum_{d=0}^{D} \epsilon_d \otimes  \epsilon_d^{T}
+% 	=
+% 	\mathbb{1}_{D\times D}
+% \end{align}
+% Consequently, we have:
+% $
+% 	\sum_{\xvar\in \Xvar_n} f_n(\xvar)\otimes f_n^*(\xvar)
+% 	=
+% 	A_n \left( \sum_{\xvar\in \Xvar_n} \xvar \otimes \xvar^* \right) A_n^*
+% 	=
+% 	A_n  \times A_n^*
+% $. This means that $A_n$ has to be an \textit{isometric} matrix if we want to satisfy the condition $\sum_{\xvar\in \Xvar_n} f_n(\xvar)\otimes f_n^*(\xvar) =\mathbb{1}_{B\times B}$ from Equation~\ref{eq:def:punc:con}, \ie $A_n A_n^* = \mathbb{1}_{B\times B}$.
+% Isometry of $A_n$ can be achieved by assuming the following factorization:
+% \begin{align}
+% 	A_n = L_n^{-1} B_n, \qquad \text{with  $B_n B_n^* = L_n  L_n^*$ and $L_n$ being a lower triangular matrix.}
+% \end{align}
+% In other words, we pick $B_n\in \mathbb{R}_{B\times D}$ to be an arbitrary matrix and $L_n \mathbb{R}_{B\times B}$ such that $L_n L_n^*$ is the Cholesky decomposition of $B_n B_n^*$, which is a differentiable operation. With this we now have completely parametrized \puncs using unconstrained parameters and can use off-the-shelf optimizers for learning the parameters.
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Related Work}
+\label{sec:related}
+
+This work is inspired by theoretical observations made in the statistical relational AI literature. Specifically, \citet{buchman2017rules}, and \citet{kuzelka2020complex} noted that using only real-valued parametrizations (including negatives~\citep{buchman2017negative}) does not allow for fully expressive models.
+% Interestingly, the approach of \citet{kuzelka2020complex} for parametrizing so-called Markov logic networks~\citep{richardson2006markov} relies, similar to our parametrization of \puncs, on the discrete Fourier transform.
+In contrast to our work, both of these works are not concerned with learning and are of a rather theoretical nature.
+We discuss next three approaches from the physics and the machine learning literature that have taken a more practical approach.
+
+
+\subsection*{Tensor Networks}
+
+A popular technique to model systems in condensed matter physics are so-called tensor networks~\citep{orus2014practical,white1992density}, and in recent years they have been applied to tackle problems in supervised as well as unsupervised machine learning~\citep{cheng2019tree,han2018unsupervised,stoudenmire2016supervised} -- with the works of \citet{han2018unsupervised} and \citet{cheng2019tree} on tree tensor networks being most related to \pocs. Similar to \pocs, tree tensor networks perform inference in a hierarchical fashion. The conceptual difference, however, lies with the formulation of \pocs in the POVM formalism. In this regard and given that tensor networks originate in the physics community, it is rather surprising that tensor networks have so far, and to the best of our knowledge, not been formulated using POVMs.
+
+Using our generalized POVM formulation for \pocs is, however, not only theoretically elegant but has also practical benefits: using this formalism leads to circuits that are normalized by construction (using a normalization constant), and we can perform learning simply by optimizing the likelihood. We contrast this to the sweeping algorithms that are usually deployed in the tensor network literature, where blocks of variables are optimized one at the time while the remaining variables are held constant. It appears that this approach is inspired by the variational ansatz taken in the density-matrix renormalization group algorithm~\citep{white1992density}, which is the original algorithm for tensor networks.
+
+We would also like to point out a theoretical result from the tensor network literature stating that picking a complex-valued parametrization instead of a real-valued one can lead to an arbitrarily large reduction in the number of parameters~\citep{glasser2019expressive}. While this result is formulated with respect to (exact) low rank tensor decomposition and does not apply directly to the problem of learning parameters via gradient descent, we consider this observation to be a strong theoretical indicator for the superiority of complex numbers over real numbers when parametrizing probabilistic circuits. A similar argument has also been made by \citet{gao2022enhancing} in the context of hidden Markov models.
+
+
+
+\subsection*{Squared Non-Monotonic Probabilistic Circuits}
+\citet{loconte2024subtractive} recently introduced a class of tractable probabilistic models called \textit{squared non-monotonic PCs} (\snpcs). The main idea behind \snpcs is that one can parametrize a probabilistic circuit using negative and positive reals and simply square the final output.
+They then use the circuit squaring algorithm from \citep{vergari2021compositional} to guarantee tractable marginalization and compute the normalization constant in time polynomial in the size of the circuit.
+Squaring the output of a circuit in order to guarantee positivity and normalizing via a normalization constant is reminiscent of the positive vector circuits from Section~\ref{sec:vpoc}.
+
+\begin{restatable}{proposition}{proppocrankone}
+	\label{prop:pocrankone}
+	\snpcs are real-valued positive vector circuits with a density matrix of rank-one.
+\end{restatable}
+
+
+\begin{proof}
+	We show this in Appendix~\ref{sec:proof:prop:pocrankone}.
+\end{proof}
+
+
+
+Concerning the parametrization, the biggest difference is our use of the entire complex plane compared to real valued parameters only for \snpcs. While we do not have a theoretical proof that this complex parametrization results in improved expressive power, results from the tensor network literature~\citep{glasser2019expressive} and the statistical relation AI~\citep{buchman2017rules,kuzelka2020complex} literature hint in this direction.
+
+Using Proposition~\ref{prop:pocrankone} and the fact that \snpcs only use real-valued parameters we can conclude that positive vector circuits generalize \snpcs two-fold. First, \pvcs use full-rank matrices as their (unnormalized) density matrix. Second, \pvcs utilize the entire complex plane. In our experiments we show that these generalizations do have an impact.
+Interestingly the restriction to rank-one density matrices is also customary in the tensor network literature~\citep{cheng2019tree,han2018unsupervised}.
+
+
+
+\subsection*{Positive Semidefinite Kernels}
+
+
+Recently, the use of PSD matrices has also been studied in the kernel literature~\citep{marteau2020non,rudi2021psd}. Specifically, given a set of $N$ data samples $\xvars^{(0)}, \dots, \xvars^{(N-1)}$. An unnormalized probability distribution $q(\xvars)$ can be defined as follows:
+$
+	% \begin{align}
+	q(\xvars) = \boldsymbol{\kappa}^{T}(\xvars)  A \boldsymbol{\kappa}(\xvars),
+	\label{eq:psdk}
+	% \end{align}
+$
+where $A  \in \mathbb{R}^{N \times N}$ is a PSD matrix and where
+$\boldsymbol{\kappa}(\xvars) \in  \mathbb{R}^{N}$ is a vectorized kernel: $\boldsymbol{\kappa}_i(\xvars)= \kappa(\xvars, \xvars^{i} )$ and $\kappa$ being the base kernel, \eg radial basis function.
+Comparing this to the root computation unit of a \pvc, we can  observe a superficial resemblance: in both cases we have a quadratic form. Important differences exist, however. Contrary to \pvcs the size of the PSD kernels grows with the number of data points. Furthermore, the distribution induced by PSD kernels is unnormalized.
+
+
+
+
+\section{Experimental Evaluation}
+\label{sec:experiments}
+
+
+\textbf{Experimental Setup}
+
+
+For our experimental evaluation we used the MNIST family of datasets. That is, the original MNIST~\citep{deng2012mnist}, FashionMNIST~\citep{xiao2017fashion}, and also EMNIST~\citep{cohen2017emnist}.
+For the implementation we used PyTorch together with the Einops library~\citep{rogozhnikov2022einops}. We set up our experiments in Lightning\footnote{\url{https://lightning.ai/}} and ran them on a DGX-2 machine with V100 Nvidia cards.
+
+We compare different methods using the \textit{bits per dimension} metric, which is calculated from the average negative log-likelihood ($\overline{NLL}$) as follows: $bpd {=} \nicefrac{\overline{NLL}}{(\log{2} \times D)}$ ($D{=}28^2$ for MNIST datasets).
+
+
+
+\textbf{Training Positive Operator Circuits}
+
+In our experiments we estimate the density of the different MNIST datasets by maximizing a parametrized likelihood function. We construct this  function using a positive vector circuit.
+In order to build the underlying partition circuit,
+we follow the approach described by \citet{zuidberg2024probabilistic}: we start with a grid of $28\times 28$ pixels and merge, in an alternating fashion, rows and columns of the image.
+We also allow for merging three partitions into  a single partition, thereby breaking the binary character of the partition trees used so far.
+Having three instead of two partitions being merged can easily be accommodated for by using a Hadamard product with three factors instead of two in the internal units of a \pvc. Ultimately, this allows us to handle layers with an uneven number of partitions.
+At the leaves we encode pixel values by associating each value to one of $256$ standard basis vector of $\mathbb{R}^{256}$.
+
+We performed training by minimizing the negative log-likelihood using Adam~\citep{kingma2014adam} with default hyperparameters, batch size of $50$, over $100$ epochs.
+The best model was selected using a $90-10$ train-validation data split where we monitored the negative log-likelihood on the validation set.
+We did not perform any hyperparameter search.
+Further details can be found in the configuration files of the experiments.
+
+
+
+\textbf{State-of-the-Art Baselines}
+
+We compare \pvcs to three state-of-the-art tractable density estimators from the literature: quadrature of probabilistic circuits (QPCs)~\citep{gala2024probabilistic}, hidden Chow-Liu trees (HCLTs)~\citep{liu2021tractable}, and sparse HCLTs (SHCLTs)~\citep{dang2022sparse}.
+All three methods are probabilistic circuits and they all use hidden Chow-Liu trees as their underlying structure. This tree is learned and dataset specific. The difference between QPCs and HCLTs is that the former is obtained by approximating a continuous latent variable extension of probabilistic circuits using numerical quadrature. The difference between HCLTs and SHCLTs is that the latter allows for dynamically adapting the number of components per partition during parameter learning. This means that SHCLTs can focus their computational budget on information-rich parts of the circuit.
+
+
+
+\textbf{Q1: How Do the Different \pvc Parametrizations Fair Against Each Other?}
+
+We construct \pvcs following the prescription of \cite{zuidberg2024probabilistic}, as described above. Furthermore, we use $B=128$ components per partition.
+As for the parametrization we study four different variants:
+$\mathrm{PVX}_{0}^{FR}$,
+$\mathrm{PVX}_{2\pi}^{FR}$,
+$\mathrm{PVX}_{0}^{R1}$, and
+$\mathrm{PVX}_{2\pi}^{R1}$.
+The subscripts ($0$ or $2\pi$) indicate whether we limit the phase to be zero or whether we allow the phase to be a learnable parameter. Note that having a tunable phase doubles the number of (real-valued) parameters. The superscript indicates whether the parametrization uses a full-rank ($FR$) density matrix in the root or a rank-one ($R1$) density matrix.
+As such, $\mathrm{PVX}_{0}^{R1}$ is equivalent to the  squared monotonic probabilistic circuits (\smpcs) used in ~\cite{loconte2024subtractive}, and $\mathrm{PVX}_{2\pi}^{R1}$ generalizes their \snpcs from the real domain to the entire complex domain. Concretely, \smpcs are rank-one \pvcs with the phase fixed to zero and \snpcs are rank-one \pvcs with the phase fixed to values in the set $\{0, \pi \}$. We do not experiment on the latter.
+
+We report the obtained bpds for the different \pvc parametrizations in the first four columns of Table~\ref{tab:mnist}. In general, we see that the complex-valued parametrizations are either on par or outperform the corresponding zero-phase parametrizations.
+The notable exception is the FashionMNIST benchmark where the two parametrizations with no phase ($\mathrm{PVX}_{0}^{FR}$ and $\mathrm{PVX}_{0}^{R1}$) perform best.
+Comparing full-rank to rank-one parametrizations we see a more important impact for the zero-phase parametrization than for the complex-valued parametrization.
+
+
+Overall, $\mathrm{PVX}_{2\pi}^{FR}$ constitutes the best performing parametrization being best-in-class on all benchmarks but FashionMNIST.
+
+
+\input{tex_input/mnist_table}
+
+
+
+
+
+
+
+
+\textbf{Q2: How Do \pvcs Fair Against the State of the Art?}
+
+In order to compare \pvcs to state-of-the-art circuits all methods (\pvc, QPC, HCLT, SHCLT) were given a computational budget of $B=128$ components per partition (on average for SHCLT).
+The results for the competing methods were taken from the respective papers -- except for HCLTs. For HCLTs we took the bpds reported by \citet{gala2024probabilistic} as they achieved stronger results with their implementation compared to the originally reported performance~\citep{liu2021tractable}.
+
+We see in Table~\ref{tab:mnist} that QPCs and HCLTs are in general outperformed by \pvc -- in particular $\mathrm{PVX}_{2\pi}^{FR}$. The FashionMNIST benchmark constitutes again an outlier in this regard.
+The only methods outperforming \pvcs are the SHCLTs, which is due to them being able to dynamically allocate compute budget to informative parts of the circuit.
+It is noteworthy that for the EMNIST-BYCLASS benchmark all four  \pvc parametrization exhibit strong performance with  $\mathrm{PVX}_{2\pi}^{FR}$ and $\mathrm{PVX}_{2\pi}^{R1}$ even outcompeting SHCLTs.
+
+
+\textbf{Discussion}
+
+In our experimental evaluation we did not perform an explicit comparison to the method of \citet{loconte2024subtractive} as they were not able to find any improvements of allowing non-negative parameters in probabilistic circuit for discrete data. They stipulated that
+\say{simple categorical distribution can already capture any discrete distribution with finite support and a (subtractive) mixture thereof might not yield additional benefits}.
+In our experimental evaluation we refute this conjecture, and show that using complex-valued parameters leads to noticeable gains when performing density estimation on discrete data.
+The exception being of course the FashionMNIST benchmark. We believe that this is due to our optimization method that was not tuned in any way.
+In this regard we believe that developing tailor-made optimization algorithms for \pvcs might further boost their performance.
+Furthermore, one can envisage, similar to SHCLTs, dynamically adapting the compute budget per partition, which should again improve the density estimation capacities of \pvcs.
+
+
+
+
+
+
+\section{Conclusions \& Future Work}
+\label{sec:conclusions}
+
+Based on first principles from quantum information theory, we constructed positive operator circuits -- a novel class of probabilistic tractable models:
+Their construction as partition circuits allows for layer-wise parallelization and execution on modern machine learning hardware.
+Using unconstrained gradient-descent we showed that \pocs, and \pvcs specifically, constitute a promising addition to the zoo of tractable probabilistic models.
+
+In future work we would like to investigate in more detail theoretical properties of \pocs and how they differ from other tractable models. Ideally one would find an exponential separation between real-valued and complex-valued circuits. On the practical side it remains, however, to be seen whether such a separation has an equally important impact on real-world datasets.
+
+This relates to another open question,  that of learning in \pocs. We presented a rather simple learning approach for parameters tailored towards neural architecture. It might be the case that more sophisticated techniques have to be deployed for large-scale \pocs, as they might exhibit the problem of barren plateaus~\citep{ragone2023unified} -- a well known issue in quantum machine learning~\citep{biamonte2017quantum,huggins2019towards}.
+Furthermore, and as already pointed out by~\citet{loconte2024subtractive}, computing the normalization constant $Z$ requires the evaluation of the circuit in the \poc representation. This gives rise to a rather expensive cubic computation cost during learning (when compared to the quadratic cost of \pvc evaluations). Avoiding this issue would allow to drastically scale \pvcs. In order, to scale \pvcs it might also be necessary to use more sophisticated structures than binary trees with every partition having the same number of components $B$ per partition, \cf SHCLTs.
+
+
+
+\clearpage
+
+
+\bibliography{references}
+\bibliographystyle{iclr2025_conference}
+
+
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% APPENDIX
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+
+\setcounter{equation}{0}
+\renewcommand{\theequation}{A\arabic{equation}}
+
+\appendix
+
+
+
+
+
+
+
+
+\section{Probabilistic Circuits as Partition Circuits}
+\label{sec:lpc}
+
+\begin{definition}[Layered Probabilistic Circuit]
+	\label{def:lpc}
+	Let $\Xvars=\{\Xvar_0,\dots ,\Xvar_{M-1}  \}$ (taking values  $\xvars=\{\xvar_0,\dots ,\xvar_{M-1}  \}$) be a set of categorical random variables. Furthermore, let $B$ be a positive integer.
+	We define a layered probabilistic circuit as a partition circuit whose computation units take the following functional form:
+	\begin{align}
+		{\circuit}_k(\xvars_k)=
+		\begin{cases}
+			f_k(\xvar_k),
+			\quad f_k(\xvar_k) \in \mathbb{R}_{\geq 0}^B
+			 & \text{if $n$ leaf unit, \ie $\xvars_k = \{\xvar_k \}$}
+			\\
+			W_k \times \Bigl( \circuit_{n_l}(\xvars_{n_l}) \odot  \circuit_{n_r} (\xvars_{n_r}) \Bigr),
+			\quad W_k \in \mathbb{R}_{\geq 0}^{B \times B}
+			 & \text{if $n$ internal unit}
+			\\
+			\rho \cdot \Bigl( \circuit_{n_l}(\xvars_{n_l}) \odot  \circuit_{n_r} (\xvars_{n_r}) \Bigr) \big/ Z,
+			\quad \rho \in \mathbb{R}_{\geq 0}^{B}
+			 & \text{if $n$ root unit.}
+		\end{cases}
+	\end{align}
+	Here we use the symbols $\times$, $\odot$ and $\cdot$ to denote the matrix product, Hadamard product and dot product, respectively.
+	Additionally, we necessitate:
+	\begin{align}
+		Z
+		=
+		\sum_{\xvars \in \Omega(\Xvars)}
+		\circuit_{root}(\xvars)
+	\end{align}
+	% Additionally, we necessitate the following normalization constraints:
+	% \begin{align}
+	% 	\forall \Xvar_k: \sum_{\xvar\in\Omega(\Xvar_k)} f_k(\xvar)=\mathbf{1}_B,
+	% 	\qquad
+	% 	\forall n, i : \sum_{j=0}^{B-1} W_{kij}=1,
+	% 	\qquad
+	% 	\sum_{j=0}^{D-1} \rho_{j}=1,
+	% \end{align}
+	where $\Omega(\Xvars)$ denotes the sample space of $\Xvars$.
+	% where $\mathbf{1}_B$ denotes the B-dimensional vector having as entries only ones,
+	% and where the subscripts $i$ and $j$ index the elements of the matrices $W_k$ and the vector $\rho$.
+\end{definition}
+
+
+
+\begin{restatable}{theorem}{theolpcvalid}
+	\label{theo:lpcvalid}
+	Layered PCs are valid probability distributions.
+\end{restatable}
+
+\begin{proof}
+	If $\circuit_{root} (\xvars)$ is the computation unit at the root of the layered PC, the unit forms a probability distribution if $\circuit(x)\geq 0$, for every $\xvars \in \Omega(\Xvars)$ and if $\sum_{\xvars \in \Omega(\Xvars)} \circuit(\xvars)=1$. The first condition is trivially satisfied as the circuit only performs linear operations on matrices and vectors ($f_k(\xvar_k), W_k, \rho$) with positive entries only.
+	The second requirement is satisfied by construction using the normalization constant Z.
+	% For the second condition we use the fact that the root unit and the internal unit are multilinear functions, which allows us to push the summation down to the leaf units. We then use that $\sum_{\xvar\in\Omega(\Xvar_n)} f_n(\xvar)=\mathbf{1}_B$. Evaluating the circuit with these $\mathbf{1}_B$ vectors and using the normalization constraints on $W_n$ and $\rho$ trivially returns $1$. Hence, both conditions are satisfied and layered PCs form valid probability distributions.
+\end{proof}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Proof of Theorems and Propositions}
+
+
+
+
+\subsection{Proof of Proposition~\ref{prop:povmprob}}
+\label{sec:proof:prop:povmprob}
+
+\proppovmprob*
+\begin{proof}
+	First we show that $p(i)\geq 1$, for each $i$:
+	\begin{align}
+		p(i)
+		%  &
+		=
+		\Tr [ E(i) \rho ]
+		% \nonumber
+		% \\
+		%  &
+		=
+		\Tr [ F(i) F^*(i)  \rho ]
+		% \nonumber
+		% \\
+		%  &
+		=
+		\Tr [ F(i)^*  \rho F(i) ].
+	\end{align}
+	Here we used the fact that $E(i)$ is PSD and factorized it into the product $F(i) F^*(i)$. Then we used the fact that the trace is invariant under cyclical shifts. Next we write out the trace using matrix elements:
+	\begin{align}
+		\Tr [ F(i)^*  \rho F(i)]
+		%  &
+		=
+		\sum_{klmn}  \delta_{kn} F^*_{lk}(i)\rho_{lm} F_{mn}(i)
+		% \nonumber
+		% \\
+		%  &
+		=
+		\sum_{k}   F^*_{k}(i)\rho F_{k}(i).
+		\label{eq:proof:trpsdprod}
+	\end{align}
+	In the equation above $F_{k}(i)$ is the $k$-th column of $F(i)$. As $\rho$ is PSD we have that each term of the sum over $k$ is positive, which means in turn that $p(i)$ is a positive real number, \ie $p(i){\geq} 0$ for every $i$.
+
+	Secondly, we show that $p(i)$ is normalized:
+	\begin{align}
+		\sum_{i=1}^N p(i)
+		%  &
+		=
+		\sum_{i=1}^N \Tr [ E(i) \rho ]
+		% \nonumber
+		% \\
+		%  &
+		=
+		\Tr [ \sum_{i=1}^N E(i) \rho ]
+		% \nonumber
+		% \\
+		%  &
+		=
+		\Tr [  \rho ],
+	\end{align}
+	where we used Equation~\ref{eq:povm_normalized}.
+	Exploiting the fact that the trace of a density matrix is one gives us indeed $\sum_{i=1}^N p(i)=1$, and we can conclude that $p(i)$ is a valid probability distribution.
+\end{proof}
+
+
+
+
+
+
+
+
+
+\subsection{Proof of Theorem~\ref{theo:pocvalid}}
+\label{sec:proof:pocvalid}
+
+
+\theopocvalid*
+
+
+
+
+
+
+
+
+
+\begin{proof}
+	We need to prove that at the root we have $\circuit_{root}(\xvars)\geq 0$, for every $\xvars \in \Omega(\Xvars_{root})$ and that $\sum_{\xvars \in \Omega(\Xvars_{root})} \circuit_{root}(\xvars)=1$.
+	The latter requirement is satisfied by construction via the normalization constant $Z$. For the former, let us first define:
+	\begin{align}
+		\mu_{root}(\xvars) \coloneqq \circuit_{root_l}(\xvars_{l}) \odot  \circuit_{root_r}(\xvars_{r}).
+	\end{align}
+	By identifying each element $\xvars \in \Omega(\Xvars)$ with an event $i$ from Definition~\ref{def:Zeventprob}, consequently $\mu_{root}(\xvars)$ with $E(i)$, we observe that the root of a \poc has the functional form of the probability of an element from a (generalized) POVM.
+	In order to prove that $\forall \xvars \in \Omega(\Xvars): \Trace[\mu_{root}(\xvars) \rho]{>}0$,
+	we now only need to show that $\mu_{root}(\xvars)$ is PSD,
+	as $\rho$ is already PSD by assumption.
+
+	To this end, we first observe that in the leaf units of a \poc we have the cross product between a vector and its conjugate transpose, which produces a PSD matrix. These PSD matrices from the leaves are then fed into the first layer of internal units where we first perform Hadamard products, which is again a PSD matrix via Schur's product theorem~\citep[p. 14, Theorem VII]{schur1911bemerkungen}. For units $k$ in the first internal layer we then have:
+	\begin{align}
+		\circuit_k(\xvars_k)
+		=
+		G_k \times P_k(\xvars_k) \times G_{k}^*,
+	\end{align}
+	where $P_k(\xvars_k)$ is the matrix obtained by performing the Hadamard product in the leaf. Using the fact that $P_k(\xvars)$ is PSD allows for a square root decomposition, and we can write:
+	\begin{align}
+		\circuit_k(\xvars_h) = G_k P^{\nicefrac{1}{2}}_k(\xvars_n) P^{\nicefrac{1}{2}}_k(\xvars_k) G_k^*
+		=
+		\left( G_k P^{\nicefrac{1}{2}}_k(\xvars_k) \right)
+		\left( G_k P^{\nicefrac{1}{2}}_k(\xvars_k) \right)^*,
+	\end{align}
+	which is clearly PSD. By repeating this argument recursively for all the layers up to the root we can conclude that $\circuit_{root}(\xvars)$ is PSD for all $\xvars \in \Omega(\Xvars_{root})$, which also concludes the proof.
+\end{proof}
+
+
+
+
+% \begin{proof}
+% 	We need to prove that at the root we have $\circuit_{root}(\xvars)\geq 0$, for every $\xvars \in \Omega(\Xvars)$ and that $\sum_{\xvars \in \Omega(\Xvars_{root})} \circuit_{root}(\xvars)=1$.
+% 	To this end, let us first define:
+% 	\begin{align}
+% 		\delta_{root}(\xvars) \coloneqq \dual_{root_l}(\xvars_{l}) \odot  \dual_{root_r}(\xvars_{r}).
+% 	\end{align}
+% 	By identifying $\delta_{root}(\xvars)$ with $E(i)$ from Definition~\ref{def:eventprob} we see that the root of a \punc has the functional form of the probability of an element from a POVM.
+% 	As $rho$ in Definition~\ref{def:punc} is a density matrix by definition, we only need to show that the following two conditions hold:
+% 	\begin{align}
+% 		\forall \xvars \in \Omega(\Xvars_{root}): \delta_{root}(\xvars) & \text{ is PSD},
+% 		\label{eq:con_psd:proof}
+% 		\\
+% 		\sum_{\xvars \in \Omega(\Xvars_{root})} \delta_{root}(\xvars)   & =\mathbb{1}_{B\times B}.
+% 		\label{eq:con_one:proof}
+% 	\end{align}
+% 	For the condition in Equation~\ref{eq:con_psd} we first observe that in the leaf units we have the cross product between a vector and its conjugate transpose, which produces a PSD matrix. These PSD matrices from the leaves are then fed into the first layer of internal units where we first perform Hadamard products, which is again a PSD matrix via Schur's product theorem~\citep[p. 14, Theorem VII]{schur1911bemerkungen}. For units $n$ in the first internal layer we then have:
+% 	\begin{align}
+% 		\dual_n(\xvars_n) = U_n P_n(\xvars_n) U_n^*
+% 	\end{align}
+% 	where $P_n(\xvars_n)$ is the matrix obtained performing the Hadamard product. Using the fact that $P_n(\xvars)$ is PSD allows for a square root decomposition, and we can write:
+% 	\begin{align}
+% 		\dual_n(\xvars_n) = U_n P^{\nicefrac{1}{2}}_n(\xvars_n) P^{\nicefrac{1}{2}}_n(\xvars_n) U_n^*
+% 		=
+% 		\left( U_n P^{\nicefrac{1}{2}}_n(\xvars_n) \right)
+% 		\left( U_n P^{\nicefrac{1}{2}}_n(\xvars_n) \right)^*,
+% 	\end{align}
+% 	which is clearly PSD. By repeating this argument recursively for all the layers up to the root we can conclude that $\delta_{root}(\xvars)$ is PSD for all $\xvars \in \Omega(\Xvars_{root})$.
+% 	Next, for the condition in Equation~\ref{eq:con_one} we note again that we can push down the summation over the variables $\xvars \in \Omega(\Xvars)$ down to the individual leaf units where we have by definition $\sum_{\xvar \in \Omega(\Xvar_n)} f_n(\xvar) \otimes f_n^*(\xvar)=\mathbb{1}_{B\times B}$. For the internal nodes this then recursively gives us:
+% 	\begin{align}
+% 		\sum_{\xvars_n \in \Omega(\Xvars_n)} \dual_n(\xvars_n)
+% 		 & =
+% 		U_n
+% 		\times
+% 		\left(
+% 		\sum_{\xvars_{n_l} \in \Omega(\Xvars_{n_l})} \dual_{n_l}(\xvars_{n_l})
+% 		\odot
+% 		\sum_{\xvars_{n_r}\in \Omega(\Xvars_{n_r})}  \dual_{n_r} (\xvars_{n_r})
+% 		\right)
+% 		\times
+% 		U_{n}^*
+% 		\\
+% 		 &
+% 		=
+% 		U_n \times \left(\mathbb{1}_{B\times B} \odot \mathbb{1}_{B\times B}  \right) \times U_{n}^*=\mathbb{1}_{B\times B},
+% 	\end{align}
+% 	Consequently, we also have $\sum_{\xvars \in \Omega(\Xvars_{root})} \delta_{root}(\xvars){=}\mathbb{1}_{B\times B}$. With Equations~\ref{eq:con_psd} and~\ref{eq:con_one} satisfied we can conclude that probabilistic unitary circuits are indeed valid probability distributions.
+
+% \end{proof}
+
+
+\subsection{Proof of Proposition~\ref{prop:pqequ}}
+\label{sec:proof:pqequ}
+
+\proppqequ*
+
+
+\begin{proof}
+	We start the proof by trivially rewriting the computation units in the leaves of a \poc  (Equation~\ref{eq:poc:def}):
+	\begin{align}
+		\circuit_k(\xvar_k)
+		=
+		\left(F_{k} \times  e_{\xvar_k} \right)
+		\otimes
+		\left(   F_{k}  \times  e_{\xvar_k}\right)^*
+		=
+		\xircuit_k (\xvar_k) \otimes \xircuit_k^* (\xvar_k),
+		\label{eq:leaf:vec}
+	\end{align}
+	This means that we can construct the matrix $\circuit_k(\xvars_k)$ from the vector $\xircuit_k(\xvars_k)$, and we need only to pass on the vector to the next layer. Coincidentally, $\xircuit_k(\xvars_k)$ is the exact computation performed by the \pvc at unit $k$. This also means that we only need to perform the computation for $\xircuit_k(\xvars_k)$ and not its conjugate transpose.
+
+	In the next layer, we plug in the right-most side of Equation~\ref{eq:leaf:vec} into the expression of an internal computational unit of a \poc and we get:
+	\begin{align}
+		\circuit_k(\xvars_k)
+		=
+		G_k
+		\times
+		\Bigl[
+			\Bigl(
+			\xircuit_{k_l}(\xvars_{k_l})
+			\otimes
+			\xircuit^*_{k_l}(\xvars_{k_l})
+			\Bigr)
+			\odot
+			\Bigl(
+			\xircuit_{k_r}(\xvars_{k_r})
+			\otimes
+			\xircuit^*_{k_r}(\xvars_{k_r})
+			\Bigr)
+			\Bigr]
+		\times
+		G_{k}^*.
+	\end{align}
+	We now exploit the mixed-product property of the Hadamard product and the Kronecker product to obtain:
+	\begin{align}
+		\circuit_k(\xvars_k)
+		 &
+		=
+		G_k
+		\times
+		\Bigl[
+			\xircuit_{k_l}(\xvars_{k_l})
+			\odot
+			\xircuit_{k_r}(\xvars_{k_r})
+			\Bigl)
+			\otimes
+			\Bigl(
+			\xircuit^*_{k_l}(\xvars_{k_l})
+			\odot
+			\xircuit^*_{k_r}(\xvars_{k_r})
+			\Bigr)
+			\Bigr]
+		\times
+		G_{k}^*
+		\label{eq:proof:pqeq:mixprod}
+		\\
+		 &
+		=
+		\Bigl[
+			G_k
+			\times
+			\Bigl(
+			\xircuit_{k_l}(\xvars_{k_l})
+			\odot
+			\xircuit_{k_r}(\xvars_{k_r})
+			\Bigr)
+			\Bigr]
+		\otimes
+		\Bigl[
+			G_k
+			\times
+			\Bigl(
+			\xircuit_{k_l}(\xvars_{k_l})
+			\odot
+			\xircuit_{k_r}(\xvars_{k_r})
+			\Bigr)
+			\Bigr]^*
+		\label{eq:proof:pqeq:asso}
+		\\
+		 &
+		=
+		\xircuit_k(\xvars_k) \otimes \xircuit^*_k(\xvars_k).
+		\label{eq:proof:pqeq:krodeco}
+	\end{align}
+	Going from Equation~\ref{eq:proof:pqeq:mixprod} to Equation~\ref{eq:proof:pqeq:asso} we made use of associativity.
+
+	We can now recursively plug in in these Kronecker decompositions (\cf Equation~\ref{eq:proof:pqeq:krodeco}) into subsequent computation units and will obtain for each internal layer the one-to-one correspondence of:
+	\begin{align}
+		\circuit_k(\xvars_k) =\xircuit_k(\xvars_k) \otimes \xircuit^*_k(\xvars_k),
+	\end{align}
+	which means that we can evaluate the internal units of a \poc by evaluating the corresponding internal units in the \pvc.
+
+	Finally, at the root layer we plug in again the Kronecker decomposition from the last internal layer and obtain:
+	\begin{align}
+		\circuit_k(\xvars_k)
+		 &
+		=
+		\Trace
+		\Bigl[
+			\rho
+			\times
+			\Bigl(
+			\xircuit_{k_l}(\xvars_{k_l}) \otimes \xircuit^*_{k_l}(\xvars_{k_l})
+			\Bigr)
+			\odot
+			\Bigl(
+			\xircuit_{k_r}(\xvars_{k_r}) \otimes \xircuit^*_{k_r}(\xvars_{k_r})
+			\Bigr)
+			\Bigr]
+		\Big/ Z
+		\\
+		 &
+		=
+		\Trace
+		\Bigl[
+			\rho
+			\times
+			\Bigl(
+			\xircuit_{k_l}(\xvars_{k_l}) \odot \xircuit_{k_r}(\xvars_{k_r})
+			\Bigr)
+			\otimes
+			\Bigl(
+			\xircuit^*_{k_l}(\xvars_{k_l}) \odot \xircuit^*_{k_r}(\xvars_{k_r})
+			\Bigr)
+			\Bigr]
+		\Big/ Z
+		\\
+		%  &
+		% =
+		% \Trace
+		% \Bigl[
+		% 	\gamma
+		% 	\times
+		% 	\Bigl(
+		% 	\xircuit_{k_l}(\xvars_{k_l}) \odot \xircuit_{k_r}(\xvars_{k_r})
+		% 	\Bigr)
+		% 	\otimes
+		% 	\Bigl(
+		% 	\xircuit^*_{k_l}(\xvars_{k_l}) \odot \xircuit^*_{k_r}(\xvars_{k_r})
+		% 	\Bigr)
+		% 	\times
+		% 	\gamma^*
+		% 	\Bigr]
+		% \Big/ Z
+		% \\
+		 &
+		=
+		\Trace
+		\Bigl[
+			\gamma^*
+			\times
+			\gamma
+			\times
+			\Bigl(
+			\xircuit_{k_l}(\xvars_{k_l}) \odot \xircuit_{k_r}(\xvars_{k_r})
+			\Bigr)
+			\otimes
+			\Bigl(
+			\xircuit^*_{k_l}(\xvars_{k_l}) \odot \xircuit^*_{k_r}(\xvars_{k_r})
+			\Bigr)
+			\Bigr]
+		\Big/ Z
+		\\
+		 &
+		=
+		\Trace
+		\Bigl[
+			\gamma
+			\times
+			\Bigl(
+			\xircuit_{k_l}(\xvars_{k_l}) \odot \xircuit_{k_r}(\xvars_{k_r})
+			\Bigr)
+			\otimes
+			\Bigl(
+			\xircuit^*_{k_l}(\xvars_{k_l}) \odot \xircuit^*_{k_r}(\xvars_{k_r})
+			\Bigr)
+			\times
+			\gamma^*
+			\Bigr]
+		\Big/ Z.
+	\end{align}
+	We can write this expression now easily in terms of $\nu_k$
+	\begin{align}
+		\circuit_k(\xvars_k)
+		 &
+		=
+		\Trace \bigl[ \nu_{k}(\xvars_k) \otimes \nu^*_{k}(\xvars_k) \bigr]
+		\\
+		 &
+		= \nu_{k}(\xvars_k) \cdot \nu^*_{k}(\xvars_k),
+	\end{align}
+	which proves the equality of a \poc and its corresponding \pvc at the root.
+\end{proof}
+
+
+% \subsection{Proof of Proposition~\ref{prop:puncmargtract}}
+% \label{sec:proof:prop:puncmargtract}
+
+
+% \proppuncmargtract*
+% \begin{proof}
+% 	The proof is trivial, as marginalizing out a variable $\Xvar_n$ from a \punc simply amounts to pushing down the summation to the corresponding leaf and replacing $\sum_{\xvar\in \Xvar_n} f_n(\xvar)\otimes f_n^*(\xvar)$ with $\mathbb{1}_{B\times B}$.
+% \end{proof}
+
+
+\subsection{Proof of Proposition~\ref{prop:pocrankone}}
+\label{sec:proof:prop:pocrankone}
+
+\proppocrankone*
+
+\begin{proof}
+	To  see this consider the computation at the root of a \pvc:
+	\begin{align}
+		\nu_{root}(\xvars)
+		=
+		\gamma
+		\times
+		\Bigl(
+		\xircuit_{root_l}(\xvars_{l})
+		\odot
+		\xircuit_{root_r}(\xvars_{r})
+		\Bigr)
+		\big/ \sqrt{Z}
+	\end{align}
+	Let us first define $\eta_{root}(\xvars) \coloneqq 			\Bigl(
+		\xircuit_{root_l}(\xvars_{l})
+		\odot
+		\xircuit_{root_r}(\xvars_{r})
+		\Bigr)
+		\big/ \sqrt{Z} $.
+	This then gives us:
+	\begin{align}
+		\nu_{root}(\xvars)
+		=
+		\gamma
+		\times
+		\eta_{root}(\xvars)
+	\end{align}
+	Here $\gamma$ is an arbitrarily complex-valued matrix -- potentially full-rank.
+	If we, however, restrict $\gamma$ to be a rank-one matrix, \ie $\gamma = \delta \otimes \delta^*$, with $\delta$ being a complex-valued vector, we get:
+	\begin{align}
+		\nu_{root}(\xvars)
+		=
+		(
+		\delta
+		\otimes
+		\delta^*
+		)
+		\times
+		\eta_{root}(\xvars).
+	\end{align}
+	Plugging this into the expression for $\xircuit_{root}$ (\cf Equation~\ref{eq:pvc:def}) we obtain:
+	\begin{align}
+		\xircuit_{root}(\xvars)
+		=
+		\Bigl[
+			(
+			\delta
+			\otimes
+			\delta^*
+			)
+			\times
+			\eta_{root}(\xvars)
+			\Bigr]
+		\cdot
+		\Bigl[
+			(
+			\delta
+			\otimes
+			\delta^*
+			)
+			\times
+			\eta_{root}(\xvars)
+			\Bigr]^*
+	\end{align}
+	Slightly rearranging the factors gives us:
+	\begin{align}
+		\xircuit_{root}(\xvars)
+		=
+		\Bigl[
+			\delta
+			\times
+			\underbrace{
+				(
+				\delta^*
+				\cdot
+				\eta_{root}(\xvars)
+				)}_{\eqqcolon \epsilon_{root}(\xvars)}
+			\Bigr]
+		\cdot
+		\Bigl[
+			\delta
+			\times
+			(
+			\delta^*
+			\cdot
+			\eta_{root}(\xvars)
+			)
+			\Bigr]^*
+	\end{align}
+	As $\delta^* \cdot \eta_{root}(\xvars)$ is a  simple dot product between two vectors  $\epsilon_{root}(\xvars)$ must be a scalar. This lets us further rearrange factors to result in:
+	\begin{align}
+		\xircuit_{root}(\xvars)
+		=
+		\epsilon_{root}(\xvars) \epsilon^*_{root}(\xvars) ( \delta \cdot \delta^*)
+	\end{align}
+	Here, the dot product $\delta \cdot \delta^*$ between two vectors results again  in a scalar, which is also positive.
+	We absorb this scalar for simplicity into $\epsilon_{root}(\xvars)$ with $\widehat{\epsilon}_{root}(\xvars) = \epsilon_{root}(\xvars) \sqrt{ \delta \cdot \delta^*}$.
+	Lastly, we can compute the probability using the product of two scalars:
+	\begin{align}
+		\xircuit_{root}(\xvars) = \widehat{\epsilon}_{root}(\xvars) \widehat{\epsilon}_{root}^*(\xvars),
+	\end{align}
+	As \citet{loconte2024subtractive} only formulated \snpcs for real-valued parameters, we need to impose a further assumption:
+	$\widehat{\epsilon}_{root}(\xvars)= \widehat{\epsilon}_{root}^*(\xvars)$, which only holds for strictly real-valued scalars. Finally, we can write the probability computed by a \pvc as the square of a scalar:
+	\begin{align}
+		\xircuit_{root}(\xvars) = \widehat{\epsilon}_{root}^2(\xvars)
+	\end{align}
+	We conclude that we recover \snpcs as a special case of \pvc by assuming $\gamma$ and consequently $\rho$ to be a rank-one matrix, and furthermore assuming that we only have real-valued parameters.
+\end{proof}
+
+
+
+
+
+
+

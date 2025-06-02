@@ -1,0 +1,273 @@
+\section*{\LARGE Appendix}
+
+\section{Proofs}
+
+
+\subsection{Proof of Proposition \ref{prop:povmprob}}
+\label{sec:proof:prop:povmprob}
+
+\proppovmprob*
+
+\begin{proof}
+	While this is a well-known result we were not able to identify a concise proof in the literature and provide therefore, for the sake of completeness here. To this end, we
+	first show that $p(i)\geq 1$, for each $i$.
+	\begin{align}
+		p(i)
+		=
+		\Tr [ E(i) \rho ]
+		% \nonumber
+		% \\
+		 &
+		=
+		\Tr [ D(i) D^*(i)  \rho ]
+		% \nonumber
+		\\
+		 &
+		=
+		\Tr [ D(i)^*  \rho D(i) ]. \nonumber
+	\end{align}
+	Here we used the fact that $E(i)$ is PSD and factorized it into the product $D(i) D^*(i)$. Then we used the fact that the trace is invariant under cyclical shifts.
+	Clearly, the matrix $ D(i)^*  \rho D(i)$ is PSD as we have for every vector $x$:
+	\begin{align}
+		x^* D(i)^*  \rho D(i) x = y^* \rho y \geq 0 \quad \text{with } y = Dx.
+		\label{eq:def:psdPOVM}
+	\end{align}
+	As the trace of a PSD matrix is positive we have that $p(i)$ is a positive real number, \ie $p(i){\geq} 0$ for every $i$.
+
+	Secondly, we show that $p(i)$ is normalized:
+	\begin{align}
+		\sum_{i=1}^N p(i)
+		%  &
+		=
+		\sum_{i=1}^N \Tr [ E(i) \rho ]
+		% \nonumber
+		% \\
+		%  &
+		=
+		\Tr [ \sum_{i=1}^N E(i) \rho ]
+		% \nonumber
+		% \\
+		%  &
+		{=}
+		\Tr [  \rho ],
+	\end{align}
+	where we used Equation~\ref{eq:povm_normalized}.
+	Exploiting the fact that the trace of a density matrix is one gives us indeed $\sum_{i=1}^N p(i)=1$, and we can conclude that $p(i)$ is a valid probability distribution.
+\end{proof}
+
+
+
+\subsection{Proof of Proposition \ref{prop:qopunital}}
+\label{sec:proof:prop:qopunital}
+
+\propqopunital*
+
+\begin{proof}
+	The (sufficient and necessary) condition that $\sum_j \kraus_j^* \kraus_j \leq \mathbb{1}$ stems from fact that we wish to bound the probability of a state $\qop (E(i))$ is less than or equal to $1$, \cf \citep[Proof of Theorem 8.1]{nielsen2001quantum}. That is, we wish to have:
+	\begin{align}
+		\Tr [ \qop (E(i)) \rho] \leq 1. \label{eq:proof:unitalvalid:bound}
+	\end{align}
+	We will now show that for unital quantum operations this holds by construction and that the condition $\sum_j K_j^* K_j$ is implied.
+
+	We start with the probability for the state $\sum_i E(i)=\mathbb{1}$:
+	\begin{align}
+		\Tr [ \qop (\mathbb{1}) \rho]
+		=
+		\Tr [ \sum_j \kraus_j  \mathbb{1} \kraus_j^* \rho ]
+		=
+		\Tr [ \sum_j \kraus_j  \kraus_j^* \rho ]
+		=
+		\Tr [  \rho ] =1
+	\end{align}
+	Alternatively, we write this also as:
+	\begin{align}
+		\Tr [ \qop (\mathbb{1}) \rho]
+		=
+		\Tr [ \sum_j \kraus_j  \mathbb{1} \kraus_j^* \rho ]
+		=
+		\sum_j \Tr [ \kraus_j  \mathbb{1} \kraus_j^* \rho ]
+		=
+		\sum_j \Tr [\gamma^* \kraus_j  \mathbb{1} \kraus_j^* \gamma ]
+	\end{align}
+	with $\rho=\gamma \gamma^*$.
+
+	Similarly we also write for the probability of the arbitrary state $\sigma$ denoting the sum over any subset of the POVM $\{ E(i) \}_{i=1}^{N}$:
+	\begin{align}
+		\Tr [ \qop (\sigma) \rho]
+		=
+		\sum_j \Tr [\gamma^* \kraus_j \sigma \kraus_j^* \gamma ].
+	\end{align}
+	We now need that $\Tr [ \qop (\sigma) \rho]\leq1$, which is equivalent to:
+	\begin{align}
+		1 - \Tr [ \qop (\sigma) \rho] \geq 0
+		 & \Leftrightarrow
+		\Tr [ \qop (\mathbb{1}) \rho] - \Tr [ \qop (\sigma) \rho] \geq 0
+		\\
+		 & \Leftrightarrow
+		\sum_j \Tr [\gamma^* \kraus_j  \mathbb{1} \kraus_j^* \gamma ]
+		-
+		\sum_j \Tr [\gamma^* \kraus_j \sigma \kraus_j^* \gamma ] \geq 0
+		\\
+		 & \Leftrightarrow
+		\sum_j \Tr \Bigl[\gamma^* \kraus_j  \Bigl( \mathbb{1} -\sigma \Bigr)  \kraus_j^* \gamma \Bigr] \geq 0
+	\end{align}
+	The last line only holds if $\mathbb{1}- \sigma$ is PSD, which is indeed the case as $\sigma$ only sums over a subset of the POVM. Substracting the sum of this subset from $\mathbb{1}$ leaves us with a sum over the remaining elements of the POVM. As this is a a sum over PSD matrices the sum over the remaining elements is again PSD.
+	This concludes the proof as we have shown that Equation~\ref{eq:proof:unitalvalid:bound} is satisfied by construction.
+\end{proof}
+
+
+
+
+\subsection{Proof of Proposition \ref{prop:puncPOVM}}
+\label{sec:proof:prop:puncPOVM}
+
+\proppuncPOVM*
+
+\begin{proof}
+	Given that positive unital circuits are by definition positive operator circuits we already have that:
+	\begin{align}
+		\forall \xvars \in \Omega(\Xvars): \punccircuit(\xvars) \text{ is PSD}.
+	\end{align}
+	Next we show that $\sum_{\xvars\in \Omega(\Xvars)} \punccircuit(\xvars)=\mathbb{1}$. Here we observe that in the computation units we have:
+	\begin{align}
+		\sum_{\xvars_k \in \Omega(\Xvars_k)} \punccircuit_k(\xvars_k)
+		 & = \sum_{\xvars_{k_l}} \sum_{\xvars_{k_r}}    \qop(\punccircuit_k(\xvars_{k_l}) \otimes \punccircuit_k(\xvars_{k_r})  )
+		\\
+		 & =
+		\qop \left(
+		\sum_{\xvars_{k_l}}   \punccircuit_k(\xvars_{k_l})
+		\otimes
+		\sum_{\xvars_{k_r}}\punccircuit_k(\xvars_{k_r})
+		\nonumber
+		\right)
+	\end{align}
+	This lets us push down the summation of a specific variable to the corresponding leaf where the variable is given as input, where we then have:
+	\begin{align}
+		\sum_{\xvars_k \in \Omega(\Xvars_k)} \punccircuit_k(\xvars_k)
+		= \sum_{\xvar_k\in \Omega(X_k)} E_{\xvar_k}
+		= \mathbb{1_k}
+	\end{align}
+	We now exploit that the completely positive maps in a positive unital circuit are unital, which gives us indeed
+	$
+		\sum_{\xvars\in \Omega(\Xvars)} \punccircuit(\xvars)=\mathbb{1}.
+	$
+\end{proof}
+
+
+
+
+
+
+
+
+
+
+
+
+
+% \subsection{Proof of Proposition \ref{prop:computationalcomplexity}}
+% \label{sec:proof:prop:computationalcomplexity}
+
+% \propcomputationalcomplexity*
+
+% \begin{proof}
+% 	We determine the computational cost of evaluating the circuit by determining the cost of the individual computation units. We start at the leaves where we first have a Kronecker product $ e_{\xvar_k} \otimes  e_{\xvar_k}^*$, which can be performed in $\bigO (\samplespacesize^2)$.
+% 	The matrix products with $A_k$ and $A_k^*$ can then be performed in $\bigO (\numbond^2 \samplespacesize)$, which implies $\bigO(\bigO (\samplespacesize^2))$ if $B\leq N$.
+% 	In the bilinear form (\cf Equation~\ref{eq:polyadicbilinear}) we perform four matrix-matrix product in $\bigO (\numbond^3)$. This is followed by a Hadamard product in $\bigO (\numbond^2)$,
+% 	This means that we have for the individual computation units in the partition a circuit a cost of $\bigO (\samplespacesize^3)$.
+
+% 	It is also easy to show that for binary tree partition circuits we have a total of $\bigO (\numvar)$ computation units. This results in a computational complexity of $\bigO (\numvar  \samplespacesize^3)$.
+
+% 	We note the computation of trace of the matrix-matrix multiplication between $\punccircuit_{root}(\xvars)$ and the density matrix $\rho$ necessary for obtaining a probability can be done in $\bigO(\numbond^2)$.
+
+% 	Given that we can evaluate \puncs $\bigO ( \numvar \samplespacesize^3)$ and also that we can marginalize out variables by pushing the summation to the leaves (\cf the proof of Proposition~\ref{prop:puncPOVM}), we can conclude that marginal inference has complexity $\bigO(\numvar \samplespacesize^3)$, as well.
+% \end{proof}
+
+
+
+
+\subsection{Proof of Proposition \ref{prop:Oveq}}
+\label{sec:proof:prop:Oveq}
+
+
+\propOveq*
+
+\begin{proof}
+	We start the proof at the leaf where we have
+	\begin{align}
+		\Ocircuit_k(\xvar_k)
+		=
+		U_k \left( e_{\xvar_k} \otimes e_{\xvar_k}^*  \right) U_k^*
+		=
+		\left( U_k e_{\xvar_k} \right) \otimes \left( e_{\xvar_k}^* U_k^* \right)
+	\end{align}
+	and Equation~\ref{eq:def:opvec_equivalent} holds almost by definition. In the computation units into which the leaves feed, we then have
+	\begin{align}
+		\Ocircuit_k
+		 & = U_k \left( \Ocircuit_{k_l} \otimes \Ocircuit_{k_r} \right) U_k^*
+		\nonumber
+		\\
+		 & = U_k \left( \vcircuit_{k_l} \otimes \vcircuit^*_{k_l} \otimes (\vcircuit_{k_r} \otimes \vcircuit^*_{k_r} ) \right) U_k^*
+		\nonumber
+		\\
+		 & = \Bigl( U_k \left( \vcircuit_{k_l} \otimes \vcircuit_{k_r} \right) \Bigr)
+		\otimes
+		\Bigl( \left( \vcircuit^*_{k_l}  \otimes \vcircuit^*_{k_r}  \right) U_k^* \Bigr)
+		\nonumber
+		\\
+		 & = v_k \otimes v_k^*.
+	\end{align}
+	where we omitted the explicit dependencies on the variables $\xvar_k$, $\xvar_{k_l}$, and $\xvar_{k_r}$.
+	Repeating this argument recursively until the root of the circuit concludes the proof.
+\end{proof}
+
+
+
+
+\subsection{Proof of Proposition \ref{prop:voequiprob}}
+\label{sec:proof:prop:voequiprob}
+
+\propvoequiprob*
+
+
+
+
+
+\begin{proof}
+	The proof starts by simply plugging in the vector representation of $\Ocircuit_{\text{root}}$ (obtained in the proof of Proposition~\ref{prop:Oveq}) into the expression $\Tr [\Ocircuit_{\text{root}} \rho]$ and rather straightforwardöy get:
+	\begin{align}
+		\Tr [\Ocircuit_{\text{root}} \rho]
+		 &
+		=
+		\Tr \left[
+			\Bigl(\vcircuit_{\text{root}} \otimes \vcircuit^*_{\text{root}}   \Bigr) \times \rho
+			\right]
+		\\
+		 & = \vcircuit^*_{\text{root}} \times  \rho \times\vcircuit_{\text{root}},
+	\end{align}
+	which is indeed the same probability as defined in Defintion~\ref{def:vpoc}.
+\end{proof}
+
+
+
+
+
+% \subsection{Proof of Proposition \ref{prop:computationalcomplexityvec}}
+% \label{sec:proof:prop:computationalcomplexityvec}
+
+
+% \propcomputationalcomplexityvec*
+
+% \begin{proof}
+% 	Following a similar train of thought as the proof in Section~\ref{sec:proof:prop:computationalcomplexity} we can derive the computational cost of evaluating a positive vector circuit to be $\bigO (\numvar \numbond \samplespacesize)$ implying
+% 	$\bigO (\numvar  \samplespacesize^2)$
+% 	when $\numbond \leq \samplespacesize$.
+% 	The major difference between matrix representation of operator circuits and their vector representation is that for the former the internal computation units output matrices ($\Ocircuit_k(\xvars_k)\in \mathbb{C}^{\numbond \times \numbond}$) while for the latter vectors are outputted ($\vcircuit_k(\xvars_k)\in \mathbb{C}^{\numbond}$).
+
+
+
+% 	As $\vcircuit_{root}(\Xvar_{rooot})$ is computable in $\bigO (\numvar \numbond \samplespacesize)$ and $\lVert \gamma \times \vcircuit_{\text{root}}\rVert^2$ is computable in $\bigO(\numbond^2)$, we can conclude that the probability $p_\Xvars(\xvars)$ can be computed in $\bigO (\numvar \samplespacesize^2)$.
+% \end{proof}
+
+
+
